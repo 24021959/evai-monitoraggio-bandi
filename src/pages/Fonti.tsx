@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { mockFonti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,35 +10,18 @@ import EditSourceForm from '@/components/EditSourceForm';
 import { Fonte } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 const Fonti = () => {
   const { toast } = useToast();
   const [fonti, setFonti] = useState(mockFonti);
   const [activeTab, setActiveTab] = useState("fonti");
   const [selectedFonte, setSelectedFonte] = useState<Fonte | null>(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [viewingFonte, setViewingFonte] = useState<Fonte | null>(null);
   
   const handleEdit = (id: string) => {
     const fonte = fonti.find(f => f.id === id);
     if (fonte) {
       setSelectedFonte(fonte);
       setActiveTab("modifica");
-    }
-  };
-  
-  const handleView = (id: string) => {
-    const fonte = fonti.find(f => f.id === id);
-    if (fonte) {
-      setViewingFonte(fonte);
-      setViewDialogOpen(true);
     }
   };
   
@@ -112,7 +94,6 @@ const Fonti = () => {
                   fonti={fonti} 
                   onEdit={handleEdit}
                   onDelete={handleDelete}
-                  onView={handleView}
                 />
               )}
             </CardContent>
@@ -192,54 +173,6 @@ const Fonti = () => {
           )}
         </TabsContent>
       </Tabs>
-      
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Dettagli Fonte</DialogTitle>
-            <DialogDescription>
-              Visualizza i dettagli della fonte selezionata
-            </DialogDescription>
-          </DialogHeader>
-          {viewingFonte && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-1">
-                <h4 className="font-medium text-sm">Nome</h4>
-                <p className="text-gray-700">{viewingFonte.nome}</p>
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-medium text-sm">URL</h4>
-                <a 
-                  href={viewingFonte.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  {viewingFonte.url}
-                </a>
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-medium text-sm">Tipo</h4>
-                <span className={`text-xs text-white px-2 py-1 rounded-full inline-block ${
-                  viewingFonte.tipo === 'statale' ? 'bg-green-500' : 
-                  viewingFonte.tipo === 'europeo' ? 'bg-blue-500' : 
-                  viewingFonte.tipo === 'regionale' ? 'bg-teal-500' : 'bg-gray-500'
-                }`}>
-                  {viewingFonte.tipo}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-medium text-sm">Stato</h4>
-                <span className={`text-xs px-2 py-1 rounded-full inline-block ${
-                  viewingFonte.stato === 'attivo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {viewingFonte.stato}
-                </span>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
