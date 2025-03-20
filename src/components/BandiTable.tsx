@@ -59,7 +59,11 @@ const BandiTable: React.FC<BandiTableProps> = ({ bandi, onViewDetails, onDeleteB
         </TableHeader>
         <TableBody>
           {bandi.map((bando) => (
-            <TableRow key={bando.id}>
+            <TableRow 
+              key={bando.id} 
+              className="cursor-pointer hover:bg-muted"
+              onClick={() => onViewDetails && onViewDetails(bando.id)}
+            >
               <TableCell className="font-medium">{bando.titolo}</TableCell>
               <TableCell>{bando.fonte}</TableCell>
               <TableCell>
@@ -70,13 +74,16 @@ const BandiTable: React.FC<BandiTableProps> = ({ bandi, onViewDetails, onDeleteB
               <TableCell>{bando.settori.join(', ')}</TableCell>
               <TableCell>{formatImporto(bando.importoMin, bando.importoMax)}</TableCell>
               <TableCell>{new Date(bando.scadenza).toLocaleDateString('it-IT')}</TableCell>
-              <TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center gap-2">
                   {onViewDetails && (
                     <Button 
                       size="sm" 
                       variant="ghost" 
-                      onClick={() => onViewDetails(bando.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(bando.id);
+                      }}
                       className="text-blue-500 hover:text-blue-700"
                     >
                       <Info className="h-4 w-4" />
@@ -86,7 +93,10 @@ const BandiTable: React.FC<BandiTableProps> = ({ bandi, onViewDetails, onDeleteB
                     <Button 
                       size="sm" 
                       variant="ghost" 
-                      onClick={() => onDeleteBando(bando.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteBando(bando.id);
+                      }}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
