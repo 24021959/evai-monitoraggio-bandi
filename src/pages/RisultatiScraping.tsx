@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,7 +97,6 @@ const RisultatiScraping = () => {
       duration: 3000,
     });
     setBandiSalvati(true);
-    navigate('/bandi');
   };
   
   const handleSalvaMatch = () => {
@@ -108,7 +106,6 @@ const RisultatiScraping = () => {
       duration: 3000,
     });
     setMatchSalvati(true);
-    navigate('/match');
   };
   
   const handleEsportaCSV = () => {
