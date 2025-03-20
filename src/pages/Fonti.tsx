@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { mockFonti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, AlertCircle, Play } from 'lucide-react';
 import FontiTable from '@/components/FontiTable';
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,13 +10,18 @@ import AddSourceForm from '@/components/AddSourceForm';
 import EditSourceForm from '@/components/EditSourceForm';
 import { Fonte } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { FirecrawlService } from '@/utils/FirecrawlService';
+import { Progress } from "@/components/ui/progress";
 
 const Fonti = () => {
   const { toast } = useToast();
   const [fonti, setFonti] = useState(mockFonti);
   const [activeTab, setActiveTab] = useState("fonti");
   const [selectedFonte, setSelectedFonte] = useState<Fonte | null>(null);
+  const [isScrapingInProgress, setIsScrapingInProgress] = useState(false);
+  const [scrapingProgress, setScrapingProgress] = useState(0);
+  const [currentScrapingFonte, setCurrentScrapingFonte] = useState<Fonte | null>(null);
   
   const handleEdit = (id: string) => {
     const fonte = fonti.find(f => f.id === id);
@@ -61,11 +67,138 @@ const Fonti = () => {
     });
   };
 
+  const handleScrapeNext = async () => {
+    if (isScrapingInProgress) return;
+    
+    const apiKey = FirecrawlService.getApiKey();
+    if (!apiKey) {
+      toast({
+        title: "Errore",
+        description: "Imposta prima la tua API key nelle impostazioni",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    const nextSource = FirecrawlService.getNextUnscrapedSource(fonti);
+    if (!nextSource) {
+      toast({
+        title: "Completato",
+        description: "Tutte le fonti attive sono state già scrappate",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    setIsScrapingInProgress(true);
+    setScrapingProgress(0);
+    setCurrentScrapingFonte(nextSource);
+    
+    const progressInterval = setInterval(() => {
+      setScrapingProgress((prev) => {
+        const newValue = prev + 5;
+        return newValue > 90 ? 90 : newValue;
+      });
+    }, 500);
+    
+    try {
+      const result = await FirecrawlService.crawlWebsite(nextSource.url);
+      
+      clearInterval(progressInterval);
+      setScrapingProgress(100);
+      
+      if (result.success) {
+        const bandi = await FirecrawlService.extractBandiFromCrawlData(result.data);
+        
+        if (bandi.length > 0) {
+          FirecrawlService.saveBandi(bandi);
+          FirecrawlService.markSourceAsScraped(nextSource.id);
+          
+          toast({
+            title: "Scraping completato",
+            description: `Estratti ${bandi.length} bandi dalla fonte "${nextSource.nome}"`,
+            duration: 3000,
+          });
+        } else {
+          toast({
+            title: "Scraping completato",
+            description: `Nessun bando trovato nella fonte "${nextSource.nome}"`,
+            duration: 3000,
+          });
+          FirecrawlService.markSourceAsScraped(nextSource.id);
+        }
+      } else {
+        toast({
+          title: "Errore",
+          description: `Impossibile eseguire lo scraping della fonte "${nextSource.nome}": ${result.error}`,
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      clearInterval(progressInterval);
+      
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore durante lo scraping: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsScrapingInProgress(false);
+      setCurrentScrapingFonte(null);
+    }
+  };
+  
+  const handleResetScrapedSources = () => {
+    FirecrawlService.resetScrapedSources();
+    toast({
+      title: "Reset completato",
+      description: "Lo stato di scraping delle fonti è stato resettato",
+      duration: 3000,
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gestione Fonti di Dati</h1>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            onClick={handleResetScrapedSources}
+            disabled={isScrapingInProgress}
+          >
+            Reset Stato Scraping
+          </Button>
+          <Button
+            onClick={handleScrapeNext}
+            disabled={isScrapingInProgress}
+            className="flex items-center gap-2"
+          >
+            <Play className="h-4 w-4" />
+            Scraping Prossima Fonte
+          </Button>
+        </div>
       </div>
+      
+      {isScrapingInProgress && currentScrapingFonte && (
+        <Card className="bg-blue-50 border-blue-100">
+          <CardContent className="pt-6">
+            <div className="flex flex-col space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-medium">Scraping in corso: {currentScrapingFonte.nome}</h3>
+                  <p className="text-sm text-gray-500">{currentScrapingFonte.url}</p>
+                </div>
+                <span className="text-sm">{scrapingProgress}%</span>
+              </div>
+              <Progress value={scrapingProgress} className="w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">

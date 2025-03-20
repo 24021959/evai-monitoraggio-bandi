@@ -1,5 +1,6 @@
+
 import FirecrawlApp from '@mendable/firecrawl-js';
-import { Bando } from '@/types';
+import { Bando, Fonte } from '@/types';
 import { mockBandi } from '@/data/mockData';
 
 interface ErrorResponse {
@@ -22,6 +23,7 @@ type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 export class FirecrawlService {
   private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
   private static SAVED_BANDI_STORAGE_KEY = 'saved_bandi';
+  private static SCRAPED_SOURCES_STORAGE_KEY = 'scraped_sources';
   private static firecrawlApp: FirecrawlApp | null = null;
 
   static saveApiKey(apiKey: string): void {
@@ -216,5 +218,50 @@ export class FirecrawlService {
     } catch (error) {
       console.error('Errore nell\'eliminazione del bando:', error);
     }
+  }
+  
+  // Nuove funzioni per gestire lo stato delle fonti scrappate
+  static markSourceAsScraped(sourceId: string): void {
+    const scrapedSourcesJson = localStorage.getItem(this.SCRAPED_SOURCES_STORAGE_KEY);
+    let scrapedSources: string[] = [];
+    
+    if (scrapedSourcesJson) {
+      try {
+        scrapedSources = JSON.parse(scrapedSourcesJson);
+      } catch (error) {
+        console.error('Errore nel parsing delle fonti scrappate:', error);
+      }
+    }
+    
+    if (!scrapedSources.includes(sourceId)) {
+      scrapedSources.push(sourceId);
+      localStorage.setItem(this.SCRAPED_SOURCES_STORAGE_KEY, JSON.stringify(scrapedSources));
+    }
+  }
+  
+  static isSourceScraped(sourceId: string): boolean {
+    const scrapedSourcesJson = localStorage.getItem(this.SCRAPED_SOURCES_STORAGE_KEY);
+    if (!scrapedSourcesJson) return false;
+    
+    try {
+      const scrapedSources = JSON.parse(scrapedSourcesJson);
+      return scrapedSources.includes(sourceId);
+    } catch (error) {
+      console.error('Errore nel parsing delle fonti scrappate:', error);
+      return false;
+    }
+  }
+  
+  static resetScrapedSources(): void {
+    localStorage.removeItem(this.SCRAPED_SOURCES_STORAGE_KEY);
+  }
+  
+  static getNextUnscrapedSource(fonti: Fonte[]): Fonte | null {
+    for (const fonte of fonti) {
+      if (fonte.stato === 'attivo' && !this.isSourceScraped(fonte.id)) {
+        return fonte;
+      }
+    }
+    return null;
   }
 }
