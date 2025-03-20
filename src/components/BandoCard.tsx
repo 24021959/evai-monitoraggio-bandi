@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Bando } from '../types';
 import { Info } from 'lucide-react';
@@ -7,9 +6,10 @@ import { Button } from '@/components/ui/button';
 interface BandoCardProps {
   bando: Bando;
   onViewDetails?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-const BandoCard: React.FC<BandoCardProps> = ({ bando, onViewDetails }) => {
+const BandoCard: React.FC<BandoCardProps> = ({ bando, onViewDetails, onDelete }) => {
   const formatImporto = (min?: number, max?: number) => {
     if (min && max) {
       return `${min / 1000}K - ${max / 1000}K`;
@@ -60,17 +60,29 @@ const BandoCard: React.FC<BandoCardProps> = ({ bando, onViewDetails }) => {
           <span className="font-medium">{new Date(bando.scadenza).toLocaleDateString('it-IT')}</span>
         </div>
       </div>
-      {onViewDetails && (
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="w-full flex items-center justify-center gap-2" 
-          onClick={() => onViewDetails(bando.id)}
-        >
-          <Info className="h-4 w-4" />
-          Dettagli
-        </Button>
-      )}
+      <div className="flex gap-2">
+        {onViewDetails && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex-1 flex items-center justify-center gap-2" 
+            onClick={() => onViewDetails(bando.id)}
+          >
+            <Info className="h-4 w-4" />
+            Dettagli
+          </Button>
+        )}
+        {onDelete && (
+          <Button 
+            variant="destructive" 
+            size="sm"
+            className="flex-1"
+            onClick={() => onDelete(bando.id)}
+          >
+            Elimina
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
