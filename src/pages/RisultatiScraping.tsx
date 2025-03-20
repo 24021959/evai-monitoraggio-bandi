@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle } from 'lucide-react';
+import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle, Trash2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Bando, TipoBando } from '@/types';
@@ -121,6 +122,22 @@ const RisultatiScraping = () => {
     navigate('/fonti');
   };
 
+  // Add a new function to handle bando deletion
+  const handleDeleteBando = (id: string) => {
+    const bandoToDelete = bandiEstrati.find(bando => bando.id === id);
+    if (!bandoToDelete) return;
+    
+    // Remove the bando from the list
+    setBandiEstratti(prev => prev.filter(bando => bando.id !== id));
+    
+    // Notify the user
+    toast({
+      title: "Bando rimosso",
+      description: `Il bando "${bandoToDelete.titolo}" è stato rimosso dalla lista`,
+      duration: 3000,
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -182,6 +199,7 @@ const RisultatiScraping = () => {
                         <TableHead>Settori</TableHead>
                         <TableHead>Scadenza</TableHead>
                         <TableHead>Importo Max</TableHead>
+                        <TableHead>Azioni</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -198,6 +216,16 @@ const RisultatiScraping = () => {
                           </TableCell>
                           <TableCell>{new Date(bando.scadenza).toLocaleDateString('it-IT')}</TableCell>
                           <TableCell>€{bando.importoMax.toLocaleString('it-IT')}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteBando(bando.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
