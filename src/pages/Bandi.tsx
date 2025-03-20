@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,10 +32,11 @@ const Bandi = () => {
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
 
-  // Load bandi from FirecrawlService on component mount and when navigating back to this page
+  // Load bandi from FirecrawlService on component mount
   useEffect(() => {
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);
+    console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
   }, []);
 
   const settoriUnici = Array.from(new Set(bandi.flatMap(bando => bando.settori)));
@@ -82,9 +82,12 @@ const Bandi = () => {
   };
 
   const handleDeleteBando = (id: string) => {
+    // Delete from FirecrawlService first
     FirecrawlService.deleteBando(id);
-    // Update the UI
+    
+    // Then update the UI
     setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
+    
     toast({
       title: "Bando eliminato",
       description: "Il bando è stato rimosso con successo",

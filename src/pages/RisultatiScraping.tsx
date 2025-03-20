@@ -16,15 +16,19 @@ const RisultatiScraping = () => {
   const { toast } = useToast();
   const [bandiSalvati, setBandiSalvati] = useState(false);
   const [matchSalvati, setMatchSalvati] = useState(false);
-  const [bandiEstrati, setBandiEstratti] = useState<Bando[]>([]);
+  const [bandiEstrati, setBandiEstrati] = useState<Bando[]>([]);
   
-  // Carica i bandi estratti all'avvio del componente
+  // Carica i bandi estratti all'avvio del componente o quando si torna a questa pagina
   useEffect(() => {
-    const loadedBandi = FirecrawlService.getScrapedBandi();
-    if (loadedBandi.length > 0) {
-      setBandiEstratti(loadedBandi);
-    }
+    loadScrapedBandi();
   }, []);
+  
+  // Funzione per caricare i bandi estratti dal localStorage
+  const loadScrapedBandi = () => {
+    const loadedBandi = FirecrawlService.getScrapedBandi();
+    setBandiEstrati(loadedBandi);
+    console.log("Caricati bandi estratti:", loadedBandi.length);
+  };
   
   const [matchSuggeriti, setMatchSuggeriti] = useState(() => {
     return [
@@ -67,7 +71,7 @@ const RisultatiScraping = () => {
       duration: 3000,
     });
     setBandiSalvati(true);
-    setBandiEstratti([]); // Svuota l'array dei bandi estratti dopo averli salvati
+    setBandiEstrati([]); // Svuota l'array dei bandi estratti dopo averli salvati
   };
   
   const handleSalvaMatch = () => {
@@ -93,11 +97,8 @@ const RisultatiScraping = () => {
 
   // Funzione aggiornata per gestire l'eliminazione di un bando
   const handleDeleteBando = (id: string) => {
-    const bandoToDelete = bandiEstrati.find(bando => bando.id === id);
-    if (!bandoToDelete) return;
-    
     // Rimuove il bando dallo stato locale
-    setBandiEstratti(prev => prev.filter(bando => bando.id !== id));
+    setBandiEstrati(prev => prev.filter(bando => bando.id !== id));
     
     // Elimina anche dalla memoria persistente tramite FirecrawlService
     FirecrawlService.deleteScrapedBando(id);
@@ -105,7 +106,7 @@ const RisultatiScraping = () => {
     // Notifica l'utente
     toast({
       title: "Bando rimosso",
-      description: `Il bando "${bandoToDelete.titolo}" è stato rimosso dalla lista`,
+      description: "Il bando è stato rimosso dalla lista",
       duration: 3000,
     });
   };

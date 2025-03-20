@@ -16,8 +16,9 @@ const Dashboard = () => {
   
   // Carica i bandi quando il componente viene montato
   useEffect(() => {
-    const loadedBandi = FirecrawlService.getAllBandi();
+    const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);
+    console.log("Dashboard: Caricati bandi salvati:", loadedBandi.length);
   }, []);
   
   // Calcola le statistiche in base ai bandi caricati
