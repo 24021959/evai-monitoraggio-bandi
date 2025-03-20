@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,6 @@ const RisultatiScraping = () => {
   const [bandiSalvati, setBandiSalvati] = useState(false);
   const [matchSalvati, setMatchSalvati] = useState(false);
   const [bandiEstrati, setBandiEstratti] = useState<Bando[]>(() => {
-    // Esempio di bandi estratti (in un'implementazione reale, questi verrebbero caricati da un'API)
     return [
       {
         id: 'bando-1',
@@ -60,7 +58,6 @@ const RisultatiScraping = () => {
   });
   
   const [matchSuggeriti, setMatchSuggeriti] = useState(() => {
-    // Esempio di match suggeriti
     return [
       {
         id: 'match-1',
@@ -93,7 +90,6 @@ const RisultatiScraping = () => {
   });
   
   const handleSalvaBandi = () => {
-    // Salva i bandi usando il FirecrawlService
     FirecrawlService.saveBandi(bandiEstrati);
     
     toast({
@@ -343,29 +339,6 @@ const RisultatiScraping = () => {
                 <p className="text-sm text-gray-600 mt-1">
                   Ci sono 2 match con compatibilità superiore all'80%. Considera di notificare i clienti.
                 </p>
-                <Button variant="outline" className="mt-2 border-green-500 text-green-600 hover:bg-green-50">
-                  Invia Notifiche Selettive
-                </Button>
-              </div>
-              
-              <div className="p-3 bg-blue-50 rounded border border-blue-100">
-                <div className="font-medium">Aggiorna Database</div>
-                <p className="text-sm text-gray-600 mt-1">
-                  Aggiungi i nuovi bandi al database per tenere traccia delle opportunità.
-                </p>
-                <Button variant="outline" className="mt-2 border-blue-500 text-blue-600 hover:bg-blue-50">
-                  Aggiorna Database
-                </Button>
-              </div>
-              
-              <div className="p-3 bg-yellow-50 rounded border border-yellow-100">
-                <div className="font-medium">Programma Monitoraggio</div>
-                <p className="text-sm text-gray-600 mt-1">
-                  Imposta un monitoraggio automatico settimanale per rimanere aggiornato.
-                </p>
-                <Button variant="outline" className="mt-2 border-yellow-500 text-yellow-600 hover:bg-yellow-50">
-                  Configura Monitoraggio Automatico
-                </Button>
               </div>
             </div>
           </CardContent>
