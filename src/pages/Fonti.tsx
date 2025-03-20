@@ -7,6 +7,7 @@ import FontiTable from '@/components/FontiTable';
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddSourceForm from '@/components/AddSourceForm';
+import EditSourceForm from '@/components/EditSourceForm';
 import { Fonte } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
@@ -14,14 +15,31 @@ import { AlertCircle } from 'lucide-react';
 const Fonti = () => {
   const { toast } = useToast();
   const [fonti, setFonti] = useState(mockFonti);
+  const [activeTab, setActiveTab] = useState("fonti");
+  const [selectedFonte, setSelectedFonte] = useState<Fonte | null>(null);
   
   const handleEdit = (id: string) => {
-    console.log('Modifica fonte con id:', id);
+    const fonte = fonti.find(f => f.id === id);
+    if (fonte) {
+      setSelectedFonte(fonte);
+      setActiveTab("modifica");
+    }
+  };
+  
+  const handleSaveEdit = (updatedFonte: Fonte) => {
+    setFonti(fonti.map(f => f.id === updatedFonte.id ? updatedFonte : f));
+    setSelectedFonte(null);
+    setActiveTab("fonti");
     toast({
-      title: "Funzionalità in arrivo",
-      description: "La modifica delle fonti sarà disponibile nella prossima versione",
+      title: "Fonte aggiornata",
+      description: "La fonte è stata aggiornata con successo",
       duration: 3000,
     });
+  };
+  
+  const handleCancelEdit = () => {
+    setSelectedFonte(null);
+    setActiveTab("fonti");
   };
   
   const handleDelete = (id: string) => {
@@ -36,6 +54,7 @@ const Fonti = () => {
   const handleAddSource = (newSource: Omit<Fonte, 'id'>) => {
     const id = `fonte-${Date.now()}`;
     setFonti([...fonti, { id, ...newSource }]);
+    setActiveTab("fonti");
     toast({
       title: "Fonte aggiunta",
       description: "La fonte è stata aggiunta con successo",
@@ -49,10 +68,11 @@ const Fonti = () => {
         <h1 className="text-2xl font-bold">Gestione Fonti di Dati</h1>
       </div>
       
-      <Tabs defaultValue="fonti" className="w-full">
-        <TabsList className="grid grid-cols-2 mb-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-3 mb-6">
           <TabsTrigger value="fonti">Fonti Configurate</TabsTrigger>
           <TabsTrigger value="aggiungi">Aggiungi Fonte</TabsTrigger>
+          <TabsTrigger value="modifica" disabled={!selectedFonte}>Modifica Fonte</TabsTrigger>
         </TabsList>
         
         <TabsContent value="fonti">
@@ -117,6 +137,41 @@ const Fonti = () => {
               </Card>
             </div>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="modifica">
+          {selectedFonte && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <EditSourceForm 
+                  fonte={selectedFonte} 
+                  onSave={handleSaveEdit} 
+                  onCancel={handleCancelEdit} 
+                />
+              </div>
+              
+              <div>
+                <Card className="bg-blue-50 border-blue-100">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="h-5 w-5 text-blue-500" />
+                      <CardTitle>Suggerimenti</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600">
+                      Aggiorna i dettagli della fonte per migliorare il monitoraggio:
+                    </p>
+                    <ul className="mt-4 space-y-2 text-sm">
+                      <li>• Assicurati che l'URL sia corretto e accessibile</li>
+                      <li>• Imposta su "inattivo" le fonti che non vuoi monitorare temporaneamente</li>
+                      <li>• Scegli il tipo corretto per migliorare la categorizzazione</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
