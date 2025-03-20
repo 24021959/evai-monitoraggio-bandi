@@ -29,6 +29,7 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails }) =
             <TableHead>Dipendenti</TableHead>
             <TableHead>Regione</TableHead>
             <TableHead>Email</TableHead>
+            <TableHead>Telefono</TableHead>
             <TableHead>Visualizza</TableHead>
           </TableRow>
         </TableHeader>
@@ -41,6 +42,7 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails }) =
               <TableCell>{cliente.dipendenti}</TableCell>
               <TableCell>{cliente.regione}</TableCell>
               <TableCell>{cliente.email}</TableCell>
+              <TableCell>{cliente.telefono || '-'}</TableCell>
               <TableCell onClick={(e) => e.stopPropagation()}>
                 {onViewDetails && (
                   <Button 
