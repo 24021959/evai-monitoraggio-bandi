@@ -9,7 +9,6 @@ import {
   FileBarChart, 
   Database,
   PlayCircle,
-  BellRing,
   KeyRound,
   CheckCircle
 } from 'lucide-react';
@@ -31,7 +30,6 @@ const Sidebar = () => {
   const [progress, setProgress] = useState(0);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [apiKey, setApiKey] = useState('');
-  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(false);
   const [apiKeyAlreadyExists, setApiKeyAlreadyExists] = useState(false);
   
@@ -161,14 +159,6 @@ const Sidebar = () => {
     }
   };
   
-  const handleSendNotifications = () => {
-    toast({
-      title: "Notifiche inviate",
-      description: "Le notifiche sono state inviate con successo",
-      duration: 3000,
-    });
-  };
-  
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-800 text-white p-5 text-xl font-medium">
@@ -253,6 +243,21 @@ const Sidebar = () => {
               Risultati Monitoraggio
             </div>
           </NavLink>
+          <NavLink
+            to="#"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              setShowApiKeyDialog(true);
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <KeyRound className="w-5 h-5" />
+              Configura API Key
+            </div>
+          </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
           <div className="px-5 mb-2">
             {isMonitoring ? (
@@ -281,24 +286,6 @@ const Sidebar = () => {
                 Avvia Monitoraggio
               </button>
             )}
-          </div>
-          <div className="px-5">
-            <button 
-              className="w-full bg-yellow-500 text-white py-3 rounded flex items-center justify-center gap-2 hover:bg-yellow-600 transition-colors"
-              onClick={handleSendNotifications}
-            >
-              <BellRing className="w-5 h-5" />
-              Invia Notifiche
-            </button>
-          </div>
-          <div className="px-5 mt-2">
-            <button 
-              className="w-full bg-blue-500 text-white py-3 rounded flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors"
-              onClick={() => setShowApiKeyDialog(true)}
-            >
-              <KeyRound className="w-5 h-5" />
-              Configura API Key
-            </button>
           </div>
         </nav>
       </div>
