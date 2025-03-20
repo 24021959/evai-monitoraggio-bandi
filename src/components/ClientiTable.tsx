@@ -41,15 +41,16 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails }) =
               <TableCell>{cliente.dipendenti}</TableCell>
               <TableCell>{cliente.regione}</TableCell>
               <TableCell>{cliente.email}</TableCell>
-              <TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 {onViewDetails && (
                   <Button 
                     size="sm" 
-                    variant="ghost" 
+                    variant="outline" 
                     onClick={() => onViewDetails(cliente.id)}
-                    className="text-blue-500 hover:text-blue-700"
+                    className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
                   >
                     <Eye className="h-4 w-4" />
+                    Dettagli
                   </Button>
                 )}
               </TableCell>
