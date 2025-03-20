@@ -32,6 +32,7 @@ const Sidebar = () => {
   const [apiKey, setApiKey] = useState('');
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(false);
   const [apiKeyAlreadyExists, setApiKeyAlreadyExists] = useState(false);
+  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   
   useEffect(() => {
     const savedApiKey = FirecrawlService.getApiKey();
@@ -47,6 +48,11 @@ const Sidebar = () => {
       if (savedApiKey) {
         setApiKey(savedApiKey);
         setApiKeyAlreadyExists(true);
+        toast({
+          title: "API Key già configurata",
+          description: "La tua API key è già configurata. Puoi modificarla se necessario.",
+          duration: 3000,
+        });
       } else {
         setApiKeyAlreadyExists(false);
       }
@@ -295,7 +301,9 @@ const Sidebar = () => {
           <DialogHeader>
             <DialogTitle>Configura Firecrawl API Key</DialogTitle>
             <DialogDescription>
-              Inserisci la tua chiave API di Firecrawl per attivare il monitoraggio automatico dei bandi.
+              {apiKeyAlreadyExists 
+                ? "La tua API key è già configurata. Puoi modificarla se necessario."
+                : "Inserisci la tua chiave API di Firecrawl per attivare il monitoraggio automatico dei bandi."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -332,7 +340,7 @@ const Sidebar = () => {
               onClick={handleSaveApiKey} 
               disabled={isCheckingApiKey}
             >
-              {isCheckingApiKey ? "Verifica in corso..." : "Salva API Key"}
+              {isCheckingApiKey ? "Verifica in corso..." : (apiKeyAlreadyExists ? "Aggiorna API Key" : "Salva API Key")}
             </Button>
           </DialogFooter>
         </DialogContent>
