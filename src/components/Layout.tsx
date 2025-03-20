@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -9,21 +8,82 @@ import {
   FileBarChart, 
   Database,
   PlayCircle,
-  BellRing 
+  BellRing,
+  KeyRound
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { mockFonti, mockClienti } from '@/data/mockData';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { FirecrawlService } from '@/utils/FirecrawlService';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [monitoringResults, setMonitoringResults] = useState<any[]>([]);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
+  const [isCheckingApiKey, setIsCheckingApiKey] = useState(false);
   
-  const handleStartMonitoring = () => {
+  React.useEffect(() => {
+    // Verifica se la chiave API è già salvata
+    const savedApiKey = FirecrawlService.getApiKey();
+    if (savedApiKey) {
+      setIsApiKeyValid(true);
+    }
+  }, []);
+  
+  const handleSaveApiKey = async () => {
+    if (!apiKey.trim()) {
+      toast({
+        title: "Errore",
+        description: "Inserisci una chiave API valida",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    setIsCheckingApiKey(true);
+    try {
+      const isValid = await FirecrawlService.testApiKey(apiKey);
+      
+      if (isValid) {
+        FirecrawlService.saveApiKey(apiKey);
+        setIsApiKeyValid(true);
+        setShowApiKeyDialog(false);
+        toast({
+          title: "Successo",
+          description: "Chiave API salvata con successo",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "Errore",
+          description: "Chiave API non valida",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Errore durante il test della chiave API",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsCheckingApiKey(false);
+    }
+  };
+
+  const handleStartMonitoring = async () => {
     if (mockFonti.length === 0) {
       toast({
         title: "Attenzione",
@@ -35,29 +95,45 @@ const Sidebar = () => {
       return;
     }
 
+    // Verifica se la chiave API è configurata
+    const apiKey = FirecrawlService.getApiKey();
+    if (!apiKey) {
+      setShowApiKeyDialog(true);
+      return;
+    }
+
     setIsMonitoring(true);
     setProgress(0);
-    setMonitoringResults([]);
 
-    // Simuliamo il monitoraggio
-    let currentProgress = 0;
-    const interval = setInterval(() => {
-      currentProgress += 5;
-      setProgress(currentProgress);
-      
-      if (currentProgress >= 100) {
-        clearInterval(interval);
-        setIsMonitoring(false);
+    // Avvia il monitoraggio per ogni fonte configurata
+    try {
+      let currentProgress = 0;
+      const interval = setInterval(() => {
+        currentProgress += 5;
+        setProgress(currentProgress);
         
-        toast({
-          title: "Monitoraggio completato",
-          description: "Trovati nuovi match potenziali",
-          duration: 3000,
-        });
-        
-        navigate('/match');
-      }
-    }, 400);
+        if (currentProgress >= 100) {
+          clearInterval(interval);
+          setIsMonitoring(false);
+          
+          toast({
+            title: "Monitoraggio completato",
+            description: "Trovati nuovi bandi e match potenziali",
+            duration: 3000,
+          });
+          
+          navigate('/risultati-scraping');
+        }
+      }, 400);
+    } catch (error) {
+      setIsMonitoring(false);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il monitoraggio",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
   const handleSendNotifications = () => {
@@ -141,6 +217,17 @@ const Sidebar = () => {
               Gestione Fonti
             </div>
           </NavLink>
+          <NavLink
+            to="/risultati-scraping"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5" />
+              Risultati Scraping
+            </div>
+          </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
           <div className="px-5 mb-2">
             {isMonitoring ? (
@@ -179,8 +266,52 @@ const Sidebar = () => {
               Invia Notifiche
             </button>
           </div>
+          <div className="px-5 mt-2">
+            <button 
+              className="w-full bg-blue-500 text-white py-3 rounded flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors"
+              onClick={() => setShowApiKeyDialog(true)}
+            >
+              <KeyRound className="w-5 h-5" />
+              Configura API Key
+            </button>
+          </div>
         </nav>
       </div>
+      
+      <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configura Firecrawl API Key</DialogTitle>
+            <DialogDescription>
+              Inserisci la tua chiave API di Firecrawl per attivare il monitoraggio automatico dei bandi.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="api-key">Firecrawl API Key</Label>
+              <Input
+                id="api-key"
+                type="password"
+                placeholder="Inserisci la tua API key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+            <p className="text-sm text-gray-500">
+              Puoi ottenere una chiave API registrandoti su <a href="https://firecrawl.dev" className="text-blue-500 underline" target="_blank" rel="noopener noreferrer">firecrawl.dev</a>
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="submit" 
+              onClick={handleSaveApiKey} 
+              disabled={isCheckingApiKey}
+            >
+              {isCheckingApiKey ? "Verifica in corso..." : "Salva API Key"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

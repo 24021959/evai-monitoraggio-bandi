@@ -12,6 +12,7 @@ import NuovoCliente from "./pages/NuovoCliente";
 import Match from "./pages/Match";
 import Report from "./pages/Report";
 import Fonti from "./pages/Fonti";
+import RisultatiScraping from "./pages/RisultatiScraping";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="match" element={<Match />} />
             <Route path="report" element={<Report />} />
             <Route path="fonti" element={<Fonti />} />
+            <Route path="risultati-scraping" element={<RisultatiScraping />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

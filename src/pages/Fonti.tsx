@@ -17,15 +17,30 @@ const Fonti = () => {
   
   const handleEdit = (id: string) => {
     console.log('Modifica fonte con id:', id);
+    toast({
+      title: "Funzionalità in arrivo",
+      description: "La modifica delle fonti sarà disponibile nella prossima versione",
+      duration: 3000,
+    });
   };
   
   const handleDelete = (id: string) => {
     setFonti(fonti.filter(fonte => fonte.id !== id));
+    toast({
+      title: "Fonte eliminata",
+      description: "La fonte è stata eliminata con successo",
+      duration: 3000,
+    });
   };
 
   const handleAddSource = (newSource: Omit<Fonte, 'id'>) => {
     const id = `fonte-${Date.now()}`;
     setFonti([...fonti, { id, ...newSource }]);
+    toast({
+      title: "Fonte aggiunta",
+      description: "La fonte è stata aggiunta con successo",
+      duration: 3000,
+    });
   };
 
   return (
