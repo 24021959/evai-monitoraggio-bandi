@@ -95,6 +95,7 @@ const RisultatiScraping = () => {
       description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
       duration: 3000,
     });
+    navigate('/bandi');
   };
   
   const handleSalvaMatch = () => {
