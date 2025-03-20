@@ -32,7 +32,6 @@ const Sidebar = () => {
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(false);
   
   React.useEffect(() => {
-    // Verifica se la chiave API è già salvata
     const savedApiKey = FirecrawlService.getApiKey();
     if (savedApiKey) {
       setIsApiKeyValid(true);
@@ -95,7 +94,6 @@ const Sidebar = () => {
       return;
     }
 
-    // Verifica se la chiave API è configurata
     const apiKey = FirecrawlService.getApiKey();
     if (!apiKey) {
       setShowApiKeyDialog(true);
@@ -105,7 +103,6 @@ const Sidebar = () => {
     setIsMonitoring(true);
     setProgress(0);
 
-    // Avvia il monitoraggio per ogni fonte configurata
     try {
       let currentProgress = 0;
       const interval = setInterval(() => {
@@ -225,7 +222,7 @@ const Sidebar = () => {
           >
             <div className="flex items-center gap-3">
               <FileText className="w-5 h-5" />
-              Risultati Scraping
+              Risultati Monitoraggio
             </div>
           </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
