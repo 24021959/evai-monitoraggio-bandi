@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,13 +121,16 @@ const RisultatiScraping = () => {
     navigate('/fonti');
   };
 
-  // Add a new function to handle bando deletion
+  // Updated function to handle bando deletion
   const handleDeleteBando = (id: string) => {
     const bandoToDelete = bandiEstrati.find(bando => bando.id === id);
     if (!bandoToDelete) return;
     
-    // Remove the bando from the list
+    // Remove the bando from the local state
     setBandiEstratti(prev => prev.filter(bando => bando.id !== id));
+    
+    // Also delete from the persisted storage via FirecrawlService
+    FirecrawlService.deleteBando(id);
     
     // Notify the user
     toast({
