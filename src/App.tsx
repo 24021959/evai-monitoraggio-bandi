@@ -13,6 +13,7 @@ import Match from "./pages/Match";
 import Report from "./pages/Report";
 import Fonti from "./pages/Fonti";
 import NotFound from "./pages/NotFound";
+import ConfigScraping from "./pages/ConfigScraping";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="match" element={<Match />} />
             <Route path="report" element={<Report />} />
             <Route path="fonti" element={<Fonti />} />
+            <Route path="config-scraping" element={<ConfigScraping />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
