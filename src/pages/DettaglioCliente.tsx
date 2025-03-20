@@ -28,7 +28,7 @@ const DettaglioCliente = () => {
       setFormData(clienteTrovato);
       
       // Estrai i campi aggiuntivi (tutto ciò che non è un campo standard)
-      const campiStandard = ['id', 'nome', 'settore', 'regione', 'provincia', 'fatturato', 'dipendenti', 'email', 'interessiSettoriali'];
+      const campiStandard = ['id', 'nome', 'settore', 'regione', 'provincia', 'fatturato', 'dipendenti', 'email', 'interessiSettoriali', 'telefono'];
       const campiExtra = Object.entries(clienteTrovato)
         .filter(([key]) => !campiStandard.includes(key))
         .map(([nome, valore]) => ({
@@ -68,8 +68,28 @@ const DettaglioCliente = () => {
   };
 
   const handleSalva = () => {
-    // In un'applicazione reale, qui invieremmo i dati all'API
-    // Per ora simuliamo solo il successo
+    if (!cliente || !id) return;
+
+    // Creiamo un nuovo oggetto cliente con i dati aggiornati
+    const clienteAggiornato: Cliente = {
+      ...cliente,
+      ...formData,
+    };
+
+    // Aggiungiamo i campi personalizzati
+    campiAggiuntivi.forEach(campo => {
+      (clienteAggiornato as any)[campo.nome] = campo.valore;
+    });
+
+    // Aggiorniamo il cliente nell'array mockClienti
+    const index = mockClienti.findIndex(c => c.id === id);
+    if (index !== -1) {
+      mockClienti[index] = clienteAggiornato;
+      
+      // Aggiorniamo lo stato locale
+      setCliente(clienteAggiornato);
+    }
+
     toast({
       title: "Cliente aggiornato",
       description: "Le modifiche sono state salvate con successo",
