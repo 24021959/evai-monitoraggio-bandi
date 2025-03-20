@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { mockMatches, getClienteName, getBandoName } from '@/data/mockData';
+import { mockMatches, getCliente, getBando } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import MatchTable from '@/components/MatchTable';
 import { useNavigate } from 'react-router-dom';
