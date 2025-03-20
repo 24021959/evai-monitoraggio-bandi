@@ -46,6 +46,26 @@ const DettaglioBando = () => {
     }
   };
 
+  const handleApriUrlBando = () => {
+    if (bando?.url) {
+      window.open(bando.url, '_blank');
+    } else {
+      toast({
+        title: "Link non disponibile",
+        description: "Il link al bando originale non è disponibile",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleVerificaRequisiti = () => {
+    toast({
+      title: "Funzionalità in sviluppo",
+      description: "La verifica dei requisiti sarà disponibile nelle prossime versioni",
+      variant: "default"
+    });
+  };
+
   const formatImporto = (min?: number, max?: number) => {
     if (min && max) {
       return `${min.toLocaleString('it-IT')} € - ${max.toLocaleString('it-IT')} €`;
@@ -155,11 +175,11 @@ const DettaglioBando = () => {
                 </div>
               </div>
               
-              {bando.url && (
-                <div className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Link al Bando</p>
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm text-gray-500">Link al Bando</p>
+                  {bando.url ? (
                     <a 
                       href={bando.url} 
                       target="_blank" 
@@ -168,9 +188,11 @@ const DettaglioBando = () => {
                     >
                       Visita il sito ufficiale <ExternalLink className="h-3.5 w-3.5" />
                     </a>
-                  </div>
+                  ) : (
+                    <p className="text-gray-500 italic">Link non disponibile</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
             
             <div className="bg-green-50 p-4 rounded-lg border border-green-100">
@@ -190,14 +212,17 @@ const DettaglioBando = () => {
               <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline" 
-                  onClick={() => window.open(bando.url, '_blank')}
+                  onClick={handleApriUrlBando}
                   className="flex items-center gap-2"
-                  disabled={!bando.url}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Vai al Bando Originale
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleVerificaRequisiti}
+                  className="flex items-center gap-2"
+                >
                   <Info className="h-4 w-4" /> 
                   Verifica Requisiti
                 </Button>
