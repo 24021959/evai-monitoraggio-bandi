@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FirecrawlService } from '@/utils/FirecrawlService';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Euro, FileText, Globe, Target, ExternalLink, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, Euro, FileText, Target, ExternalLink, Info } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 const DettaglioBando = () => {
@@ -172,25 +171,6 @@ const DettaglioBando = () => {
                       <Badge key={index} variant="outline" className="bg-blue-50">{settore}</Badge>
                     ))}
                   </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="text-sm text-gray-500">Link al Bando</p>
-                  {bando.url ? (
-                    <a 
-                      href={bando.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline flex items-center gap-1"
-                    >
-                      Visita il sito ufficiale <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  ) : (
-                    <p className="text-gray-500 italic">Link non disponibile</p>
-                  )}
                 </div>
               </div>
             </div>
