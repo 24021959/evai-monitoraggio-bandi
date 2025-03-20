@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Fonte, TipoBando } from "@/types";
+import { Save } from 'lucide-react';
 
 interface AddSourceFormProps {
   onAddSource: (fonte: Omit<Fonte, 'id'>) => void;
@@ -114,7 +115,10 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
             </Select>
           </div>
           
-          <Button type="submit" className="w-full">Aggiungi Fonte</Button>
+          <Button type="submit" className="w-full flex items-center justify-center gap-2">
+            <Save className="w-4 h-4" />
+            Salva Fonte
+          </Button>
         </form>
       </CardContent>
     </Card>
