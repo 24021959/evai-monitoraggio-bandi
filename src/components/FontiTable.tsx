@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Fonte } from '../types';
-import { Trash2, CheckCircle, AlertCircle, Clock, ArrowRight } from 'lucide-react';
+import { Trash2, CheckCircle, AlertCircle, Clock, ArrowRight, StopCircle } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -20,6 +20,7 @@ interface FontiTableProps {
   onDelete?: (id: string) => void;
   currentScrapingId?: string | null;
   scrapingProgress?: number;
+  onStopScraping?: () => void;
 }
 
 const FontiTable: React.FC<FontiTableProps> = ({ 
@@ -27,7 +28,8 @@ const FontiTable: React.FC<FontiTableProps> = ({
   onEdit, 
   onDelete, 
   currentScrapingId, 
-  scrapingProgress = 0 
+  scrapingProgress = 0,
+  onStopScraping
 }) => {
   const getTipoClass = (tipo: string) => {
     switch (tipo) {
@@ -64,11 +66,23 @@ const FontiTable: React.FC<FontiTableProps> = ({
             if (isCurrentlyScraping) {
               scrapingStatus = (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 text-blue-600">
-                    <Clock className="h-4 w-4 animate-pulse" />
-                    <span className="text-xs">In corso ({scrapingProgress}%)</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-blue-600">
+                      <Clock className="h-4 w-4 animate-pulse" />
+                      <span className="text-xs">In corso ({scrapingProgress}%)</span>
+                    </div>
+                    {onStopScraping && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={onStopScraping}
+                        className="text-red-500 hover:text-red-700 h-6 px-2"
+                      >
+                        <StopCircle className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                  <Progress value={scrapingProgress} className="h-2" />
+                  <Progress value={scrapingProgress} className="h-2 bg-gray-200" indicatorClassName="bg-green-500" />
                 </div>
               );
             } else if (isScraped) {

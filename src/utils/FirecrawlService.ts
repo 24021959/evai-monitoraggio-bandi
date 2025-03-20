@@ -1,4 +1,3 @@
-
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { Bando, Fonte } from '@/types';
 import { mockBandi } from '@/data/mockData';
@@ -24,6 +23,7 @@ export class FirecrawlService {
   private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
   private static SAVED_BANDI_STORAGE_KEY = 'saved_bandi';
   private static SCRAPED_SOURCES_STORAGE_KEY = 'scraped_sources';
+  private static SAVED_FONTI_STORAGE_KEY = 'saved_fonti';
   private static firecrawlApp: FirecrawlApp | null = null;
 
   static saveApiKey(apiKey: string): void {
@@ -109,7 +109,7 @@ export class FirecrawlService {
     
     for (const page of crawlData.data) {
       // Estrai informazioni dai contenuti della pagina 
-      // Questo è un esempio semplificato, in un'implementazione reale avremmo bisogno
+      // Questo è un esempio semplificato, in un'implementazione reale avremo bisogno
       // di logica più sofisticata per estrarre informazioni strutturate
       
       if (page.content && typeof page.content === 'string') {
@@ -263,5 +263,25 @@ export class FirecrawlService {
       }
     }
     return null;
+  }
+
+  // Aggiungiamo metodi per salvare e recuperare le fonti
+  static saveFonti(fonti: Fonte[]): void {
+    localStorage.setItem(this.SAVED_FONTI_STORAGE_KEY, JSON.stringify(fonti));
+    console.log('Fonti salvate nel localStorage:', fonti.length);
+  }
+
+  static getSavedFonti(): Fonte[] {
+    const fontiJson = localStorage.getItem(this.SAVED_FONTI_STORAGE_KEY);
+    if (!fontiJson) {
+      return []; // Non usiamo i mockFonti, ritorniamo un array vuoto
+    }
+    
+    try {
+      return JSON.parse(fontiJson) as Fonte[];
+    } catch (error) {
+      console.error('Errore nel parsing delle fonti salvate:', error);
+      return [];
+    }
   }
 }

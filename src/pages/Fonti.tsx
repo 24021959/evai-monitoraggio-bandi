@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { mockFonti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HelpCircle, AlertCircle, Play, RefreshCw } from 'lucide-react';
+import { HelpCircle, AlertCircle, Play, RefreshCw, StopCircle } from 'lucide-react';
 import FontiTable from '@/components/FontiTable';
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,13 +15,29 @@ import { Progress } from "@/components/ui/progress";
 
 const Fonti = () => {
   const { toast } = useToast();
-  const [fonti, setFonti] = useState(mockFonti);
+  const [fonti, setFonti] = useState<Fonte[]>([]);
   const [activeTab, setActiveTab] = useState("fonti");
   const [selectedFonte, setSelectedFonte] = useState<Fonte | null>(null);
   const [isScrapingInProgress, setIsScrapingInProgress] = useState(false);
   const [scrapingProgress, setScrapingProgress] = useState(0);
   const [currentScrapingFonte, setCurrentScrapingFonte] = useState<Fonte | null>(null);
   const [autoScrape, setAutoScrape] = useState(false);
+  const [progressInterval, setProgressInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Carica le fonti salvate quando il componente viene montato
+  useEffect(() => {
+    const savedFonti = FirecrawlService.getSavedFonti();
+    if (savedFonti.length > 0) {
+      setFonti(savedFonti);
+    }
+  }, []);
+  
+  // Salva le fonti ogni volta che cambiano
+  useEffect(() => {
+    if (fonti.length > 0) {
+      FirecrawlService.saveFonti(fonti);
+    }
+  }, [fonti]);
   
   useEffect(() => {
     const checkForScrapingTask = () => {
@@ -70,11 +86,29 @@ const Fonti = () => {
 
   const handleAddSource = (newSource: Omit<Fonte, 'id'>) => {
     const id = `fonte-${Date.now()}`;
-    setFonti([...fonti, { id, ...newSource }]);
+    const newFonti = [...fonti, { id, ...newSource }];
+    setFonti(newFonti);
     setActiveTab("fonti");
     toast({
       title: "Fonte aggiunta",
       description: "La fonte è stata aggiunta con successo",
+      duration: 3000,
+    });
+  };
+
+  const handleStopScraping = () => {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+    
+    setIsScrapingInProgress(false);
+    setCurrentScrapingFonte(null);
+    setScrapingProgress(0);
+    setAutoScrape(false);
+    
+    toast({
+      title: "Scraping interrotto",
+      description: "Il processo di scraping è stato interrotto",
       duration: 3000,
     });
   };
@@ -108,17 +142,20 @@ const Fonti = () => {
     setScrapingProgress(0);
     setCurrentScrapingFonte(nextSource);
     
-    const progressInterval = setInterval(() => {
+    const interval = setInterval(() => {
       setScrapingProgress((prev) => {
         const newValue = prev + 5;
         return newValue > 90 ? 90 : newValue;
       });
     }, 500);
     
+    setProgressInterval(interval);
+    
     try {
       const result = await FirecrawlService.crawlWebsite(nextSource.url);
       
-      clearInterval(progressInterval);
+      clearInterval(interval);
+      setProgressInterval(null);
       setScrapingProgress(100);
       
       if (result.success) {
@@ -150,7 +187,10 @@ const Fonti = () => {
         });
       }
     } catch (error) {
-      clearInterval(progressInterval);
+      if (interval) {
+        clearInterval(interval);
+        setProgressInterval(null);
+      }
       
       toast({
         title: "Errore",
@@ -221,17 +261,28 @@ const Fonti = () => {
             <RefreshCw className="h-4 w-4 mr-2" />
             Reset Stato Scraping
           </Button>
-          <Button
-            onClick={handleScrapeNext}
-            disabled={isScrapingInProgress}
-            className="flex items-center gap-2"
-          >
-            <Play className="h-4 w-4" />
-            Scraping Prossima Fonte
-          </Button>
+          {isScrapingInProgress ? (
+            <Button
+              onClick={handleStopScraping}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <StopCircle className="h-4 w-4" />
+              Ferma Scraping
+            </Button>
+          ) : (
+            <Button
+              onClick={handleScrapeNext}
+              disabled={isScrapingInProgress}
+              className="flex items-center gap-2"
+            >
+              <Play className="h-4 w-4" />
+              Scraping Prossima Fonte
+            </Button>
+          )}
           <Button
             onClick={handleToggleAutoScrape}
-            disabled={isScrapingInProgress}
+            disabled={isScrapingInProgress && !autoScrape}
             variant={autoScrape ? "default" : "outline"}
             className={`flex items-center gap-2 ${autoScrape ? "bg-green-600 hover:bg-green-700" : ""}`}
           >
@@ -249,9 +300,19 @@ const Fonti = () => {
                   <h3 className="font-medium">Scraping in corso: {currentScrapingFonte.nome}</h3>
                   <p className="text-sm text-gray-500">{currentScrapingFonte.url}</p>
                 </div>
-                <span className="text-sm">{scrapingProgress}%</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{scrapingProgress}%</span>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={handleStopScraping}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <StopCircle className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <Progress value={scrapingProgress} className="w-full" />
+              <Progress value={scrapingProgress} className="w-full" indicatorClassName="bg-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -286,6 +347,7 @@ const Fonti = () => {
                   onDelete={handleDelete}
                   currentScrapingId={currentScrapingFonte?.id}
                   scrapingProgress={scrapingProgress}
+                  onStopScraping={handleStopScraping}
                 />
               )}
             </CardContent>
