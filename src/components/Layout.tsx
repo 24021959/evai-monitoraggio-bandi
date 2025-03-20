@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -14,7 +15,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { mockFonti, mockClienti } from '@/data/mockData';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -114,7 +114,8 @@ const Sidebar = () => {
   };
 
   const handleStartMonitoring = async () => {
-    if (mockFonti.length === 0) {
+    const savedFonti = FirecrawlService.getSavedFonti();
+    if (savedFonti.length === 0) {
       toast({
         title: "Attenzione",
         description: "Aggiungi almeno una fonte prima di avviare il monitoraggio",
@@ -134,12 +135,24 @@ const Sidebar = () => {
     // Naviga alla pagina Fonti quando inizia il monitoraggio
     navigate('/fonti');
     
-    // Imposta lo stato di monitoraggio
+    // Avvia il monitoraggio automatico
     setIsMonitoring(true);
     setProgress(0);
     
+    // Simula progresso iniziale
+    const intervalId = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(intervalId);
+          setIsMonitoring(false);
+          return 0;
+        }
+        return prev + 10;
+      });
+    }, 300);
+    
     // Trova la prossima fonte da scrappare
-    const nextSource = FirecrawlService.getNextUnscrapedSource(mockFonti);
+    const nextSource = FirecrawlService.getNextUnscrapedSource(savedFonti);
     
     if (!nextSource) {
       setIsMonitoring(false);
@@ -151,17 +164,20 @@ const Sidebar = () => {
       return;
     }
 
-    // Simula l'avvio del monitoraggio
+    // Simula l'avvio del monitoraggio e attiva autoScrape nella pagina Fonti
     toast({
-      title: "Monitoraggio avviato",
-      description: "Vai alla pagina Fonti per seguire l'avanzamento",
+      title: "Monitoraggio Automatico avviato",
+      description: "Tutte le fonti verranno monitorate automaticamente",
       duration: 3000,
     });
-
-    // Imposta un timer per tornare allo stato normale
-    setTimeout(() => {
-      setIsMonitoring(false);
-    }, 2000);
+    
+    // Attiva il monitoraggio automatico nella pagina Fonti
+    // In un'implementazione reale, useresti un global state manager come Redux o Context
+    // Per questa demo, impostiamo un flag nel localStorage
+    localStorage.setItem('auto_monitoring_enabled', 'true');
+    
+    // Ricarica la pagina Fonti per applicare le modifiche
+    window.dispatchEvent(new Event('auto_monitoring_start'));
   };
   
   return (
@@ -272,14 +288,14 @@ const Sidebar = () => {
                   disabled
                 >
                   <PlayCircle className="w-5 h-5" />
-                  Monitoraggio in corso...
+                  Monitoraggio Automatico in corso...
                 </button>
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-gray-600">
                     <span>Progresso</span>
                     <span>{progress}%</span>
                   </div>
-                  <Progress value={progress} className="w-full h-2" />
+                  <Progress value={progress} className="w-full h-2" indicatorClassName="bg-green-500" />
                 </div>
               </div>
             ) : (
@@ -288,7 +304,7 @@ const Sidebar = () => {
                 onClick={handleStartMonitoring}
               >
                 <PlayCircle className="w-5 h-5" />
-                Avvia Monitoraggio
+                Avvia Monitoraggio Automatico
               </button>
             )}
           </div>

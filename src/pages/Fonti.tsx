@@ -30,7 +30,30 @@ const Fonti = () => {
     if (savedFonti.length > 0) {
       setFonti(savedFonti);
     }
+    
+    // Check if auto monitoring was started from sidebar
+    const autoMonitoringEnabled = localStorage.getItem('auto_monitoring_enabled') === 'true';
+    if (autoMonitoringEnabled && !autoScrape && !isScrapingInProgress) {
+      setAutoScrape(true);
+      localStorage.removeItem('auto_monitoring_enabled');
+    }
   }, []);
+  
+  // Listen for auto monitoring start event
+  useEffect(() => {
+    const handleAutoMonitoringStart = () => {
+      if (!autoScrape && !isScrapingInProgress) {
+        setAutoScrape(true);
+        handleScrapeNext();
+      }
+    };
+    
+    window.addEventListener('auto_monitoring_start', handleAutoMonitoringStart);
+    
+    return () => {
+      window.removeEventListener('auto_monitoring_start', handleAutoMonitoringStart);
+    };
+  }, [autoScrape, isScrapingInProgress]);
   
   // Salva le fonti ogni volta che cambiano
   useEffect(() => {
@@ -259,7 +282,7 @@ const Fonti = () => {
             disabled={isScrapingInProgress}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            Reset Stato Scraping
+            Reset Monitoraggio
           </Button>
           {isScrapingInProgress ? (
             <Button
@@ -277,7 +300,7 @@ const Fonti = () => {
               className="flex items-center gap-2"
             >
               <Play className="h-4 w-4" />
-              Scraping Prossima Fonte
+              Monitoraggio Prossima Fonte
             </Button>
           )}
           <Button
