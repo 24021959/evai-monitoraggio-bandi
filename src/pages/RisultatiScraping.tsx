@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Search, Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle } from 'lucide-react';
+import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Bando, TipoBando } from '@/types';
@@ -126,10 +126,6 @@ const RisultatiScraping = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Risultati Monitoraggio</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleNuovoMonitoraggio} className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Nuovo Monitoraggio
-          </Button>
           <Button onClick={handleEsportaCSV} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Esporta CSV
