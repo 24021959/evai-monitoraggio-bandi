@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Match } from '../types';
-import { Check, X, Info } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -10,15 +10,21 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { mockBandi, mockClienti } from '@/data/mockData';
 
 interface MatchTableProps {
   matches: Match[];
   onViewDetails?: (id: string) => void;
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
-const MatchTable: React.FC<MatchTableProps> = ({ matches, onViewDetails }) => {
+const MatchTable: React.FC<MatchTableProps> = ({ 
+  matches, 
+  onSelectionChange 
+}) => {
+  const [selectedMatches, setSelectedMatches] = useState<string[]>([]);
+
   const getCompatibilitaClass = (compatibilita: number) => {
     if (compatibilita >= 80) return 'bg-green-500';
     if (compatibilita >= 60) return 'bg-yellow-500';
@@ -40,22 +46,43 @@ const MatchTable: React.FC<MatchTableProps> = ({ matches, onViewDetails }) => {
     return bando ? new Date(bando.scadenza).toLocaleDateString('it-IT') : 'N/D';
   };
 
+  const handleCheckboxChange = (id: string) => {
+    setSelectedMatches(prev => {
+      const newSelection = prev.includes(id)
+        ? prev.filter(matchId => matchId !== id)
+        : [...prev, id];
+      
+      // Notify parent component about selection change
+      if (onSelectionChange) {
+        onSelectionChange(newSelection);
+      }
+      
+      return newSelection;
+    });
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">Selezione</TableHead>
             <TableHead>Cliente</TableHead>
             <TableHead>Bando</TableHead>
             <TableHead>Scadenza</TableHead>
             <TableHead>Compatibilità</TableHead>
             <TableHead>Notificato</TableHead>
-            <TableHead>Azioni</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {matches.map((match) => (
             <TableRow key={match.id}>
+              <TableCell>
+                <Checkbox 
+                  checked={selectedMatches.includes(match.id)}
+                  onCheckedChange={() => handleCheckboxChange(match.id)}
+                />
+              </TableCell>
               <TableCell className="font-medium">{getClienteName(match.clienteId)}</TableCell>
               <TableCell>{getBandoName(match.bandoId)}</TableCell>
               <TableCell>{getBandoScadenza(match.bandoId)}</TableCell>
@@ -74,18 +101,6 @@ const MatchTable: React.FC<MatchTableProps> = ({ matches, onViewDetails }) => {
                 <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${match.notificato ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                   {match.notificato ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
                 </span>
-              </TableCell>
-              <TableCell>
-                {onViewDetails && (
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={() => onViewDetails(match.id)}
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    <Info className="h-4 w-4" />
-                  </Button>
-                )}
               </TableCell>
             </TableRow>
           ))}

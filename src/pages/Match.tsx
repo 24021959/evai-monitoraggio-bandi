@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { mockMatches, getCliente, getBando } from '@/data/mockData';
+import { mockMatches, getCliente, getBando, mockClienti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import MatchTable from '@/components/MatchTable';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftRight, Play, Settings } from 'lucide-react';
+import { ArrowLeftRight, Play, Settings, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +15,7 @@ const Match = () => {
   const [isMatchRunning, setIsMatchRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [matches, setMatches] = useState(mockMatches);
+  const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
 
   const eseguiMatch = () => {
     setIsMatchRunning(true);
@@ -51,6 +52,50 @@ const Match = () => {
         });
       }
     }, 200);
+  };
+
+  const handleSelectionChange = (selectedIds: string[]) => {
+    setSelectedMatchIds(selectedIds);
+  };
+
+  const inviaNotifiche = () => {
+    if (selectedMatchIds.length === 0) {
+      toast({
+        title: "Nessun match selezionato",
+        description: "Seleziona almeno un match per inviare notifiche",
+        duration: 3000
+      });
+      return;
+    }
+
+    // Aggiorna lo stato dei match selezionati a "notificato"
+    const matchesAggiornati = matches.map(match => {
+      if (selectedMatchIds.includes(match.id)) {
+        return { ...match, notificato: true };
+      }
+      return match;
+    });
+    setMatches(matchesAggiornati);
+
+    // Ottieni gli indirizzi email dei clienti selezionati
+    const clientiNotificati = selectedMatchIds.map(matchId => {
+      const match = matches.find(m => m.id === matchId);
+      if (match) {
+        const cliente = mockClienti.find(c => c.id === match.clienteId);
+        return cliente ? cliente.nome : 'Cliente sconosciuto';
+      }
+      return 'Cliente sconosciuto';
+    });
+
+    // Mostra un toast con il messaggio di successo
+    toast({
+      title: "Notifiche inviate",
+      description: `Inviate ${selectedMatchIds.length} notifiche a: ${clientiNotificati.join(", ")}`,
+      duration: 3000
+    });
+
+    // Reset della selezione
+    setSelectedMatchIds([]);
   };
 
   return (
@@ -100,8 +145,18 @@ const Match = () => {
         <CardContent>
           <MatchTable 
             matches={matches}
-            onViewDetails={(id) => navigate(`/match/${id}`)}
+            onSelectionChange={handleSelectionChange}
           />
+          <div className="mt-4 flex justify-end">
+            <Button 
+              onClick={inviaNotifiche} 
+              disabled={selectedMatchIds.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Send className="h-4 w-4" />
+              Invia Notifiche ({selectedMatchIds.length})
+            </Button>
+          </div>
         </CardContent>
       </Card>
       
@@ -129,66 +184,15 @@ const Match = () => {
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-gray-600">
-              Puoi inviare notifiche automatiche ai tuoi clienti quando viene trovata una corrispondenza di alta compatibilità.
+              Puoi inviare notifiche automatiche ai tuoi clienti quando viene trovata una corrispondenza tra bandi e profili.
             </p>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded border border-green-200">
-                <div>
-                  <p className="font-medium">Match &gt; 80%</p>
-                  <p className="text-sm text-gray-600">Alta compatibilità</p>
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-green-500 text-green-600 hover:bg-green-50"
-                  onClick={() => {
-                    toast({
-                      title: "Notifiche inviate",
-                      description: "Notifiche inviate per 2 match ad alta compatibilità",
-                      duration: 3000
-                    });
-                  }}
-                >
-                  Invia ora
-                </Button>
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded border border-yellow-200">
-                <div>
-                  <p className="font-medium">Match tra 60% e 80%</p>
-                  <p className="text-sm text-gray-600">Media compatibilità</p>
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-yellow-500 text-yellow-600 hover:bg-yellow-50"
-                  onClick={() => {
-                    toast({
-                      title: "Notifiche inviate",
-                      description: "Notifiche inviate per 3 match a media compatibilità",
-                      duration: 3000
-                    });
-                  }}
-                >
-                  Invia ora
-                </Button>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => {
-                  toast({
-                    title: "Configurazione notifiche",
-                    description: "Funzionalità in arrivo nella prossima versione",
-                    duration: 3000
-                  });
-                }}
-              >
-                Configura Notifiche
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate('/configura-notifiche')}
+            >
+              Configura Notifiche
+            </Button>
           </CardContent>
         </Card>
       </div>
