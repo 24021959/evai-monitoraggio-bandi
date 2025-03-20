@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Bandi from "./pages/Bandi";
+import DettaglioBando from "./pages/DettaglioBando";
 import Clienti from "./pages/Clienti";
 import NuovoCliente from "./pages/NuovoCliente";
 import Match from "./pages/Match";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="bandi" element={<Bandi />} />
+            <Route path="bandi/:id" element={<DettaglioBando />} />
             <Route path="clienti" element={<Clienti />} />
             <Route path="clienti/nuovo" element={<NuovoCliente />} />
             <Route path="match" element={<Match />} />

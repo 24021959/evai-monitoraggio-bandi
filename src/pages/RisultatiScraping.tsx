@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,20 +10,21 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Search, Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/utils/FirecrawlService';
+import { Bando, TipoBando } from '@/types';
 
 const RisultatiScraping = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [bandiSalvati, setBandiSalvati] = useState(false);
   const [matchSalvati, setMatchSalvati] = useState(false);
-  const [bandiEstrati, setBandiEstratti] = useState(() => {
+  const [bandiEstrati, setBandiEstratti] = useState<Bando[]>(() => {
     // Esempio di bandi estratti (in un'implementazione reale, questi verrebbero caricati da un'API)
     return [
       {
         id: 'bando-1',
         titolo: 'Bando Innovazione Digitale PMI',
         fonte: 'Regione Lombardia',
-        tipo: 'regionale',
+        tipo: 'regionale' as TipoBando,
         settori: ['Tecnologia', 'Industria', 'Startup'],
         importoMin: 20000,
         importoMax: 200000,
@@ -34,7 +36,7 @@ const RisultatiScraping = () => {
         id: 'bando-2',
         titolo: 'Fondo Ricerca e Sviluppo',
         fonte: 'MISE',
-        tipo: 'statale',
+        tipo: 'statale' as TipoBando,
         settori: ['Tecnologia', 'Energia', 'Agricoltura'],
         importoMin: 50000,
         importoMax: 500000,
@@ -46,7 +48,7 @@ const RisultatiScraping = () => {
         id: 'bando-3',
         titolo: 'Horizon Europe Cluster 5',
         fonte: 'UE',
-        tipo: 'europeo',
+        tipo: 'europeo' as TipoBando,
         settori: ['Energia', 'Sostenibilità'],
         importoMin: 100000,
         importoMax: 1500000,
