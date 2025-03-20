@@ -11,6 +11,16 @@ import { Filter, Search, X, Trash2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Bando } from '@/types';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const ELEMENTI_PER_PAGINA = 10;
 
 const Bandi = () => {
   const navigate = useNavigate();
@@ -21,6 +31,7 @@ const Bandi = () => {
   const [scadenza, setScadenza] = useState<string>('tutti');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [bandi, setBandi] = useState<Bando[]>([]);
+  const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
 
   // Load bandi from FirecrawlService on component mount
   useEffect(() => {
@@ -82,6 +93,16 @@ const Bandi = () => {
   };
 
   const bandiMostrati = filtraBandi();
+  const totaleElementi = bandiMostrati.length;
+  const totalePagine = Math.ceil(totaleElementi / ELEMENTI_PER_PAGINA);
+
+  // Calcola gli elementi da mostrare nella pagina corrente
+  const indiceIniziale = (paginaCorrente - 1) * ELEMENTI_PER_PAGINA;
+  const bandiPaginati = bandiMostrati.slice(indiceIniziale, indiceIniziale + ELEMENTI_PER_PAGINA);
+
+  const handlePageChange = (pagina: number) => {
+    setPaginaCorrente(pagina);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -189,7 +210,7 @@ const Bandi = () => {
         <CardHeader className="pb-3">
           <CardTitle>Elenco Bandi</CardTitle>
           <CardDescription>
-            {bandiMostrati.length} bandi trovati
+            {bandiMostrati.length} bandi trovati - Pagina {paginaCorrente} di {totalePagine || 1}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -201,7 +222,7 @@ const Bandi = () => {
             
             <TabsContent value="tabella">
               <BandiTable 
-                bandi={bandiMostrati} 
+                bandi={bandiPaginati} 
                 onViewDetails={(id) => navigate(`/bandi/${id}`)} 
                 onDeleteBando={handleDeleteBando}
               />
@@ -209,7 +230,7 @@ const Bandi = () => {
             
             <TabsContent value="card">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bandiMostrati.map((bando) => (
+                {bandiPaginati.map((bando) => (
                   <Card key={bando.id} className="cursor-pointer hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -252,7 +273,7 @@ const Bandi = () => {
                           className="w-full mt-2"
                           onClick={() => navigate(`/bandi/${bando.id}`)}
                         >
-                          Dettagli
+                          Visualizza Dettagli
                         </Button>
                       </div>
                     </CardContent>
@@ -262,14 +283,43 @@ const Bandi = () => {
             </TabsContent>
           </Tabs>
           
-          <div className="mt-4 flex justify-center gap-2">
-            <Button variant="outline" size="icon">
-              1
-            </Button>
-            <Button variant="outline" size="icon">
-              2
-            </Button>
-          </div>
+          {totalePagine > 1 && (
+            <div className="mt-6">
+              <Pagination>
+                <PaginationContent>
+                  {paginaCorrente > 1 && (
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(paginaCorrente - 1)}
+                        className="cursor-pointer"
+                      />
+                    </PaginationItem>
+                  )}
+                  
+                  {Array.from({ length: totalePagine }).map((_, index) => (
+                    <PaginationItem key={index}>
+                      <PaginationLink
+                        isActive={paginaCorrente === index + 1}
+                        onClick={() => handlePageChange(index + 1)}
+                        className="cursor-pointer"
+                      >
+                        {index + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  {paginaCorrente < totalePagine && (
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(paginaCorrente + 1)}
+                        className="cursor-pointer"
+                      />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

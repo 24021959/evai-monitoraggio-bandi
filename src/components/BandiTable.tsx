@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Bando } from '../types';
-import { Info, Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -54,7 +54,7 @@ const BandiTable: React.FC<BandiTableProps> = ({ bandi, onViewDetails, onDeleteB
             <TableHead>Settori</TableHead>
             <TableHead>Importo (€)</TableHead>
             <TableHead>Scadenza</TableHead>
-            <TableHead>Azioni</TableHead>
+            <TableHead>Visualizza</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -79,14 +79,15 @@ const BandiTable: React.FC<BandiTableProps> = ({ bandi, onViewDetails, onDeleteB
                   {onViewDetails && (
                     <Button 
                       size="sm" 
-                      variant="ghost" 
+                      variant="outline" 
                       onClick={(e) => {
                         e.stopPropagation();
                         onViewDetails(bando.id);
                       }}
                       className="text-blue-500 hover:text-blue-700"
                     >
-                      <Info className="h-4 w-4" />
+                      <Eye className="h-4 w-4 mr-1" />
+                      Dettagli
                     </Button>
                   )}
                   {onDeleteBando && (
