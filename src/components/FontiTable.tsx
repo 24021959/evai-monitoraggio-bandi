@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Fonte } from '../types';
-import { Settings, Trash2 } from 'lucide-react';
+import { Eye, Settings, Trash2 } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -16,9 +16,10 @@ interface FontiTableProps {
   fonti: Fonte[];
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onView?: (id: string) => void;
 }
 
-const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete }) => {
+const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete, onView }) => {
   const getTipoClass = (tipo: string) => {
     switch (tipo) {
       case 'statale':
@@ -41,7 +42,7 @@ const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete }) => {
             <TableHead>URL</TableHead>
             <TableHead>Tipo</TableHead>
             <TableHead>Stato</TableHead>
-            <TableHead>Azioni</TableHead>
+            <TableHead>Modifica Fonte</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -70,6 +71,16 @@ const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete }) => {
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
+                  {onView && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => onView(fonte.id)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
                   {onEdit && (
                     <Button 
                       size="sm" 
