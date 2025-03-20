@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Fonte } from '../types';
-import { Eye, Settings, Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -84,11 +84,11 @@ const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete, onView
                   {onEdit && (
                     <Button 
                       size="sm" 
-                      variant="ghost" 
+                      variant="outline" 
                       onClick={() => onEdit(fonte.id)}
                       className="text-blue-500 hover:text-blue-700"
                     >
-                      <Settings className="h-4 w-4" />
+                      Dettagli
                     </Button>
                   )}
                   {onDelete && (
