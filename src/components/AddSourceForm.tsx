@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Fonte } from "@/types";
+import { Fonte, TipoBando } from "@/types";
 
 interface AddSourceFormProps {
   onAddSource: (fonte: Omit<Fonte, 'id'>) => void;
@@ -22,7 +22,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const { toast } = useToast();
   const [nome, setNome] = useState('');
   const [url, setUrl] = useState('');
-  const [tipo, setTipo] = useState<string>('');
+  const [tipo, setTipo] = useState<TipoBando | ''>('');
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +53,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     onAddSource({
       nome,
       url,
-      tipo,
+      tipo: tipo as TipoBando,
       stato: 'attivo'
     });
     
@@ -101,7 +101,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
           
           <div className="space-y-2">
             <Label htmlFor="tipo">Tipo Fonte</Label>
-            <Select value={tipo} onValueChange={setTipo} required>
+            <Select value={tipo} onValueChange={setTipo as (value: string) => void} required>
               <SelectTrigger id="tipo">
                 <SelectValue placeholder="Seleziona tipo fonte" />
               </SelectTrigger>

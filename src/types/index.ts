@@ -1,5 +1,4 @@
-
-export type TipoBando = 'statale' | 'regionale' | 'europeo';
+export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro';
 
 export interface Bando {
   id: string;
@@ -18,12 +17,13 @@ export interface Cliente {
   id: string;
   nome: string;
   settore: string;
-  fatturato: number;
-  dipendenti: number;
   regione: string;
+  provincia: string;
+  fatturato: number;
+  interessiSettoriali: string[];
+  dipendenti: number;
   email: string;
   annoFondazione?: number;
-  provincia?: string;
   formaGiuridica?: string;
   codiceATECO?: string;
 }

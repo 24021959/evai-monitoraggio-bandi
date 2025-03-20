@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { mockFonti, mockClienti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { CrawlForm } from '@/components/CrawlForm';
 import AddSourceForm from '@/components/AddSourceForm';
 import ClienteCard from '@/components/ClienteCard';
-import { Fonte } from '@/types';
+import { Fonte, Cliente } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Fonti = () => {
@@ -22,7 +21,7 @@ const Fonti = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [progress, setProgress] = useState(0);
   const [monitoringResults, setMonitoringResults] = useState<any[]>([]);
-  const [clientiMock] = useState(mockClienti);
+  const [clientiMock] = useState<Cliente[]>(mockClienti);
   
   const handleEdit = (id: string) => {
     console.log('Edit fonte with id:', id);
@@ -63,17 +62,19 @@ const Fonti = () => {
         const randomFonte = fonti[Math.floor(Math.random() * fonti.length)];
         const randomCliente = clientiMock[Math.floor(Math.random() * clientiMock.length)];
         
-        setMonitoringResults(prev => [
-          ...prev,
-          {
-            id: `result-${Date.now()}-${Math.random()}`,
-            fonte: randomFonte.nome,
-            url: randomFonte.url,
-            bandoTitolo: `Bando per ${randomCliente.interessiSettoriali[0] || 'sviluppo'} - ${new Date().toLocaleDateString('it-IT')}`,
-            clienteNome: randomCliente.nome,
-            compatibilita: Math.floor(Math.random() * 30) + 70
-          }
-        ]);
+        if (randomCliente && randomCliente.interessiSettoriali && randomCliente.interessiSettoriali.length > 0) {
+          setMonitoringResults(prev => [
+            ...prev,
+            {
+              id: `result-${Date.now()}-${Math.random()}`,
+              fonte: randomFonte.nome,
+              url: randomFonte.url,
+              bandoTitolo: `Bando per ${randomCliente.interessiSettoriali[0] || 'sviluppo'} - ${new Date().toLocaleDateString('it-IT')}`,
+              clienteNome: randomCliente.nome,
+              compatibilita: Math.floor(Math.random() * 30) + 70
+            }
+          ]);
+        }
       }
       
       if (currentProgress >= 100) {
