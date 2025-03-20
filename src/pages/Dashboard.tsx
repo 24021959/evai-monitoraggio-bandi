@@ -14,7 +14,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [bandi, setBandi] = useState<Bando[]>([]);
   
-  // Carica i bandi quando il componente viene montato
+  // Carica SOLO i bandi salvati quando il componente viene montato
   useEffect(() => {
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);

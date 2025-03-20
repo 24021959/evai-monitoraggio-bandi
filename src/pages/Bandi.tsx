@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,13 +33,14 @@ const Bandi = () => {
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
 
-  // Load bandi from FirecrawlService on component mount
+  // Carica SOLO i bandi salvati dal FirecrawlService, non quelli estratti
   useEffect(() => {
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);
     console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
   }, []);
 
+  // Calcoliamo i settori unici solo dai bandi attualmente mostrati
   const settoriUnici = Array.from(new Set(bandi.flatMap(bando => bando.settori)));
   
   const resetFilters = () => {
@@ -82,10 +84,10 @@ const Bandi = () => {
   };
 
   const handleDeleteBando = (id: string) => {
-    // Delete from FirecrawlService first
+    // Elimina il bando dal servizio
     FirecrawlService.deleteBando(id);
     
-    // Then update the UI
+    // Aggiorna lo stato locale rimuovendo il bando cancellato
     setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
     
     toast({
