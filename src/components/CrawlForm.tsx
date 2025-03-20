@@ -166,7 +166,7 @@ export const CrawlForm = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Alert variant="warning">
+              <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Attenzione</AlertTitle>
                 <AlertDescription>

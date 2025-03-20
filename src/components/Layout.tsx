@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   FileText, 
@@ -13,6 +13,12 @@ import {
 } from 'lucide-react';
 
 const Sidebar = () => {
+  const navigate = useNavigate();
+  
+  const handleStartMonitoring = () => {
+    navigate('/fonti');
+  };
+  
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-800 text-white p-5 text-xl font-medium">
@@ -88,7 +94,10 @@ const Sidebar = () => {
           </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
           <div className="px-5 mb-2">
-            <button className="w-full bg-green-500 text-white py-3 rounded flex items-center justify-center gap-2 hover:bg-green-600 transition-colors">
+            <button 
+              className="w-full bg-green-500 text-white py-3 rounded flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
+              onClick={handleStartMonitoring}
+            >
               <PlayCircle className="w-5 h-5" />
               Avvia Monitoraggio
             </button>
