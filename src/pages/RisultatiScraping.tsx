@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Search, Download, AlertCircle, FileText, ArrowLeftRight } from 'lucide-react';
+import { Search, Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 
 const RisultatiScraping = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [bandiSalvati, setBandiSalvati] = useState(false);
+  const [matchSalvati, setMatchSalvati] = useState(false);
   const [bandiEstrati, setBandiEstratti] = useState(() => {
     // Esempio di bandi estratti (in un'implementazione reale, questi verrebbero caricati da un'API)
     return [
@@ -95,6 +97,7 @@ const RisultatiScraping = () => {
       description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
       duration: 3000,
     });
+    setBandiSalvati(true);
     navigate('/bandi');
   };
   
@@ -104,6 +107,7 @@ const RisultatiScraping = () => {
       description: `${matchSuggeriti.length} match sono stati salvati nel sistema`,
       duration: 3000,
     });
+    setMatchSalvati(true);
     navigate('/match');
   };
   
@@ -153,7 +157,20 @@ const RisultatiScraping = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {bandiEstrati.length === 0 ? (
+              {bandiSalvati ? (
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <AlertTitle>Bandi salvati con successo</AlertTitle>
+                  <AlertDescription>
+                    I bandi sono stati salvati nel sistema. Puoi visualizzarli nella sezione Bandi.
+                    <div className="mt-4">
+                      <Button variant="outline" onClick={() => navigate('/bandi')} className="flex items-center gap-2">
+                        Vai alla sezione Bandi
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : bandiEstrati.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Nessun bando trovato</AlertTitle>
@@ -214,7 +231,20 @@ const RisultatiScraping = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {matchSuggeriti.length === 0 ? (
+              {matchSalvati ? (
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <AlertTitle>Match salvati con successo</AlertTitle>
+                  <AlertDescription>
+                    I match sono stati salvati nel sistema. Puoi visualizzarli nella sezione Match.
+                    <div className="mt-4">
+                      <Button variant="outline" onClick={() => navigate('/match')} className="flex items-center gap-2">
+                        Vai alla sezione Match
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : matchSuggeriti.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Nessun match trovato</AlertTitle>
