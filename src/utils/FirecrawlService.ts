@@ -1,5 +1,6 @@
-
 import FirecrawlApp from '@mendable/firecrawl-js';
+import { Bando } from '@/types';
+import { mockBandi } from '@/data/mockData';
 
 interface ErrorResponse {
   success: false;
@@ -20,6 +21,7 @@ type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 
 export class FirecrawlService {
   private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
+  private static SAVED_BANDI_STORAGE_KEY = 'saved_bandi';
   private static firecrawlApp: FirecrawlApp | null = null;
 
   static saveApiKey(apiKey: string): void {
@@ -161,5 +163,58 @@ export class FirecrawlService {
     }
     
     return bandiEstratti;
+  }
+
+  static saveBandi(bandi: Bando[]): void {
+    const existingBandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
+    let existingBandi: Bando[] = [];
+    
+    if (existingBandiJson) {
+      try {
+        existingBandi = JSON.parse(existingBandiJson);
+      } catch (error) {
+        console.error('Errore nel parsing dei bandi salvati:', error);
+      }
+    }
+    
+    // Merge new bandi with existing ones, avoiding duplicates by ID
+    const mergedBandi = [...existingBandi];
+    for (const bando of bandi) {
+      if (!mergedBandi.some(b => b.id === bando.id)) {
+        mergedBandi.push(bando);
+      }
+    }
+    
+    localStorage.setItem(this.SAVED_BANDI_STORAGE_KEY, JSON.stringify(mergedBandi));
+    console.log('Bandi salvati nel localStorage:', mergedBandi.length);
+  }
+
+  static getSavedBandi(): Bando[] {
+    const bandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
+    if (!bandiJson) {
+      return [...mockBandi]; // Return mock data if nothing is saved yet
+    }
+    
+    try {
+      const savedBandi = JSON.parse(bandiJson);
+      return [...mockBandi, ...savedBandi]; // Combine mock and saved bandi
+    } catch (error) {
+      console.error('Errore nel parsing dei bandi salvati:', error);
+      return [...mockBandi];
+    }
+  }
+
+  static deleteBando(id: string): void {
+    const bandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
+    if (!bandiJson) return;
+    
+    try {
+      let savedBandi = JSON.parse(bandiJson) as Bando[];
+      savedBandi = savedBandi.filter(bando => bando.id !== id);
+      localStorage.setItem(this.SAVED_BANDI_STORAGE_KEY, JSON.stringify(savedBandi));
+      console.log('Bando eliminato, ID:', id);
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del bando:', error);
+    }
   }
 }

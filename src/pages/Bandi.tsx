@@ -1,6 +1,5 @@
 
-import React, { useState } from 'react';
-import { mockBandi } from '@/data/mockData';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,17 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BandiTable from '@/components/BandiTable';
 import { useNavigate } from 'react-router-dom';
-import { Filter, Search, X } from 'lucide-react';
+import { Filter, Search, X, Trash2 } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import { FirecrawlService } from '@/utils/FirecrawlService';
+import { Bando } from '@/types';
 
 const Bandi = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tipo, setTipo] = useState<string>('tutti');
   const [settore, setSettore] = useState<string>('tutti');
   const [regione, setRegione] = useState<string>('tutti');
   const [scadenza, setScadenza] = useState<string>('tutti');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [bandi, setBandi] = useState<Bando[]>([]);
 
-  const settoriUnici = Array.from(new Set(mockBandi.flatMap(bando => bando.settori)));
+  // Load bandi from FirecrawlService on component mount
+  useEffect(() => {
+    const loadedBandi = FirecrawlService.getSavedBandi();
+    setBandi(loadedBandi);
+  }, []);
+
+  const settoriUnici = Array.from(new Set(bandi.flatMap(bando => bando.settori)));
   
   const resetFilters = () => {
     setTipo('tutti');
@@ -29,7 +39,7 @@ const Bandi = () => {
   };
 
   const filtraBandi = () => {
-    return mockBandi.filter(bando => {
+    return bandi.filter(bando => {
       if (searchTerm && !bando.titolo.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
       }
@@ -57,6 +67,17 @@ const Bandi = () => {
         }
       }
       return true;
+    });
+  };
+
+  const handleDeleteBando = (id: string) => {
+    FirecrawlService.deleteBando(id);
+    // Update the UI
+    setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
+    toast({
+      title: "Bando eliminato",
+      description: "Il bando è stato rimosso con successo",
+      duration: 3000,
     });
   };
 
@@ -182,6 +203,7 @@ const Bandi = () => {
               <BandiTable 
                 bandi={bandiMostrati} 
                 onViewDetails={(id) => navigate(`/bandi/${id}`)} 
+                onDeleteBando={handleDeleteBando}
               />
             </TabsContent>
             
@@ -192,13 +214,26 @@ const Bandi = () => {
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-lg">{bando.titolo}</CardTitle>
-                        <span className={`text-xs text-white px-2 py-1 rounded-full ${
-                          bando.tipo === 'statale' ? 'bg-green-500' :
-                          bando.tipo === 'europeo' ? 'bg-blue-500' :
-                          'bg-teal-500'
-                        }`}>
-                          {bando.tipo}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs text-white px-2 py-1 rounded-full ${
+                            bando.tipo === 'statale' ? 'bg-green-500' :
+                            bando.tipo === 'europeo' ? 'bg-blue-500' :
+                            'bg-teal-500'
+                          }`}>
+                            {bando.tipo}
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteBando(bando.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <CardDescription>{bando.settori.join(', ')}</CardDescription>
                     </CardHeader>

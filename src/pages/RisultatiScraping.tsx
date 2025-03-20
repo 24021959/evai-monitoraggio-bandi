@@ -91,6 +91,9 @@ const RisultatiScraping = () => {
   });
   
   const handleSalvaBandi = () => {
+    // Salva i bandi usando il FirecrawlService
+    FirecrawlService.saveBandi(bandiEstrati);
+    
     toast({
       title: "Bandi salvati",
       description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
