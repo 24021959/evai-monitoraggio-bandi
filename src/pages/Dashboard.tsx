@@ -1,21 +1,62 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
-import { mockStatistiche, mockBandi } from '@/data/mockData';
+import { mockStatistiche } from '@/data/mockData';
 import StatCard from '@/components/StatCard';
 import ChartContainer from '@/components/ChartContainer';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { FirecrawlService } from '@/utils/FirecrawlService';
+import { Bando } from '@/types';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [bandi, setBandi] = useState<Bando[]>([]);
+  
+  // Carica i bandi quando il componente viene montato
+  useEffect(() => {
+    const loadedBandi = FirecrawlService.getAllBandi();
+    setBandi(loadedBandi);
+  }, []);
+  
+  // Calcola le statistiche in base ai bandi caricati
+  const calcStatistiche = () => {
+    // Conta i bandi per tipo
+    const europei = bandi.filter(b => b.tipo === 'europeo').length;
+    const statali = bandi.filter(b => b.tipo === 'statale').length;
+    const regionali = bandi.filter(b => b.tipo === 'regionale').length;
+    
+    // Calcola la distribuzione percentuale per settore
+    const settoriCount: Record<string, number> = {};
+    bandi.forEach(bando => {
+      bando.settori.forEach(settore => {
+        settoriCount[settore] = (settoriCount[settore] || 0) + 1;
+      });
+    });
+    
+    const bandoPerSettore = Object.entries(settoriCount)
+      .map(([settore, count]) => ({
+        settore,
+        percentuale: Math.round((count / bandi.length) * 100)
+      }))
+      .sort((a, b) => b.percentuale - a.percentuale)
+      .slice(0, 5); // Prendi i primi 5 settori più frequenti
+    
+    return {
+      bandiAttivi: bandi.length,
+      distribuzioneBandi: { europei, statali, regionali },
+      bandoPerSettore
+    };
+  };
+  
+  const stats = calcStatistiche();
   
   // Prepara dati per il grafico a torta
   const distribuzioneBandiData = [
-    { name: 'Europei', value: mockStatistiche.distribuzioneBandi.europei, color: '#3b82f6' },
-    { name: 'Statali', value: mockStatistiche.distribuzioneBandi.statali, color: '#22c55e' },
-    { name: 'Regionali', value: mockStatistiche.distribuzioneBandi.regionali, color: '#f59e0b' },
+    { name: 'Europei', value: stats.distribuzioneBandi.europei, color: '#3b82f6' },
+    { name: 'Statali', value: stats.distribuzioneBandi.statali, color: '#22c55e' },
+    { name: 'Regionali', value: stats.distribuzioneBandi.regionali, color: '#f59e0b' },
   ];
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -31,8 +72,8 @@ const Dashboard = () => {
     );
   };
 
-  // Filtro gli ultimi 5 bandi
-  const ultimiBandi = [...mockBandi].sort((a, b) => 
+  // Filtra gli ultimi 5 bandi per scadenza
+  const ultimiBandi = [...bandi].sort((a, b) => 
     new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime()
   ).slice(0, 5);
 
@@ -42,7 +83,7 @@ const Dashboard = () => {
       
       {/* Statistiche principali */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Bandi Attivi" value={mockStatistiche.bandiAttivi} color="blue" icon={<FileText className="w-8 h-8 text-blue-500" />} />
+        <StatCard title="Bandi Attivi" value={stats.bandiAttivi} color="blue" icon={<FileText className="w-8 h-8 text-blue-500" />} />
         <StatCard title="Clienti" value={mockStatistiche.numeroClienti} color="green" icon={<Users className="w-8 h-8 text-green-500" />} />
         <StatCard title="Match Recenti" value={mockStatistiche.matchRecenti} color="yellow" icon={<GitCompare className="w-8 h-8 text-yellow-500" />} />
       </div>
@@ -112,7 +153,7 @@ const Dashboard = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={mockStatistiche.bandoPerSettore}
+                data={stats.bandoPerSettore}
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
               >

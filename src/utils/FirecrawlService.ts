@@ -1,3 +1,4 @@
+
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { Bando, Fonte } from '@/types';
 import { mockBandi } from '@/data/mockData';
@@ -22,10 +23,12 @@ type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 export class FirecrawlService {
   private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
   private static SAVED_BANDI_STORAGE_KEY = 'saved_bandi';
+  private static SCRAPED_BANDI_STORAGE_KEY = 'scraped_bandi';
   private static SCRAPED_SOURCES_STORAGE_KEY = 'scraped_sources';
   private static SAVED_FONTI_STORAGE_KEY = 'saved_fonti';
   private static firecrawlApp: FirecrawlApp | null = null;
 
+  // API key management methods
   static saveApiKey(apiKey: string): void {
     localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
     this.firecrawlApp = new FirecrawlApp({ apiKey });
@@ -56,6 +59,7 @@ export class FirecrawlService {
     }
   }
 
+  // Crawling methods
   static async crawlWebsite(url: string): Promise<{ success: boolean; error?: string; data?: any }> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
@@ -97,10 +101,8 @@ export class FirecrawlService {
     }
   }
 
-  static async extractBandiFromCrawlData(crawlData: any): Promise<any[]> {
-    // Questa funzione estrarrà le informazioni sui bandi dal risultato del crawl
-    // In una implementazione reale, utilizzeremmo NLP o regole specifiche per estrarre informazioni strutturate
-    
+  static async extractBandiFromCrawlData(crawlData: any): Promise<Bando[]> {
+    // Estrae le informazioni sui bandi dal risultato del crawl
     if (!crawlData || !crawlData.data || !Array.isArray(crawlData.data)) {
       return [];
     }
@@ -109,9 +111,6 @@ export class FirecrawlService {
     
     for (const page of crawlData.data) {
       // Estrai informazioni dai contenuti della pagina 
-      // Questo è un esempio semplificato, in un'implementazione reale avremo bisogno
-      // di logica più sofisticata per estrarre informazioni strutturate
-      
       if (page.content && typeof page.content === 'string') {
         const titoloBando = page.title || 'Bando senza titolo';
         const urlBando = page.url || '';
@@ -164,9 +163,49 @@ export class FirecrawlService {
       }
     }
     
+    // Salva i bandi estratti in localStorage
+    this.saveScrapedBandi(bandiEstratti);
     return bandiEstratti;
   }
 
+  // Metodi per la gestione dei bandi estratti (temporanei)
+  static saveScrapedBandi(bandi: Bando[]): void {
+    localStorage.setItem(this.SCRAPED_BANDI_STORAGE_KEY, JSON.stringify(bandi));
+    console.log('Bandi estratti salvati temporaneamente:', bandi.length);
+  }
+
+  static getScrapedBandi(): Bando[] {
+    const bandiJson = localStorage.getItem(this.SCRAPED_BANDI_STORAGE_KEY);
+    if (!bandiJson) return [];
+    
+    try {
+      return JSON.parse(bandiJson) as Bando[];
+    } catch (error) {
+      console.error('Errore nel parsing dei bandi estratti:', error);
+      return [];
+    }
+  }
+
+  static deleteScrapedBando(id: string): void {
+    const bandiJson = localStorage.getItem(this.SCRAPED_BANDI_STORAGE_KEY);
+    if (!bandiJson) return;
+    
+    try {
+      let bandi = JSON.parse(bandiJson) as Bando[];
+      bandi = bandi.filter(bando => bando.id !== id);
+      localStorage.setItem(this.SCRAPED_BANDI_STORAGE_KEY, JSON.stringify(bandi));
+      console.log('Bando estratto eliminato, ID:', id);
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del bando estratto:', error);
+    }
+  }
+
+  static clearScrapedBandi(): void {
+    localStorage.removeItem(this.SCRAPED_BANDI_STORAGE_KEY);
+    console.log('Tutti i bandi estratti sono stati eliminati');
+  }
+
+  // Metodi per la gestione dei bandi salvati (permanenti)
   static saveBandi(bandi: Bando[]): void {
     const existingBandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
     let existingBandi: Bando[] = [];
@@ -189,6 +228,9 @@ export class FirecrawlService {
     
     localStorage.setItem(this.SAVED_BANDI_STORAGE_KEY, JSON.stringify(mergedBandi));
     console.log('Bandi salvati nel localStorage:', mergedBandi.length);
+    
+    // Dopo aver salvato i bandi, cancelliamo quelli estratti temporaneamente
+    this.clearScrapedBandi();
   }
 
   static getSavedBandi(): Bando[] {
@@ -206,7 +248,31 @@ export class FirecrawlService {
     }
   }
 
+  static getAllBandi(): Bando[] {
+    // Combina i bandi salvati e quelli estratti
+    const savedBandi = this.getSavedBandi();
+    const scrapedBandi = this.getScrapedBandi();
+    
+    // Evita duplicati basandosi sull'ID
+    const allBandi = [...savedBandi];
+    for (const bando of scrapedBandi) {
+      if (!allBandi.some(b => b.id === bando.id)) {
+        allBandi.push(bando);
+      }
+    }
+    
+    return allBandi;
+  }
+
   static deleteBando(id: string): void {
+    // Prima controlla se è un bando estratto
+    const scrapedBandi = this.getScrapedBandi();
+    if (scrapedBandi.some(bando => bando.id === id)) {
+      this.deleteScrapedBando(id);
+      return;
+    }
+    
+    // Altrimenti è un bando salvato
     const bandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
     if (!bandiJson) return;
     
@@ -214,13 +280,13 @@ export class FirecrawlService {
       let savedBandi = JSON.parse(bandiJson) as Bando[];
       savedBandi = savedBandi.filter(bando => bando.id !== id);
       localStorage.setItem(this.SAVED_BANDI_STORAGE_KEY, JSON.stringify(savedBandi));
-      console.log('Bando eliminato, ID:', id);
+      console.log('Bando salvato eliminato, ID:', id);
     } catch (error) {
-      console.error('Errore nell\'eliminazione del bando:', error);
+      console.error('Errore nell\'eliminazione del bando salvato:', error);
     }
   }
   
-  // Nuove funzioni per gestire lo stato delle fonti scrappate
+  // Metodi per la gestione delle fonti scrappate
   static markSourceAsScraped(sourceId: string): void {
     const scrapedSourcesJson = localStorage.getItem(this.SCRAPED_SOURCES_STORAGE_KEY);
     let scrapedSources: string[] = [];
@@ -265,7 +331,7 @@ export class FirecrawlService {
     return null;
   }
 
-  // Aggiungiamo metodi per salvare e recuperare le fonti
+  // Metodi per la gestione delle fonti
   static saveFonti(fonti: Fonte[]): void {
     localStorage.setItem(this.SAVED_FONTI_STORAGE_KEY, JSON.stringify(fonti));
     console.log('Fonti salvate nel localStorage:', fonti.length);

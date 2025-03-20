@@ -33,7 +33,7 @@ const Bandi = () => {
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
 
-  // Load bandi from FirecrawlService on component mount
+  // Load bandi from FirecrawlService on component mount and when navigating back to this page
   useEffect(() => {
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);

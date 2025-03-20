@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,46 +16,15 @@ const RisultatiScraping = () => {
   const { toast } = useToast();
   const [bandiSalvati, setBandiSalvati] = useState(false);
   const [matchSalvati, setMatchSalvati] = useState(false);
-  const [bandiEstrati, setBandiEstratti] = useState<Bando[]>(() => {
-    return [
-      {
-        id: 'bando-1',
-        titolo: 'Bando Innovazione Digitale PMI',
-        fonte: 'Regione Lombardia',
-        tipo: 'regionale' as TipoBando,
-        settori: ['Tecnologia', 'Industria', 'Startup'],
-        importoMin: 20000,
-        importoMax: 200000,
-        scadenza: '2023-11-30',
-        descrizione: 'Contributi a fondo perduto per l\'adozione di soluzioni tecnologiche innovative',
-        url: 'https://regione.lombardia.it/bandi/123'
-      },
-      {
-        id: 'bando-2',
-        titolo: 'Fondo Ricerca e Sviluppo',
-        fonte: 'MISE',
-        tipo: 'statale' as TipoBando,
-        settori: ['Tecnologia', 'Energia', 'Agricoltura'],
-        importoMin: 50000,
-        importoMax: 500000,
-        scadenza: '2023-12-15',
-        descrizione: 'Finanziamenti per progetti di ricerca e sviluppo sperimentale',
-        url: 'https://mise.gov.it/bandi/456'
-      },
-      {
-        id: 'bando-3',
-        titolo: 'Horizon Europe Cluster 5',
-        fonte: 'UE',
-        tipo: 'europeo' as TipoBando,
-        settori: ['Energia', 'Sostenibilità'],
-        importoMin: 100000,
-        importoMax: 1500000,
-        scadenza: '2024-02-01',
-        descrizione: 'Progetti di ricerca e innovazione per la transizione energetica e la sostenibilità',
-        url: 'https://ec.europa.eu/info/funding-tenders/789'
-      }
-    ];
-  });
+  const [bandiEstrati, setBandiEstratti] = useState<Bando[]>([]);
+  
+  // Carica i bandi estratti all'avvio del componente
+  useEffect(() => {
+    const loadedBandi = FirecrawlService.getScrapedBandi();
+    if (loadedBandi.length > 0) {
+      setBandiEstratti(loadedBandi);
+    }
+  }, []);
   
   const [matchSuggeriti, setMatchSuggeriti] = useState(() => {
     return [
@@ -98,6 +67,7 @@ const RisultatiScraping = () => {
       duration: 3000,
     });
     setBandiSalvati(true);
+    setBandiEstratti([]); // Svuota l'array dei bandi estratti dopo averli salvati
   };
   
   const handleSalvaMatch = () => {
@@ -121,18 +91,18 @@ const RisultatiScraping = () => {
     navigate('/fonti');
   };
 
-  // Updated function to handle bando deletion
+  // Funzione aggiornata per gestire l'eliminazione di un bando
   const handleDeleteBando = (id: string) => {
     const bandoToDelete = bandiEstrati.find(bando => bando.id === id);
     if (!bandoToDelete) return;
     
-    // Remove the bando from the local state
+    // Rimuove il bando dallo stato locale
     setBandiEstratti(prev => prev.filter(bando => bando.id !== id));
     
-    // Also delete from the persisted storage via FirecrawlService
-    FirecrawlService.deleteBando(id);
+    // Elimina anche dalla memoria persistente tramite FirecrawlService
+    FirecrawlService.deleteScrapedBando(id);
     
-    // Notify the user
+    // Notifica l'utente
     toast({
       title: "Bando rimosso",
       description: `Il bando "${bandoToDelete.titolo}" è stato rimosso dalla lista`,
