@@ -198,6 +198,16 @@ const DettaglioCliente = () => {
                   onChange={handleInputChange} 
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="telefono">Telefono</Label>
+                <Input 
+                  id="telefono" 
+                  name="telefono" 
+                  type="tel" 
+                  value={formData.telefono || ''} 
+                  onChange={handleInputChange} 
+                />
+              </div>
               
               {/* Campi aggiuntivi */}
               {campiAggiuntivi.map((campo, index) => (
@@ -283,6 +293,10 @@ const DettaglioCliente = () => {
               <div>
                 <h3 className="font-medium text-sm text-gray-500">Email</h3>
                 <p>{cliente.email}</p>
+              </div>
+              <div>
+                <h3 className="font-medium text-sm text-gray-500">Telefono</h3>
+                <p>{cliente.telefono || '-'}</p>
               </div>
               
               {/* Visualizza campi aggiuntivi */}
