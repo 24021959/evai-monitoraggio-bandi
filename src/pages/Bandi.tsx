@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BandoCard } from '@/components/BandoCard';
+import BandoCard from '@/components/BandoCard'; // Fixed: Changed from named import to default import
 
 const Bandi = () => {
   const { toast } = useToast();
@@ -61,8 +61,8 @@ const Bandi = () => {
   const bandiFiltrati = bandi.filter(bando => {
     const matchTestoRicerca = !filtro || 
       bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
-      bando.descrizione.toLowerCase().includes(filtro.toLowerCase()) ||
-      bando.ente.toLowerCase().includes(filtro.toLowerCase());
+      bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
+      bando.fonte.toLowerCase().includes(filtro.toLowerCase()); // Fixed: Changed 'ente' to 'fonte' to match the Bando type
       
     const matchSettore = !settoreFiltro || bando.settori.includes(settoreFiltro);
     
@@ -173,8 +173,8 @@ const Bandi = () => {
             {visualizzazione === 'tabella' ? (
               <BandiTable 
                 bandi={bandiPaginati} 
-                onViewDetail={handleViewDetail}
-                onDelete={handleDeleteBando}
+                onViewDetails={handleViewDetail} // Fixed: Changed prop name from 'onViewDetail' to 'onViewDetails'
+                onDeleteBando={handleDeleteBando} // Fixed: Changed prop name to match BandiTable definition
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -182,8 +182,8 @@ const Bandi = () => {
                   <BandoCard 
                     key={bando.id} 
                     bando={bando} 
-                    onViewDetail={() => handleViewDetail(bando.id)}
-                    onDelete={() => handleDeleteBando(bando.id)}
+                    onViewDetails={handleViewDetail} // Fixed: Changed prop name to match BandoCard definition
+                    onDelete={handleDeleteBando}
                   />
                 ))}
               </div>
