@@ -66,6 +66,8 @@ export const mockClienti: Cliente[] = [
     fatturato: 5000000,
     dipendenti: 45,
     regione: 'Lombardia',
+    provincia: 'Milano',
+    interessiSettoriali: ['Innovazione', 'Digitalizzazione', 'Smart City'],
     email: 'info@tech.it'
   },
   {
@@ -75,6 +77,8 @@ export const mockClienti: Cliente[] = [
     fatturato: 12500000,
     dipendenti: 120,
     regione: 'Piemonte',
+    provincia: 'Torino',
+    interessiSettoriali: ['Energie Rinnovabili', 'Efficienza Energetica', 'Sostenibilità'],
     email: 'info@green.it'
   },
   {
@@ -84,6 +88,8 @@ export const mockClienti: Cliente[] = [
     fatturato: 3200000,
     dipendenti: 28,
     regione: 'Emilia-Romagna',
+    provincia: 'Bologna',
+    interessiSettoriali: ['Agricoltura Biologica', 'Tecnologie Agricole', 'Sostenibilità'],
     email: 'info@agri.it'
   },
   {
@@ -93,6 +99,8 @@ export const mockClienti: Cliente[] = [
     fatturato: 8700000,
     dipendenti: 75,
     regione: 'Veneto',
+    provincia: 'Padova',
+    interessiSettoriali: ['Industria 4.0', 'Automazione', 'Manifattura Avanzata'],
     email: 'info@mani.it'
   },
   {
@@ -102,6 +110,8 @@ export const mockClienti: Cliente[] = [
     fatturato: 750000,
     dipendenti: 12,
     regione: 'Lazio',
+    provincia: 'Roma',
+    interessiSettoriali: ['Innovazione', 'Digitale', 'Startup'],
     email: 'info@innova.it'
   },
   {
@@ -111,6 +121,8 @@ export const mockClienti: Cliente[] = [
     fatturato: 4200000,
     dipendenti: 32,
     regione: 'Toscana',
+    provincia: 'Firenze',
+    interessiSettoriali: ['Ricerca Medica', 'Biotecnologie', 'Salute'],
     email: 'info@biomed.it'
   }
 ];
