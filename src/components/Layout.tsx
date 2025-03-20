@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -9,7 +10,8 @@ import {
   Database,
   PlayCircle,
   BellRing,
-  KeyRound
+  KeyRound,
+  CheckCircle
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 
 const Sidebar = () => {
@@ -30,13 +33,27 @@ const Sidebar = () => {
   const [apiKey, setApiKey] = useState('');
   const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(false);
+  const [apiKeyAlreadyExists, setApiKeyAlreadyExists] = useState(false);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const savedApiKey = FirecrawlService.getApiKey();
     if (savedApiKey) {
       setIsApiKeyValid(true);
     }
   }, []);
+  
+  useEffect(() => {
+    // Quando il dialog viene aperto, verifica se esiste già una API key
+    if (showApiKeyDialog) {
+      const savedApiKey = FirecrawlService.getApiKey();
+      if (savedApiKey) {
+        setApiKey(savedApiKey);
+        setApiKeyAlreadyExists(true);
+      } else {
+        setApiKeyAlreadyExists(false);
+      }
+    }
+  }, [showApiKeyDialog]);
   
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) {
@@ -46,6 +63,17 @@ const Sidebar = () => {
         variant: "destructive",
         duration: 3000,
       });
+      return;
+    }
+    
+    // Verifica se la chiave è già stata salvata con lo stesso valore
+    if (FirecrawlService.isApiKeyAlreadySaved(apiKey)) {
+      toast({
+        title: "Informazione",
+        description: "Questa API key è già stata salvata nel sistema",
+        duration: 3000,
+      });
+      setApiKeyAlreadyExists(true);
       return;
     }
     
@@ -284,6 +312,16 @@ const Sidebar = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {apiKeyAlreadyExists && (
+              <Alert className="bg-blue-50 border-blue-100">
+                <CheckCircle className="h-4 w-4 text-blue-500" />
+                <AlertTitle>API Key già presente</AlertTitle>
+                <AlertDescription>
+                  Questa API key è già stata salvata nel sistema.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="api-key">Firecrawl API Key</Label>
               <Input
@@ -291,7 +329,10 @@ const Sidebar = () => {
                 type="password"
                 placeholder="Inserisci la tua API key"
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setApiKeyAlreadyExists(false);
+                }}
               />
             </div>
             <p className="text-sm text-gray-500">

@@ -32,6 +32,11 @@ export class FirecrawlService {
     return localStorage.getItem(this.API_KEY_STORAGE_KEY);
   }
 
+  static isApiKeyAlreadySaved(apiKey: string): boolean {
+    const savedApiKey = this.getApiKey();
+    return savedApiKey === apiKey;
+  }
+
   static async testApiKey(apiKey: string): Promise<boolean> {
     try {
       console.log('Test della API key con Firecrawl API');

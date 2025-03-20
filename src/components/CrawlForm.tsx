@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { KeyRound, AlertCircle } from 'lucide-react';
+import { KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface CrawlResult {
   success: boolean;
@@ -29,6 +28,14 @@ export const CrawlForm = () => {
   const [crawlResult, setCrawlResult] = useState<CrawlResult | null>(null);
   const [extractedBandi, setExtractedBandi] = useState<any[]>([]);
   const [showApiKeyInput, setShowApiKeyInput] = useState(!FirecrawlService.getApiKey());
+  const [apiKeyStatus, setApiKeyStatus] = useState<'none' | 'saved' | 'already-exists'>('none');
+
+  useEffect(() => {
+    const savedApiKey = FirecrawlService.getApiKey();
+    if (savedApiKey) {
+      setApiKeyStatus('saved');
+    }
+  }, []);
 
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) {
@@ -41,6 +48,16 @@ export const CrawlForm = () => {
       return;
     }
 
+    if (FirecrawlService.isApiKeyAlreadySaved(apiKey)) {
+      setApiKeyStatus('already-exists');
+      toast({
+        title: "Informazione",
+        description: "Questa API key è già stata salvata nel sistema",
+        duration: 3000,
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       const isValid = await FirecrawlService.testApiKey(apiKey);
@@ -48,6 +65,7 @@ export const CrawlForm = () => {
       if (isValid) {
         FirecrawlService.saveApiKey(apiKey);
         setShowApiKeyInput(false);
+        setApiKeyStatus('saved');
         toast({
           title: "Successo",
           description: "API key salvata con successo",
@@ -73,6 +91,15 @@ export const CrawlForm = () => {
     }
   };
 
+  const handleViewApiKey = () => {
+    const savedApiKey = FirecrawlService.getApiKey();
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+      setShowApiKeyInput(true);
+      setApiKeyStatus('already-exists');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -93,7 +120,6 @@ export const CrawlForm = () => {
         return;
       }
 
-      // Simula progresso durante il crawl
       const progressInterval = setInterval(() => {
         setProgress((prev) => {
           const newValue = prev + 5;
@@ -115,7 +141,6 @@ export const CrawlForm = () => {
           duration: 3000,
         });
         
-        // Estrai informazioni sui bandi dai dati crawlati
         const bandi = await FirecrawlService.extractBandiFromCrawlData(result.data);
         setExtractedBandi(bandi);
         
@@ -166,6 +191,16 @@ export const CrawlForm = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {apiKeyStatus === 'already-exists' && (
+                <Alert className="bg-blue-50 border-blue-100">
+                  <CheckCircle className="h-4 w-4 text-blue-500" />
+                  <AlertTitle>API Key già presente</AlertTitle>
+                  <AlertDescription>
+                    Questa API key è già stata salvata nel sistema.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Attenzione</AlertTitle>
@@ -181,7 +216,10 @@ export const CrawlForm = () => {
                   id="apiKey"
                   type="password"
                   value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    setApiKeyStatus('none');
+                  }}
                   placeholder="Inserisci la tua API key"
                 />
               </div>
@@ -194,6 +232,29 @@ export const CrawlForm = () => {
                 {isLoading ? "Verifica..." : "Salva API Key"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {!showApiKeyInput && apiKeyStatus === 'saved' && (
+        <Card className="bg-green-50 border-green-100">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CardTitle>API Key configurata</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              L'API key di Firecrawl è stata configurata correttamente. Puoi procedere con l'estrazione dei bandi.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={handleViewApiKey} 
+              className="w-full"
+            >
+              Visualizza/Modifica API Key
+            </Button>
           </CardContent>
         </Card>
       )}
