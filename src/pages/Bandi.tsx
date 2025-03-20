@@ -1,38 +1,39 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import BandiTable from '@/components/BandiTable';
-import { useNavigate } from 'react-router-dom';
-import { Filter, Search, X, Trash2 } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import BandiTable from "@/components/BandiTable";
+import { Bando } from "@/types";
 import { FirecrawlService } from '@/utils/FirecrawlService';
-import { Bando } from '@/types';
+import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from 'react-router-dom';
+import { 
+  FileText, 
+  Search, 
+  Filter 
+} from 'lucide-react';
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-
-const ELEMENTI_PER_PAGINA = 10;
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { BandoCard } from '@/components/BandoCard';
 
 const Bandi = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [tipo, setTipo] = useState<string>('tutti');
-  const [settore, setSettore] = useState<string>('tutti');
-  const [regione, setRegione] = useState<string>('tutti');
-  const [scadenza, setScadenza] = useState<string>('tutti');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const navigate = useNavigate();
+  const [filtro, setFiltro] = useState<string>('');
+  const [settoreFiltro, setSettoreFiltro] = useState<string>('');
+  const [visualizzazione, setVisualizzazione] = useState<'tabella' | 'cards'>('tabella');
+  const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
 
-  // Carica SOLO i bandi salvati dal FirecrawlService e pulisci i bandi esistenti
+  // Carica SOLO i bandi salvati dal FirecrawlService
   useEffect(() => {
     // Clear any scraped bandi to ensure they don't appear
     FirecrawlService.clearScrapedBandi();
@@ -40,75 +41,49 @@ const Bandi = () => {
     // Get only the saved bandi
     const loadedBandi = FirecrawlService.getSavedBandi();
     
-    // Clear mock bandi for testing purposes
-    const realSavedBandi = loadedBandi.filter(bando => !mockBandi.some(mb => mb.id === bando.id));
-    
-    setBandi(realSavedBandi);
-    console.log("Bandi page: Caricati bandi salvati (senza mock):", realSavedBandi.length);
-  }, []);
-
-  // Elimina tutti i bandi salvati
-  useEffect(() => {
-    // Delete all saved bandi
-    FirecrawlService.clearAllSavedBandi();
-    
-    // Update the UI
-    setBandi([]);
-    toast({
-      title: "Bandi eliminati",
-      description: "Tutti i bandi sono stati eliminati con successo",
-      duration: 3000,
-    });
+    // Set the state with the real saved bandi (no mock data)
+    setBandi(loadedBandi);
+    console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
   }, []);
 
   // Calcoliamo i settori unici solo dai bandi attualmente mostrati
-  const settoriUnici = Array.from(new Set(bandi.flatMap(bando => bando.settori)));
-  
-  const resetFilters = () => {
-    setTipo('tutti');
-    setSettore('tutti');
-    setRegione('tutti');
-    setScadenza('tutti');
-    setSearchTerm('');
-  };
-
-  const filtraBandi = () => {
-    return bandi.filter(bando => {
-      if (searchTerm && !bando.titolo.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-      if (tipo !== 'tutti' && bando.tipo !== tipo) {
-        return false;
-      }
-      if (settore !== 'tutti' && !bando.settori.includes(settore)) {
-        return false;
-      }
-      // Per la scadenza possiamo filtrare per periodo
-      if (scadenza !== 'tutti') {
-        const oggi = new Date();
-        const scadenzaBando = new Date(bando.scadenza);
-        const diffGiorni = Math.ceil((scadenzaBando.getTime() - oggi.getTime()) / (1000 * 60 * 60 * 24));
-        
-        switch (scadenza) {
-          case 'prossimi30':
-            return diffGiorni <= 30 && diffGiorni > 0;
-          case 'prossimi90':
-            return diffGiorni <= 90 && diffGiorni > 0;
-          case 'oltre90':
-            return diffGiorni > 90;
-          default:
-            return true;
-        }
-      }
-      return true;
+  useEffect(() => {
+    const settori = new Set<string>();
+    bandi.forEach(bando => {
+      bando.settori.forEach(settore => {
+        settori.add(settore);
+      });
     });
+    setSettoriDisponibili(Array.from(settori).sort());
+  }, [bandi]);
+
+  // Filtra i bandi in base al testo di ricerca e al settore
+  const bandiFiltrati = bandi.filter(bando => {
+    const matchTestoRicerca = !filtro || 
+      bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
+      bando.descrizione.toLowerCase().includes(filtro.toLowerCase()) ||
+      bando.ente.toLowerCase().includes(filtro.toLowerCase());
+      
+    const matchSettore = !settoreFiltro || bando.settori.includes(settoreFiltro);
+    
+    return matchTestoRicerca && matchSettore;
+  });
+
+  // Pagina corrente dei risultati (per la vista a tabella)
+  const RISULTATI_PER_PAGINA = 10;
+  const indicePrimoRisultato = (paginaCorrente - 1) * RISULTATI_PER_PAGINA;
+  const indiceUltimoRisultato = indicePrimoRisultato + RISULTATI_PER_PAGINA;
+  const bandiPaginati = bandiFiltrati.slice(indicePrimoRisultato, indiceUltimoRisultato);
+  const totalePagine = Math.ceil(bandiFiltrati.length / RISULTATI_PER_PAGINA);
+
+  const handleViewDetail = (id: string) => {
+    navigate(`/bandi/${id}`);
   };
 
   const handleDeleteBando = (id: string) => {
-    // Elimina il bando dal servizio
     FirecrawlService.deleteBando(id);
     
-    // Aggiorna lo stato locale rimuovendo il bando cancellato
+    // Aggiorna lo stato locale dopo l'eliminazione
     setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
     
     toast({
@@ -118,236 +93,130 @@ const Bandi = () => {
     });
   };
 
-  const bandiMostrati = filtraBandi();
-  const totaleElementi = bandiMostrati.length;
-  const totalePagine = Math.ceil(totaleElementi / ELEMENTI_PER_PAGINA);
-
-  // Calcola gli elementi da mostrare nella pagina corrente
-  const indiceIniziale = (paginaCorrente - 1) * ELEMENTI_PER_PAGINA;
-  const bandiPaginati = bandiMostrati.slice(indiceIniziale, indiceIniziale + ELEMENTI_PER_PAGINA);
-
-  const handlePageChange = (pagina: number) => {
-    setPaginaCorrente(pagina);
-  };
-
   return (
-    <div className="space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-bold">Bandi di Finanza Agevolata</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Catalogo Bandi</h1>
+        <Button variant="outline" onClick={() => navigate('/risultati-scraping')}>
+          <FileText className="w-4 h-4 mr-2" />
+          Estrai Nuovi Bandi
+        </Button>
+      </div>
       
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Filtri</CardTitle>
-          <CardDescription>Filtra i bandi in base alle tue esigenze</CardDescription>
+        <CardHeader className="pb-4">
+          <CardTitle>Filtra Bandi</CardTitle>
+          <CardDescription>Ricerca e filtra i bandi in base ai tuoi criteri</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-              <label className="text-sm font-medium">Tipo</label>
-              <Select value={tipo} onValueChange={setTipo}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tutti" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tutti">Tutti</SelectItem>
-                  <SelectItem value="statale">Statale</SelectItem>
-                  <SelectItem value="regionale">Regionale</SelectItem>
-                  <SelectItem value="europeo">Europeo</SelectItem>
-                </SelectContent>
-              </Select>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Cerca bandi..."
+                className="pl-9"
+                value={filtro}
+                onChange={(e) => setFiltro(e.target.value)}
+              />
             </div>
             
-            <div>
-              <label className="text-sm font-medium">Settore</label>
-              <Select value={settore} onValueChange={setSettore}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tutti" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tutti">Tutti</SelectItem>
-                  {settoriUnici.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Regione</label>
-              <Select value={regione} onValueChange={setRegione}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tutte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tutti">Tutte</SelectItem>
-                  <SelectItem value="lombardia">Lombardia</SelectItem>
-                  <SelectItem value="piemonte">Piemonte</SelectItem>
-                  <SelectItem value="lazio">Lazio</SelectItem>
-                  <SelectItem value="veneto">Veneto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Scadenza</label>
-              <Select value={scadenza} onValueChange={setScadenza}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tutte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tutti">Tutte</SelectItem>
-                  <SelectItem value="prossimi30">Prossimi 30 giorni</SelectItem>
-                  <SelectItem value="prossimi90">Prossimi 90 giorni</SelectItem>
-                  <SelectItem value="oltre90">Oltre 90 giorni</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Cerca</label>
-              <div className="flex gap-2">
-                <div className="relative flex-grow">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cerca bando..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+            <div className="flex gap-3">
+              <div className="w-48">
+                <Select value={settoreFiltro} onValueChange={setSettoreFiltro}>
+                  <SelectTrigger>
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      <span className="truncate">
+                        {settoreFiltro || "Tutti i settori"}
+                      </span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tutti i settori</SelectItem>
+                    {settoriDisponibili.map(settore => (
+                      <SelectItem key={settore} value={settore}>
+                        {settore}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Tabs value={visualizzazione} onValueChange={(v) => setVisualizzazione(v as 'tabella' | 'cards')}>
+                  <TabsList>
+                    <TabsTrigger value="tabella">Tabella</TabsTrigger>
+                    <TabsTrigger value="cards">Schede</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
             </div>
-          </div>
-          
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={resetFilters} className="flex items-center gap-2">
-              <X className="h-4 w-4" />
-              Reset
-            </Button>
-            
-            <Button className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filtra
-            </Button>
           </div>
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Elenco Bandi</CardTitle>
-          <CardDescription>
-            {bandiMostrati.length} bandi trovati - Pagina {paginaCorrente} di {totalePagine || 1}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="tabella">
-            <TabsList className="mb-4">
-              <TabsTrigger value="tabella">Tabella</TabsTrigger>
-              <TabsTrigger value="card">Card</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="tabella">
+      <div>
+        {bandiFiltrati.length === 0 ? (
+          <Card className="bg-gray-50">
+            <CardContent className="py-8">
+              <div className="text-center text-gray-500">
+                <FileText className="mx-auto h-12 w-12 mb-4 text-gray-400" />
+                <h3 className="text-lg font-medium mb-2">Nessun bando trovato</h3>
+                <p className="text-sm max-w-md mx-auto">
+                  Non sono stati trovati bandi che corrispondono ai criteri di ricerca. Prova a modificare i filtri o estrai nuovi bandi.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {visualizzazione === 'tabella' ? (
               <BandiTable 
                 bandi={bandiPaginati} 
-                onViewDetails={(id) => navigate(`/bandi/${id}`)} 
-                onDeleteBando={handleDeleteBando}
+                onViewDetail={handleViewDetail}
+                onDelete={handleDeleteBando}
               />
-            </TabsContent>
-            
-            <TabsContent value="card">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bandiPaginati.map((bando) => (
-                  <Card key={bando.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{bando.titolo}</CardTitle>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs text-white px-2 py-1 rounded-full ${
-                            bando.tipo === 'statale' ? 'bg-green-500' :
-                            bando.tipo === 'europeo' ? 'bg-blue-500' :
-                            'bg-teal-500'
-                          }`}>
-                            {bando.tipo}
-                          </span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteBando(bando.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <CardDescription>{bando.settori.join(', ')}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Fonte:</span>
-                          <span>{bando.fonte}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Scadenza:</span>
-                          <span>{new Date(bando.scadenza).toLocaleDateString('it-IT')}</span>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          className="w-full mt-2"
-                          onClick={() => navigate(`/bandi/${bando.id}`)}
-                        >
-                          Visualizza Dettagli
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {bandiFiltrati.map(bando => (
+                  <BandoCard 
+                    key={bando.id} 
+                    bando={bando} 
+                    onViewDetail={() => handleViewDetail(bando.id)}
+                    onDelete={() => handleDeleteBando(bando.id)}
+                  />
                 ))}
               </div>
-            </TabsContent>
-          </Tabs>
-          
-          {totalePagine > 1 && (
-            <div className="mt-6">
-              <Pagination>
-                <PaginationContent>
-                  {paginaCorrente > 1 && (
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => handlePageChange(paginaCorrente - 1)}
-                        className="cursor-pointer"
-                      />
-                    </PaginationItem>
-                  )}
-                  
-                  {Array.from({ length: totalePagine }).map((_, index) => (
-                    <PaginationItem key={index}>
-                      <PaginationLink
-                        isActive={paginaCorrente === index + 1}
-                        onClick={() => handlePageChange(index + 1)}
-                        className="cursor-pointer"
-                      >
-                        {index + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  
-                  {paginaCorrente < totalePagine && (
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => handlePageChange(paginaCorrente + 1)}
-                        className="cursor-pointer"
-                      />
-                    </PaginationItem>
-                  )}
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+            
+            {visualizzazione === 'tabella' && totalePagine > 1 && (
+              <div className="flex justify-between items-center mt-4">
+                <div className="text-sm text-gray-500">
+                  Mostra {indicePrimoRisultato + 1}-{Math.min(indiceUltimoRisultato, bandiFiltrati.length)} di {bandiFiltrati.length} bandi
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={paginaCorrente === 1}
+                    onClick={() => setPaginaCorrente(prev => Math.max(prev - 1, 1))}
+                  >
+                    Precedente
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={paginaCorrente === totalePagine}
+                    onClick={() => setPaginaCorrente(prev => Math.min(prev + 1, totalePagine))}
+                  >
+                    Successiva
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

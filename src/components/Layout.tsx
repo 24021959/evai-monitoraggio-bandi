@@ -9,7 +9,8 @@ import {
   FileBarChart, 
   Database,
   KeyRound,
-  CheckCircle
+  CheckCircle,
+  FileSearch
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
@@ -112,6 +113,17 @@ const Sidebar = () => {
     }
   };
 
+  // Funzione per gestire il clic sul pulsante Estrai Bandi
+  const handleEstraiBandiClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/fonti');
+    toast({
+      title: "Gestione Fonti",
+      description: "Sei stato reindirizzato alla pagina di gestione fonti",
+      duration: 3000,
+    });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-800 text-white p-5 text-xl font-medium">
@@ -119,16 +131,15 @@ const Sidebar = () => {
       </div>
       <div className="bg-gray-100 flex-grow">
         <nav className="flex flex-col">
-          {/* Moved to the top and styled with green background */}
+          {/* Pulsante verde modificato per navigare alla pagina fonti invece di attivare il monitoraggio */}
           <NavLink
-            to="/fonti"
-            className={({ isActive }) =>
-              `p-5 mb-2 ${isActive ? 'bg-green-600 text-white' : 'bg-green-500 text-white hover:bg-green-600'}`
-            }
+            to="#"
+            className="p-5 mb-2 bg-green-500 text-white hover:bg-green-600"
+            onClick={handleEstraiBandiClick}
           >
             <div className="flex items-center gap-3">
-              <Database className="w-5 h-5" />
-              Monitoraggio Fonti
+              <FileSearch className="w-5 h-5" />
+              Estrai Bandi
             </div>
           </NavLink>
           
