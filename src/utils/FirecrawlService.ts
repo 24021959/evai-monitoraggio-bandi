@@ -1,4 +1,3 @@
-
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { Bando, Fonte } from '@/types';
 import { mockBandi } from '@/data/mockData';
@@ -194,7 +193,11 @@ export class FirecrawlService {
     console.log('Tutti i bandi estratti sono stati eliminati');
   }
 
-  // Questo metodo viene chiamato quando si salvano i bandi dalla pagina RisultatiScraping
+  static clearAllSavedBandi(): void {
+    localStorage.removeItem(this.SAVED_BANDI_STORAGE_KEY);
+    console.log('Tutti i bandi salvati sono stati eliminati');
+  }
+
   static saveBandi(bandi: Bando[]): void {
     const existingBandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
     let existingBandi: Bando[] = [];
@@ -207,7 +210,6 @@ export class FirecrawlService {
       }
     }
     
-    // Unisci i bandi esistenti con quelli nuovi, evitando duplicati
     const mergedBandi = [...existingBandi];
     for (const bando of bandi) {
       if (!mergedBandi.some(b => b.id === bando.id)) {
@@ -218,27 +220,24 @@ export class FirecrawlService {
     localStorage.setItem(this.SAVED_BANDI_STORAGE_KEY, JSON.stringify(mergedBandi));
     console.log('Bandi salvati nel localStorage:', mergedBandi.length);
     
-    // Pulisci i bandi estratti dopo averli salvati
     this.clearScrapedBandi();
   }
 
-  // Questo metodo prende SOLO i bandi salvati, non quelli estratti
   static getSavedBandi(): Bando[] {
     const bandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
     if (!bandiJson) {
-      return [...mockBandi];
+      return [];
     }
     
     try {
       const savedBandi = JSON.parse(bandiJson);
-      return [...mockBandi, ...savedBandi];
+      return savedBandi;
     } catch (error) {
       console.error('Errore nel parsing dei bandi salvati:', error);
-      return [...mockBandi];
+      return [];
     }
   }
 
-  // Questo metodo restituisce sia i bandi salvati che quelli estratti
   static getAllBandi(): Bando[] {
     const savedBandi = this.getSavedBandi();
     const scrapedBandi = this.getScrapedBandi();
@@ -254,14 +253,12 @@ export class FirecrawlService {
   }
 
   static deleteBando(id: string): void {
-    // Controlla se il bando è tra quelli estratti
     const scrapedBandi = this.getScrapedBandi();
     if (scrapedBandi.some(bando => bando.id === id)) {
       this.deleteScrapedBando(id);
       return;
     }
     
-    // Altrimenti controlla se è tra quelli salvati
     const bandiJson = localStorage.getItem(this.SAVED_BANDI_STORAGE_KEY);
     if (!bandiJson) return;
     

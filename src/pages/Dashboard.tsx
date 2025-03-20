@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -16,6 +15,7 @@ const Dashboard = () => {
   
   // Carica SOLO i bandi salvati quando il componente viene montato
   useEffect(() => {
+    // Get only the real saved bandi, no mock data
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);
     console.log("Dashboard: Caricati bandi salvati:", loadedBandi.length);

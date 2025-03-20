@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,11 +32,33 @@ const Bandi = () => {
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
 
-  // Carica SOLO i bandi salvati dal FirecrawlService, non quelli estratti
+  // Carica SOLO i bandi salvati dal FirecrawlService e pulisci i bandi esistenti
   useEffect(() => {
+    // Clear any scraped bandi to ensure they don't appear
+    FirecrawlService.clearScrapedBandi();
+    
+    // Get only the saved bandi
     const loadedBandi = FirecrawlService.getSavedBandi();
-    setBandi(loadedBandi);
-    console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
+    
+    // Clear mock bandi for testing purposes
+    const realSavedBandi = loadedBandi.filter(bando => !mockBandi.some(mb => mb.id === bando.id));
+    
+    setBandi(realSavedBandi);
+    console.log("Bandi page: Caricati bandi salvati (senza mock):", realSavedBandi.length);
+  }, []);
+
+  // Elimina tutti i bandi salvati
+  useEffect(() => {
+    // Delete all saved bandi
+    FirecrawlService.clearAllSavedBandi();
+    
+    // Update the UI
+    setBandi([]);
+    toast({
+      title: "Bandi eliminati",
+      description: "Tutti i bandi sono stati eliminati con successo",
+      duration: 3000,
+    });
   }, []);
 
   // Calcoliamo i settori unici solo dai bandi attualmente mostrati
