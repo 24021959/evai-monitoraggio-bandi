@@ -1,8 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { mockFonti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HelpCircle, AlertCircle, Play } from 'lucide-react';
+import { HelpCircle, AlertCircle, Play, RefreshCw } from 'lucide-react';
 import FontiTable from '@/components/FontiTable';
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +21,20 @@ const Fonti = () => {
   const [isScrapingInProgress, setIsScrapingInProgress] = useState(false);
   const [scrapingProgress, setScrapingProgress] = useState(0);
   const [currentScrapingFonte, setCurrentScrapingFonte] = useState<Fonte | null>(null);
+  const [autoScrape, setAutoScrape] = useState(false);
   
+  useEffect(() => {
+    const checkForScrapingTask = () => {
+      if (autoScrape && !isScrapingInProgress) {
+        handleScrapeNext();
+      }
+    };
+    
+    const intervalId = setInterval(checkForScrapingTask, 3000);
+    
+    return () => clearInterval(intervalId);
+  }, [autoScrape, isScrapingInProgress]);
+
   const handleEdit = (id: string) => {
     const fonte = fonti.find(f => f.id === id);
     if (fonte) {
@@ -88,6 +100,7 @@ const Fonti = () => {
         description: "Tutte le fonti attive sono state già scrappate",
         duration: 3000,
       });
+      setAutoScrape(false);
       return;
     }
     
@@ -148,16 +161,51 @@ const Fonti = () => {
     } finally {
       setIsScrapingInProgress(false);
       setCurrentScrapingFonte(null);
+      
+      if (!autoScrape) {
+        const nextSource = FirecrawlService.getNextUnscrapedSource(fonti);
+        if (nextSource) {
+          toast({
+            title: "Fonte successiva",
+            description: `Pronta per lo scraping: "${nextSource.nome}"`,
+            duration: 3000,
+          });
+        }
+      }
     }
   };
   
   const handleResetScrapedSources = () => {
     FirecrawlService.resetScrapedSources();
+    setAutoScrape(false);
     toast({
       title: "Reset completato",
       description: "Lo stato di scraping delle fonti è stato resettato",
       duration: 3000,
     });
+  };
+  
+  const handleToggleAutoScrape = () => {
+    const newState = !autoScrape;
+    setAutoScrape(newState);
+    
+    if (newState) {
+      toast({
+        title: "Monitoraggio automatico attivato",
+        description: "Le fonti verranno scrappate in sequenza automaticamente",
+        duration: 3000,
+      });
+      
+      if (!isScrapingInProgress) {
+        handleScrapeNext();
+      }
+    } else {
+      toast({
+        title: "Monitoraggio automatico disattivato",
+        description: "Lo scraping automatico è stato interrotto",
+        duration: 3000,
+      });
+    }
   };
 
   return (
@@ -170,6 +218,7 @@ const Fonti = () => {
             onClick={handleResetScrapedSources}
             disabled={isScrapingInProgress}
           >
+            <RefreshCw className="h-4 w-4 mr-2" />
             Reset Stato Scraping
           </Button>
           <Button
@@ -180,10 +229,18 @@ const Fonti = () => {
             <Play className="h-4 w-4" />
             Scraping Prossima Fonte
           </Button>
+          <Button
+            onClick={handleToggleAutoScrape}
+            disabled={isScrapingInProgress}
+            variant={autoScrape ? "default" : "outline"}
+            className={`flex items-center gap-2 ${autoScrape ? "bg-green-600 hover:bg-green-700" : ""}`}
+          >
+            {autoScrape ? "Ferma Monitoraggio Automatico" : "Avvia Monitoraggio Automatico"}
+          </Button>
         </div>
       </div>
       
-      {isScrapingInProgress && currentScrapingFonte && (
+      {currentScrapingFonte && (
         <Card className="bg-blue-50 border-blue-100">
           <CardContent className="pt-6">
             <div className="flex flex-col space-y-4">
@@ -227,6 +284,8 @@ const Fonti = () => {
                   fonti={fonti} 
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  currentScrapingId={currentScrapingFonte?.id}
+                  scrapingProgress={scrapingProgress}
                 />
               )}
             </CardContent>

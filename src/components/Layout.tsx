@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -132,37 +131,37 @@ const Sidebar = () => {
       return;
     }
 
+    // Naviga alla pagina Fonti quando inizia il monitoraggio
+    navigate('/fonti');
+    
+    // Imposta lo stato di monitoraggio
     setIsMonitoring(true);
     setProgress(0);
-
-    try {
-      let currentProgress = 0;
-      const interval = setInterval(() => {
-        currentProgress += 5;
-        setProgress(currentProgress);
-        
-        if (currentProgress >= 100) {
-          clearInterval(interval);
-          setIsMonitoring(false);
-          
-          toast({
-            title: "Monitoraggio completato",
-            description: "Trovati nuovi bandi e match potenziali",
-            duration: 3000,
-          });
-          
-          navigate('/risultati-scraping');
-        }
-      }, 400);
-    } catch (error) {
+    
+    // Trova la prossima fonte da scrappare
+    const nextSource = FirecrawlService.getNextUnscrapedSource(mockFonti);
+    
+    if (!nextSource) {
       setIsMonitoring(false);
       toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il monitoraggio",
-        variant: "destructive",
+        title: "Monitoraggio completato",
+        description: "Tutte le fonti attive sono state già scrappate",
         duration: 3000,
       });
+      return;
     }
+
+    // Simula l'avvio del monitoraggio
+    toast({
+      title: "Monitoraggio avviato",
+      description: "Vai alla pagina Fonti per seguire l'avanzamento",
+      duration: 3000,
+    });
+
+    // Imposta un timer per tornare allo stato normale
+    setTimeout(() => {
+      setIsMonitoring(false);
+    }, 2000);
   };
   
   return (

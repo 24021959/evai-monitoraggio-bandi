@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Fonte } from '../types';
-import { Trash2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Trash2, CheckCircle, AlertCircle, Clock, ArrowRight } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -12,14 +12,23 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { FirecrawlService } from '@/utils/FirecrawlService';
+import { Progress } from '@/components/ui/progress';
 
 interface FontiTableProps {
   fonti: Fonte[];
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  currentScrapingId?: string | null;
+  scrapingProgress?: number;
 }
 
-const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete }) => {
+const FontiTable: React.FC<FontiTableProps> = ({ 
+  fonti, 
+  onEdit, 
+  onDelete, 
+  currentScrapingId, 
+  scrapingProgress = 0 
+}) => {
   const getTipoClass = (tipo: string) => {
     switch (tipo) {
       case 'statale':
@@ -49,9 +58,50 @@ const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete }) => {
         <TableBody>
           {fonti.map((fonte) => {
             const isScraped = FirecrawlService.isSourceScraped(fonte.id);
+            const isCurrentlyScraping = currentScrapingId === fonte.id;
+            
+            let scrapingStatus;
+            if (isCurrentlyScraping) {
+              scrapingStatus = (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <Clock className="h-4 w-4 animate-pulse" />
+                    <span className="text-xs">In corso ({scrapingProgress}%)</span>
+                  </div>
+                  <Progress value={scrapingProgress} className="h-2" />
+                </div>
+              );
+            } else if (isScraped) {
+              scrapingStatus = (
+                <div className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-xs">Completato</span>
+                </div>
+              );
+            } else {
+              // Find next unscraped source
+              const nextUnscrapedSource = FirecrawlService.getNextUnscrapedSource(fonti);
+              const isNext = nextUnscrapedSource && nextUnscrapedSource.id === fonte.id;
+              
+              scrapingStatus = (
+                <div className={`flex items-center gap-1 ${isNext ? 'text-orange-500' : 'text-gray-500'}`}>
+                  {isNext ? (
+                    <>
+                      <ArrowRight className="h-4 w-4 animate-bounce" />
+                      <span className="text-xs font-medium">Prossima</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-xs">In attesa</span>
+                    </>
+                  )}
+                </div>
+              );
+            }
             
             return (
-              <TableRow key={fonte.id}>
+              <TableRow key={fonte.id} className={isCurrentlyScraping ? 'bg-blue-50' : ''}>
                 <TableCell className="font-medium">{fonte.nome}</TableCell>
                 <TableCell>
                   <a 
@@ -74,17 +124,7 @@ const FontiTable: React.FC<FontiTableProps> = ({ fonti, onEdit, onDelete }) => {
                   </span>
                 </TableCell>
                 <TableCell>
-                  {isScraped ? (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="text-xs">Completato</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-gray-500">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-xs">In attesa</span>
-                    </div>
-                  )}
+                  {scrapingStatus}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
