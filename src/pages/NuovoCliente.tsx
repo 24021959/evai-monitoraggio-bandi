@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, 
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { 
   Form,
   FormControl,
@@ -37,8 +36,15 @@ const formSchema = z.object({
   email: z.string().email({ message: "Inserisci un indirizzo email valido" }).optional(),
 });
 
+interface CampoAggiuntivo {
+  id: string;
+  nome: string;
+  valore: string;
+}
+
 const NuovoCliente = () => {
   const navigate = useNavigate();
+  const [campiAggiuntivi, setCampiAggiuntivi] = useState<CampoAggiuntivo[]>([]);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,8 +62,29 @@ const NuovoCliente = () => {
     },
   });
 
+  const aggiungiCampo = () => {
+    setCampiAggiuntivi([...campiAggiuntivi, {
+      id: `campo-${Date.now()}`,
+      nome: '',
+      valore: ''
+    }]);
+  };
+
+  const rimuoviCampo = (id: string) => {
+    setCampiAggiuntivi(campiAggiuntivi.filter(campo => campo.id !== id));
+  };
+
+  const aggiornaCampo = (id: string, tipo: 'nome' | 'valore', nuovoValore: string) => {
+    setCampiAggiuntivi(campiAggiuntivi.map(campo => 
+      campo.id === id ? { ...campo, [tipo]: nuovoValore } : campo
+    ));
+  };
+
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+    console.log({
+      ...values,
+      campiAggiuntivi
+    });
     navigate('/clienti');
   }
 
@@ -265,7 +292,61 @@ const NuovoCliente = () => {
                   </FormItem>
                 )}
               />
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Campi Aggiuntivi</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={aggiungiCampo}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Aggiungi Campo
+                  </Button>
+                </div>
                 
+                {campiAggiuntivi.map((campo) => (
+                  <div key={campo.id} className="flex gap-4 items-start">
+                    <div className="flex-1">
+                      <FormItem>
+                        <FormLabel>Nome Campo</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Es: Sito Web"
+                            value={campo.nome}
+                            onChange={(e) => aggiornaCampo(campo.id, 'nome', e.target.value)}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <FormItem>
+                        <FormLabel>Valore</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Inserisci valore"
+                            value={campo.valore}
+                            onChange={(e) => aggiornaCampo(campo.id, 'valore', e.target.value)}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-8"
+                      onClick={() => rimuoviCampo(campo.id)}
+                    >
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              
               <div className="flex justify-end gap-4">
                 <Button variant="outline" onClick={() => navigate('/clienti')}>
                   Annulla

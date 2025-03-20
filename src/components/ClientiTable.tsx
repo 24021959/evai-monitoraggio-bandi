@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Cliente } from '../types';
-import { Info } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -29,7 +29,7 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails }) =
             <TableHead>Dipendenti</TableHead>
             <TableHead>Regione</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>Azioni</TableHead>
+            <TableHead>Visualizza</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -49,7 +49,7 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails }) =
                     onClick={() => onViewDetails(cliente.id)}
                     className="text-blue-500 hover:text-blue-700"
                   >
-                    <Info className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Button>
                 )}
               </TableCell>
