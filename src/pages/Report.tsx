@@ -5,15 +5,103 @@ import { Button } from "@/components/ui/button";
 import { Download, BarChart3, PieChart, FileText } from 'lucide-react';
 import ChartContainer from '@/components/ChartContainer';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart as RePieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { mockStatistiche } from '@/data/mockData';
+import { mockStatistiche, mockBandi, mockClienti, mockMatches, getCliente, getBando } from '@/data/mockData';
+import { useToast } from "@/components/ui/use-toast";
 
 const Report = () => {
+  const { toast } = useToast();
+  
   // Prepara dati per i grafici
   const distribuzioneBandiData = [
     { name: 'Europei', value: mockStatistiche.distribuzioneBandi.europei, color: '#3b82f6' },
     { name: 'Statali', value: mockStatistiche.distribuzioneBandi.statali, color: '#22c55e' },
     { name: 'Regionali', value: mockStatistiche.distribuzioneBandi.regionali, color: '#f59e0b' },
   ];
+  
+  // Funzione per scaricare CSV dei bandi attivi
+  const handleDownloadBandiCSV = () => {
+    const headers = ['ID', 'Titolo', 'Fonte', 'Tipo', 'Settori', 'Importo Minimo', 'Importo Massimo', 'Scadenza', 'Descrizione'];
+    
+    // Preparazione dati
+    const csvRows = [
+      headers.join(','), // Intestazioni
+      // Righe con i dati
+      ...mockBandi.map(bando => [
+        bando.id,
+        `"${bando.titolo.replace(/"/g, '""')}"`, // Escape delle virgolette
+        `"${bando.fonte}"`,
+        bando.tipo,
+        `"${bando.settori.join('; ')}"`,
+        bando.importoMin || '',
+        bando.importoMax || '',
+        bando.scadenza,
+        `"${(bando.descrizione || '').replace(/"/g, '""')}"` // Escape delle virgolette
+      ].join(','))
+    ];
+    
+    // Creazione del file CSV
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    // Crea elemento a per il download
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'bandi_attivi.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download completato",
+      description: `File "bandi_attivi.csv" scaricato con successo`,
+    });
+  };
+  
+  // Funzione per scaricare CSV dei match bandi-clienti
+  const handleDownloadMatchCSV = () => {
+    const headers = ['ID Match', 'Cliente', 'Bando', 'Compatibilità', 'Settori Bando', 'Stato Notifica', 'Scadenza'];
+    
+    // Preparazione dati
+    const csvRows = [
+      headers.join(','), // Intestazioni
+      // Righe con i dati
+      ...mockMatches.map(match => {
+        const cliente = getCliente(match.clienteId);
+        const bando = getBando(match.bandoId);
+        
+        return [
+          match.id,
+          `"${cliente?.nome || 'N/D'}"`,
+          `"${bando?.titolo || 'N/D'}"`,
+          `${match.compatibilita}%`,
+          `"${bando?.settori.join('; ') || 'N/D'}"`,
+          match.notificato ? 'Notificato' : 'Non notificato',
+          bando?.scadenza || 'N/D'
+        ].join(',');
+      })
+    ];
+    
+    // Creazione del file CSV
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    // Crea elemento a per il download
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'match_bandi_clienti.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Download completato",
+      description: `File "match_bandi_clienti.csv" scaricato con successo`,
+    });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -86,7 +174,10 @@ const Report = () => {
               <li>Data di scadenza</li>
               <li>Settori di applicazione</li>
             </ul>
-            <Button className="w-full flex items-center justify-center gap-2">
+            <Button 
+              className="w-full flex items-center justify-center gap-2"
+              onClick={handleDownloadBandiCSV}
+            >
               <Download className="h-4 w-4" />
               Scarica CSV
             </Button>
@@ -114,31 +205,13 @@ const Report = () => {
               <li>Stato della notifica</li>
               <li>Data di scadenza del bando</li>
             </ul>
-            <Button className="w-full flex items-center justify-center gap-2" variant="secondary">
+            <Button 
+              className="w-full flex items-center justify-center gap-2" 
+              variant="secondary"
+              onClick={handleDownloadMatchCSV}
+            >
               <Download className="h-4 w-4" />
               Scarica CSV
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="mt-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-purple-500" />
-              <CardTitle>Report Personalizzati</CardTitle>
-            </div>
-            <CardDescription>
-              Crea report personalizzati in base alle tue esigenze specifiche.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-6">
-              Puoi generare report personalizzati selezionando i dati e i filtri specifici di tuo interesse. Contatta il team di supporto per richieste particolari.
-            </p>
-            <Button className="w-full" variant="outline">
-              Crea Report Personalizzato
             </Button>
           </CardContent>
         </Card>
@@ -148,3 +221,4 @@ const Report = () => {
 };
 
 export default Report;
+
