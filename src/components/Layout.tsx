@@ -8,7 +8,6 @@ import {
   GitCompare, 
   FileBarChart, 
   Database,
-  PlayCircle,
   KeyRound,
   CheckCircle
 } from 'lucide-react';
@@ -113,73 +112,6 @@ const Sidebar = () => {
     }
   };
 
-  const handleStartMonitoring = async () => {
-    const savedFonti = FirecrawlService.getSavedFonti();
-    if (savedFonti.length === 0) {
-      toast({
-        title: "Attenzione",
-        description: "Aggiungi almeno una fonte prima di avviare il monitoraggio",
-        variant: "destructive",
-        duration: 3000,
-      });
-      navigate('/fonti');
-      return;
-    }
-
-    const apiKey = FirecrawlService.getApiKey();
-    if (!apiKey) {
-      setShowApiKeyDialog(true);
-      return;
-    }
-
-    // Naviga alla pagina Fonti quando inizia il monitoraggio
-    navigate('/fonti');
-    
-    // Avvia il monitoraggio automatico
-    setIsMonitoring(true);
-    setProgress(0);
-    
-    // Simula progresso iniziale
-    const intervalId = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(intervalId);
-          setIsMonitoring(false);
-          return 0;
-        }
-        return prev + 10;
-      });
-    }, 300);
-    
-    // Trova la prossima fonte da scrappare
-    const nextSource = FirecrawlService.getNextUnscrapedSource(savedFonti);
-    
-    if (!nextSource) {
-      setIsMonitoring(false);
-      toast({
-        title: "Monitoraggio completato",
-        description: "Tutte le fonti attive sono state già scrappate",
-        duration: 3000,
-      });
-      return;
-    }
-
-    // Simula l'avvio del monitoraggio e attiva autoScrape nella pagina Fonti
-    toast({
-      title: "Monitoraggio Automatico avviato",
-      description: "Tutte le fonti verranno monitorate automaticamente",
-      duration: 3000,
-    });
-    
-    // Attiva il monitoraggio automatico nella pagina Fonti
-    // In un'implementazione reale, useresti un global state manager come Redux o Context
-    // Per questa demo, impostiamo un flag nel localStorage
-    localStorage.setItem('auto_monitoring_enabled', 'true');
-    
-    // Ricarica la pagina Fonti per applicare le modifiche
-    window.dispatchEvent(new Event('auto_monitoring_start'));
-  };
-  
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-800 text-white p-5 text-xl font-medium">
@@ -187,6 +119,19 @@ const Sidebar = () => {
       </div>
       <div className="bg-gray-100 flex-grow">
         <nav className="flex flex-col">
+          {/* Moved to the top and styled with green background */}
+          <NavLink
+            to="/fonti"
+            className={({ isActive }) =>
+              `p-5 mb-2 ${isActive ? 'bg-green-600 text-white' : 'bg-green-500 text-white hover:bg-green-600'}`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <Database className="w-5 h-5" />
+              Monitoraggio Fonti
+            </div>
+          </NavLink>
+          
           <NavLink
             to="/"
             className={({ isActive }) =>
@@ -243,17 +188,6 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <NavLink
-            to="/fonti"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Database className="w-5 h-5" />
-              Gestione Fonti
-            </div>
-          </NavLink>
-          <NavLink
             to="/risultati-scraping"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
@@ -280,34 +214,6 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
-          <div className="px-5 mb-2">
-            {isMonitoring ? (
-              <div className="space-y-2">
-                <button 
-                  className="w-full bg-gray-400 text-white py-3 rounded flex items-center justify-center gap-2 cursor-not-allowed"
-                  disabled
-                >
-                  <PlayCircle className="w-5 h-5" />
-                  Monitoraggio Automatico in corso...
-                </button>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>Progresso</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <Progress value={progress} className="w-full h-2" indicatorClassName="bg-green-500" />
-                </div>
-              </div>
-            ) : (
-              <button 
-                className="w-full bg-green-500 text-white py-3 rounded flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
-                onClick={handleStartMonitoring}
-              >
-                <PlayCircle className="w-5 h-5" />
-                Avvia Monitoraggio Automatico
-              </button>
-            )}
-          </div>
         </nav>
       </div>
       
