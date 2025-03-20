@@ -3,56 +3,28 @@ import React, { useState } from 'react';
 import { mockMatches, getCliente, getBando, mockClienti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import MatchTable from '@/components/MatchTable';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeftRight, Play, Settings, Send } from 'lucide-react';
+import { ArrowLeftRight, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Progress } from "@/components/ui/progress";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 const Match = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isMatchRunning, setIsMatchRunning] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [matches, setMatches] = useState(mockMatches);
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
-
-  const eseguiMatch = () => {
-    setIsMatchRunning(true);
-    setProgress(0);
-
-    // Simuliamo un processo di matching con progress bar
-    let currentProgress = 0;
-    const interval = setInterval(() => {
-      currentProgress += 5;
-      setProgress(currentProgress);
-      
-      if (currentProgress >= 100) {
-        clearInterval(interval);
-        
-        // Aggiorniamo i match con valori calcolati (in una versione reale, questo sarebbe un algoritmo più complesso)
-        const newMatches = [...matches];
-        // Aggiungiamo un nuovo match calcolato
-        newMatches.push({
-          id: `new-match-${Date.now()}`,
-          clienteId: '3', // Agritech
-          bandoId: '4', // Credito R&S
-          compatibilita: 72,
-          notificato: false
-        });
-        
-        // Aggiorniamo i match
-        setMatches(newMatches);
-        setIsMatchRunning(false);
-        
-        toast({
-          title: 'Match completato',
-          description: `Trovati ${newMatches.length} match potenziali tra clienti e bandi`,
-          duration: 3000
-        });
-      }
-    }, 200);
-  };
+  const [isNotificheDialogOpen, setIsNotificheDialogOpen] = useState(false);
+  const [testoNotifica, setTestoNotifica] = useState(
+    'Gentile cliente,\n\nAbbiamo individuato un\'opportunità di finanziamento che potrebbe essere interessante per la vostra azienda.\n\nBando: [NOME_BANDO]\nScadenza: [SCADENZA_BANDO]\nCompatibilità stimata: [COMPATIBILITA]%\n\nPer maggiori informazioni, non esitate a contattarci.\n\nCordiali saluti,\nIl team di Firecrawl'
+  );
 
   const handleSelectionChange = (selectedIds: string[]) => {
     setSelectedMatchIds(selectedIds);
@@ -102,35 +74,7 @@ const Match = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Match Bandi-Clienti</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/config-scraping')} className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Configura
-          </Button>
-          <Button 
-            onClick={eseguiMatch} 
-            disabled={isMatchRunning}
-            className="flex items-center gap-2"
-          >
-            <Play className="h-4 w-4" />
-            Esegui Match
-          </Button>
-        </div>
       </div>
-      
-      {isMatchRunning && (
-        <Card className="bg-blue-50 border-blue-100">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Analisi in corso...</span>
-                <span>{progress}%</span>
-              </div>
-              <Progress value={progress} className="w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      )}
       
       <Card>
         <CardHeader className="pb-3">
@@ -147,7 +91,14 @@ const Match = () => {
             matches={matches}
             onSelectionChange={handleSelectionChange}
           />
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-end gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setIsNotificheDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              Configura Notifiche
+            </Button>
             <Button 
               onClick={inviaNotifiche} 
               disabled={selectedMatchIds.length === 0}
@@ -186,16 +137,68 @@ const Match = () => {
             <p className="mb-4 text-gray-600">
               Puoi inviare notifiche automatiche ai tuoi clienti quando viene trovata una corrispondenza tra bandi e profili.
             </p>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => navigate('/configura-notifiche')}
-            >
-              Configura Notifiche
-            </Button>
+            <p className="text-gray-600">
+              Puoi personalizzare il testo della notifica cliccando sul pulsante "Configura Notifiche".
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isNotificheDialogOpen} onOpenChange={setIsNotificheDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Configura Notifica</DialogTitle>
+            <DialogDescription>
+              Personalizza il testo della notifica che verrà inviata ai clienti selezionati
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="testoNotifica">Testo Notifica</Label>
+              <Textarea 
+                id="testoNotifica"
+                value={testoNotifica}
+                onChange={(e) => setTestoNotifica(e.target.value)}
+                className="min-h-[200px]"
+              />
+              <p className="text-sm text-gray-500">
+                Puoi utilizzare i seguenti placeholder che verranno sostituiti automaticamente:
+              </p>
+              <ul className="text-sm text-gray-500 list-disc pl-5 space-y-1">
+                <li>[NOME_CLIENTE] - Nome del cliente</li>
+                <li>[NOME_BANDO] - Titolo del bando</li>
+                <li>[SCADENZA_BANDO] - Data di scadenza del bando</li>
+                <li>[COMPATIBILITA] - Percentuale di compatibilità</li>
+                <li>[LINK_BANDO] - Link al bando</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsNotificheDialogOpen(false)}
+            >
+              Annulla
+            </Button>
+            <Button 
+              type="button"
+              onClick={() => {
+                toast({
+                  title: "Template salvato",
+                  description: "Il testo della notifica è stato salvato con successo",
+                  duration: 3000
+                });
+                setIsNotificheDialogOpen(false);
+              }}
+            >
+              Salva Template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
