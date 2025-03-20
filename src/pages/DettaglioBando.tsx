@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Euro, FileText, Globe, Target } from 'lucide-react';
+import { ArrowLeft, Calendar, Euro, FileText, Globe, Target, ExternalLink, Info } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 const DettaglioBando = () => {
@@ -164,9 +164,9 @@ const DettaglioBando = () => {
                       href={bando.url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 hover:underline flex items-center gap-1"
                     >
-                      Visita il sito ufficiale
+                      Visita il sito ufficiale <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   </div>
                 </div>
@@ -184,16 +184,27 @@ const DettaglioBando = () => {
           
           <Separator />
           
-          <div className="flex justify-between">
+          <div className="flex flex-col md:flex-row md:justify-between gap-4">
             <div>
-              <h3 className="font-semibold mb-2">Azioni Suggerite</h3>
-              <div className="flex gap-2">
-                <Button>Verifica Compatibilità</Button>
-                <Button variant="outline">Salva PDF</Button>
+              <h3 className="font-semibold mb-2">Azioni Rapide</h3>
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.open(bando.url, '_blank')}
+                  className="flex items-center gap-2"
+                  disabled={!bando.url}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Vai al Bando Originale
+                </Button>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Info className="h-4 w-4" /> 
+                  Verifica Requisiti
+                </Button>
               </div>
             </div>
             
-            <Button variant="destructive" onClick={handleEliminaBando}>
+            <Button variant="destructive" onClick={handleEliminaBando} className="mt-2 md:mt-auto">
               Elimina Bando
             </Button>
           </div>

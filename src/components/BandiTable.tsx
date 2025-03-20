@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Bando } from '../types';
-import { Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2, ExternalLink } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -84,9 +84,9 @@ const BandiTable: React.FC<BandiTableProps> = ({ bandi, onViewDetails, onDeleteB
                         e.stopPropagation();
                         onViewDetails(bando.id);
                       }}
-                      className="text-blue-500 hover:text-blue-700"
+                      className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
                     >
-                      <Eye className="h-4 w-4 mr-1" />
+                      <Eye className="h-4 w-4" />
                       Dettagli
                     </Button>
                   )}
