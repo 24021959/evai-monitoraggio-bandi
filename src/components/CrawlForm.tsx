@@ -8,7 +8,9 @@ import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { KeyRound, AlertCircle, CheckCircle, Globe, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CrawlResult {
   success: boolean;
@@ -20,8 +22,18 @@ interface CrawlResult {
   data?: any[];
 }
 
+// Lista di URL di esempio per facilitare i test
+const exampleUrls = [
+  {value: 'https://www.mise.gov.it/it/incentivi/area-incentivi', label: 'MISE - Area Incentivi'},
+  {value: 'https://www.agenziaentrate.gov.it/portale/web/guest/cittadini/agevolazioni', label: 'Agenzia Entrate - Agevolazioni'},
+  {value: 'https://www.regione.lombardia.it/wps/portal/istituzionale/HP/DettaglioRedazionale/servizi-e-informazioni/imprese/imprese-agricole/bandi-finanziamenti-programmazione-europea', label: 'Regione Lombardia - Bandi'},
+  {value: 'https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-search', label: 'EU Funding & Tenders'},
+  {value: 'https://www.invitalia.it/cosa-facciamo/rafforziamo-le-imprese', label: 'Invitalia - Rafforzamento Imprese'}
+];
+
 export const CrawlForm = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [url, setUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +42,7 @@ export const CrawlForm = () => {
   const [extractedBandi, setExtractedBandi] = useState<any[]>([]);
   const [showApiKeyInput, setShowApiKeyInput] = useState(!FirecrawlService.getApiKey());
   const [apiKeyStatus, setApiKeyStatus] = useState<'none' | 'saved' | 'already-exists'>('none');
+  const [selectedExample, setSelectedExample] = useState('');
 
   useEffect(() => {
     const savedApiKey = FirecrawlService.getApiKey();
@@ -37,6 +50,12 @@ export const CrawlForm = () => {
       setApiKeyStatus('saved');
     }
   }, []);
+
+  // Imposta l'URL selezionato dall'esempio
+  const handleExampleSelect = (value: string) => {
+    setSelectedExample(value);
+    setUrl(value);
+  };
 
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) {
@@ -121,6 +140,7 @@ export const CrawlForm = () => {
         return;
       }
 
+      // Avvio un intervallo per simulare il progresso
       const progressInterval = setInterval(() => {
         setProgress((prev) => {
           const newValue = prev + 5;
@@ -138,7 +158,7 @@ export const CrawlForm = () => {
         setCrawlResult(result.data);
         toast({
           title: "Successo",
-          description: "Website crawled con successo",
+          description: "Sito web analizzato con successo",
           duration: 3000,
         });
         
@@ -162,21 +182,37 @@ export const CrawlForm = () => {
       } else {
         toast({
           title: "Errore",
-          description: result.error || "Impossibile eseguire il crawl del sito web",
+          description: result.error || "Impossibile eseguire l'analisi del sito web",
           variant: "destructive",
           duration: 3000,
         });
       }
     } catch (error) {
-      console.error('Errore durante il crawl del sito web:', error);
+      console.error('Errore durante l\'analisi del sito web:', error);
       toast({
         title: "Errore",
-        description: "Impossibile eseguire il crawl del sito web",
+        description: "Impossibile eseguire l'analisi del sito web",
         variant: "destructive",
         duration: 3000,
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleViewResults = () => {
+    navigate('/risultati-scraping');
+  };
+
+  const handleSaveBandi = () => {
+    if (extractedBandi.length > 0) {
+      FirecrawlService.saveBandi(extractedBandi);
+      toast({
+        title: "Bandi salvati",
+        description: `${extractedBandi.length} bandi salvati nel sistema`,
+        duration: 3000,
+      });
+      navigate('/risultati-scraping');
     }
   };
 
@@ -206,7 +242,7 @@ export const CrawlForm = () => {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Attenzione</AlertTitle>
                 <AlertDescription>
-                  È necessaria una API key per utilizzare il servizio di scraping.
+                  È necessaria una API key per utilizzare il servizio di estrazione bandi.
                 </AlertDescription>
               </Alert>
               
@@ -266,21 +302,43 @@ export const CrawlForm = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="url">URL Sito Web</Label>
-              <Input
-                id="url"
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://esempio.com/bandi"
-                required
-              />
+              <Label htmlFor="exampleUrl">Siti di esempio</Label>
+              <Select value={selectedExample} onValueChange={handleExampleSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona un sito di esempio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {exampleUrls.map((example, index) => (
+                    <SelectItem key={index} value={example.value}>
+                      {example.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <div className="mt-4">
+                <Label htmlFor="url">URL Sito Web</Label>
+                <div className="flex mt-1.5">
+                  <div className="relative flex-grow">
+                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="url"
+                      type="url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://esempio.com/bandi"
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             
             {isLoading && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Progresso</span>
+                  <span>Progresso estrazione</span>
                   <span>{progress}%</span>
                 </div>
                 <Progress value={progress} className="w-full" />
@@ -289,7 +347,7 @@ export const CrawlForm = () => {
             
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !url}
               className="w-full"
             >
               {isLoading ? "Estrazione in corso..." : "Estrai Bandi"}
@@ -315,9 +373,13 @@ export const CrawlForm = () => {
                   </Card>
                 ))}
               </div>
-              <div className="mt-4">
-                <Button variant="outline" className="w-full">
+              <div className="mt-4 flex gap-2">
+                <Button onClick={handleSaveBandi} className="flex-1 bg-green-600 hover:bg-green-700">
                   Salva Bandi Estratti
+                </Button>
+                <Button variant="outline" onClick={handleViewResults} className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Visualizza Risultati
                 </Button>
               </div>
             </div>
