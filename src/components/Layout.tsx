@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -41,7 +40,6 @@ const Sidebar = () => {
   }, []);
   
   useEffect(() => {
-    // Quando il dialog viene aperto, verifica se esiste già una API key
     if (showApiKeyDialog) {
       const savedApiKey = FirecrawlService.getApiKey();
       if (savedApiKey) {
@@ -69,7 +67,6 @@ const Sidebar = () => {
       return;
     }
     
-    // Verifica se la chiave è già stata salvata con lo stesso valore
     if (FirecrawlService.isApiKeyAlreadySaved(apiKey)) {
       toast({
         title: "Informazione",
@@ -113,13 +110,12 @@ const Sidebar = () => {
     }
   };
 
-  // Funzione per gestire il clic sul pulsante Estrai Bandi
   const handleEstraiBandiClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate('/fonti');
+    navigate('/configura-scraping');
     toast({
-      title: "Gestione Fonti",
-      description: "Sei stato reindirizzato alla pagina di gestione fonti",
+      title: "Estrazione Bandi",
+      description: "Sei stato reindirizzato alla pagina di estrazione bandi",
       duration: 3000,
     });
   };
@@ -131,7 +127,6 @@ const Sidebar = () => {
       </div>
       <div className="bg-gray-100 flex-grow">
         <nav className="flex flex-col">
-          {/* Pulsante verde modificato per navigare alla pagina fonti invece di attivare il monitoraggio */}
           <NavLink
             to="#"
             className="p-5 mb-2 bg-green-500 text-white hover:bg-green-600"
