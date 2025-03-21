@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle, Trash2, RefreshCw } from 'lucide-react';
+import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle, Trash2, RefreshCw, ExternalLink } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Bando, TipoBando } from '@/types';
@@ -19,18 +18,35 @@ const RisultatiScraping = () => {
   const [matchSalvati, setMatchSalvati] = useState(false);
   const [bandiEstrati, setBandiEstrati] = useState<Bando[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   
-  // Carica i bandi estratti all'avvio del componente o quando si torna a questa pagina
   useEffect(() => {
+    console.log("RisultatiScraping: Componente montato, caricamento bandi");
     loadScrapedBandi();
   }, []);
   
-  // Funzione per caricare i bandi estratti dal localStorage
   const loadScrapedBandi = () => {
     setIsLoading(true);
+    setDebugInfo('');
+    
     try {
+      console.log("Iniziando caricamento dei bandi estratti...");
       const loadedBandi = FirecrawlService.getScrapedBandi();
-      console.log("Caricati bandi estratti:", loadedBandi);
+      console.log("Caricati bandi estratti, quantità:", loadedBandi.length);
+      
+      const storageInfo = {
+        scrapedBandi: localStorage.getItem('scraped_bandi'),
+        savedBandi: localStorage.getItem('saved_bandi')
+      };
+      
+      const debugText = `
+        Chiavi localStorage: ${Object.keys(localStorage).join(', ')}
+        Bandi estratti trovati: ${loadedBandi.length}
+        scraped_bandi presente: ${storageInfo.scrapedBandi ? 'Sì' : 'No'}
+        saved_bandi presente: ${storageInfo.savedBandi ? 'Sì' : 'No'}
+      `;
+      
+      setDebugInfo(debugText);
       setBandiEstrati(loadedBandi);
       
       if (loadedBandi.length === 0) {
@@ -42,7 +58,8 @@ const RisultatiScraping = () => {
         });
       }
     } catch (error) {
-      console.error("Errore nel caricamento dei bandi:", error);
+      console.error("Errore completo nel caricamento dei bandi:", error);
+      setDebugInfo(`Errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
       toast({
         title: "Errore",
         description: "Si è verificato un errore nel caricamento dei dati.",
@@ -88,14 +105,29 @@ const RisultatiScraping = () => {
   
   const handleSalvaBandi = () => {
     if (bandiEstrati.length > 0) {
-      FirecrawlService.saveBandi(bandiEstrati);
-      toast({
-        title: "Bandi salvati",
-        description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
-        duration: 3000,
-      });
-      setBandiSalvati(true);
-      setBandiEstrati([]); // Svuota l'array dei bandi estratti dopo averli salvati
+      try {
+        console.log("Salvando bandi nella memoria persistente...");
+        FirecrawlService.saveBandi(bandiEstrati);
+        toast({
+          title: "Bandi salvati",
+          description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
+          duration: 3000,
+        });
+        setBandiSalvati(true);
+        
+        const savedBandi = FirecrawlService.getSavedBandi();
+        console.log("Controllo bandi salvati:", savedBandi.length);
+        
+        setBandiEstrati([]);
+      } catch (error) {
+        console.error("Errore completo nel salvataggio:", error);
+        toast({
+          title: "Errore",
+          description: `Errore nel salvataggio: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
     } else {
       toast({
         title: "Nessun bando da salvare",
@@ -141,9 +173,15 @@ const RisultatiScraping = () => {
     loadScrapedBandi();
   };
 
-  // Modifica questa funzione per navigare alla pagina "fonti" invece di "configura-scraping"
   const handleTornaScraping = () => {
-    navigate('/fonti');
+    console.log("Navigazione a /configura-scraping");
+    navigate('/configura-scraping');
+  };
+
+  const handleViewBando = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   return (
@@ -218,6 +256,13 @@ const RisultatiScraping = () => {
                         Torna all'estrazione
                       </Button>
                     </div>
+                    
+                    {debugInfo && (
+                      <div className="mt-4 p-3 bg-gray-100 rounded text-xs font-mono whitespace-pre-wrap">
+                        <p className="font-semibold mb-1">Informazioni di debug:</p>
+                        {debugInfo}
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -236,7 +281,21 @@ const RisultatiScraping = () => {
                     <TableBody>
                       {bandiEstrati.map((bando) => (
                         <TableRow key={bando.id}>
-                          <TableCell className="font-medium">{bando.titolo}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-1">
+                              {bando.titolo}
+                              {bando.url && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-5 w-5 p-0 text-blue-500 hover:text-blue-700"
+                                  onClick={() => handleViewBando(bando.url)}
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>{bando.fonte}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
@@ -404,4 +463,3 @@ const RisultatiScraping = () => {
 };
 
 export default RisultatiScraping;
-

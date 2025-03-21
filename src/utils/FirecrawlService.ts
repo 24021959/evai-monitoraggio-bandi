@@ -61,14 +61,24 @@ export class FirecrawlService {
   static async crawlWebsite(url: string): Promise<{ success: boolean; error?: string; data?: any }> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
+      console.error('API key non trovata');
       return { success: false, error: 'API key non trovata' };
     }
 
     try {
-      console.log('Richiesta di crawling');
+      console.log('Richiesta di crawling per URL:', url);
       if (!this.firecrawlApp) {
+        console.log('Creazione nuova istanza FirecrawlApp');
         this.firecrawlApp = new FirecrawlApp({ apiKey });
       }
+
+      // Per debugging: stampa delle opzioni
+      console.log('Opzioni di crawling:', {
+        limit: 100,
+        scrapeOptions: {
+          formats: ['markdown', 'html'],
+        }
+      });
 
       const crawlResponse = await this.firecrawlApp.crawlUrl(url, {
         limit: 100,
@@ -85,7 +95,8 @@ export class FirecrawlService {
         };
       }
 
-      console.log('Crawl completato con successo:', crawlResponse);
+      console.log('Crawl completato con successo, numero di pagine:', crawlResponse.data?.length || 0);
+      console.log('Dati del crawl:', JSON.stringify(crawlResponse).substring(0, 500) + '...');
       return { 
         success: true,
         data: crawlResponse 
@@ -100,64 +111,79 @@ export class FirecrawlService {
   }
 
   static async extractBandiFromCrawlData(crawlData: any): Promise<Bando[]> {
-    console.log('Inizio estrazione bandi da crawlData:', crawlData);
+    console.log('Inizio estrazione bandi da crawlData');
     
     if (!crawlData || !crawlData.data || !Array.isArray(crawlData.data)) {
-      console.warn('Dati di crawl non validi o vuoti');
+      console.warn('Dati di crawl non validi o vuoti:', JSON.stringify(crawlData).substring(0, 500));
       return [];
     }
+    
+    console.log(`Numero di pagine nei dati di crawl: ${crawlData.data.length}`);
     
     const bandiEstratti = [];
     
     for (const page of crawlData.data) {
-      if (page.content && typeof page.content === 'string') {
-        const titoloBando = page.title || 'Bando senza titolo';
-        const urlBando = page.url || '';
-        const descrizione = page.content.substring(0, 200) + '...';
-        
-        const dateRegex = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/g;
-        const dateMatches = [...page.content.matchAll(dateRegex)];
-        const scadenza = dateMatches.length > 0 
-          ? `${dateMatches[0][3]}-${dateMatches[0][2].padStart(2, '0')}-${dateMatches[0][1].padStart(2, '0')}` 
-          : '2025-12-31';
-        
-        const importiRegex = /(?:€|EUR|euro)\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/gi;
-        const importiMatches = [...page.content.matchAll(importiRegex)];
-        const importoStr = importiMatches.length > 0 ? importiMatches[0][1].replace(/\./g, '').replace(/,/g, '.') : '0';
-        const importoMax = parseFloat(importoStr) || 100000;
-        
-        const settori = [];
-        if (/agricol|rural|agroaliment/i.test(page.content)) settori.push('Agricoltura');
-        if (/tecnolog|digital|innova|ict|software/i.test(page.content)) settori.push('Tecnologia');
-        if (/energi|rinnovabil|sostenib/i.test(page.content)) settori.push('Energia');
-        if (/industri|manifattur|produzion/i.test(page.content)) settori.push('Industria');
-        if (/startup|impresa giovan|nuova impresa/i.test(page.content)) settori.push('Startup');
-        
-        let tipo = 'regionale';
-        if (/europ|ue|eu|commission/i.test(page.content)) tipo = 'europeo';
-        if (/nazional|minis|govern/i.test(page.content)) tipo = 'statale';
-        
-        let fonte = 'Altra Fonte';
-        if (/lombardia|regione/i.test(page.content)) fonte = 'Regione Lombardia';
-        if (/mise|sviluppo economico/i.test(page.content)) fonte = 'MISE';
-        if (/europ|ue|commission/i.test(page.content)) fonte = 'UE';
-        
-        bandiEstratti.push({
-          id: `scraped-${Date.now()}-${bandiEstratti.length}`,  // Modificato per avere ID univoci
-          titolo: titoloBando,
-          fonte,
-          tipo,
-          settori: settori.length > 0 ? settori : ['Altro'],
-          importoMin: importoMax * 0.1,
-          importoMax,
-          scadenza,
-          descrizione,
-          url: urlBando
-        });
+      try {
+        if (page.content && typeof page.content === 'string') {
+          console.log(`Analisi pagina con URL: ${page.url}`);
+          console.log(`Contenuto pagina (primi 100 caratteri): ${page.content.substring(0, 100)}...`);
+          
+          const titoloBando = page.title || 'Bando senza titolo';
+          const urlBando = page.url || '';
+          const descrizione = page.content.substring(0, 200) + '...';
+          
+          const dateRegex = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/g;
+          const dateMatches = [...page.content.matchAll(dateRegex)];
+          const scadenza = dateMatches.length > 0 
+            ? `${dateMatches[0][3]}-${dateMatches[0][2].padStart(2, '0')}-${dateMatches[0][1].padStart(2, '0')}` 
+            : '2025-12-31';
+          
+          const importiRegex = /(?:€|EUR|euro)\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/gi;
+          const importiMatches = [...page.content.matchAll(importiRegex)];
+          const importoStr = importiMatches.length > 0 ? importiMatches[0][1].replace(/\./g, '').replace(/,/g, '.') : '0';
+          const importoMax = parseFloat(importoStr) || 100000;
+          
+          const settori = [];
+          if (/agricol|rural|agroaliment/i.test(page.content)) settori.push('Agricoltura');
+          if (/tecnolog|digital|innova|ict|software/i.test(page.content)) settori.push('Tecnologia');
+          if (/energi|rinnovabil|sostenib/i.test(page.content)) settori.push('Energia');
+          if (/industri|manifattur|produzion/i.test(page.content)) settori.push('Industria');
+          if (/startup|impresa giovan|nuova impresa/i.test(page.content)) settori.push('Startup');
+          
+          let tipo = 'regionale';
+          if (/europ|ue|eu|commission/i.test(page.content)) tipo = 'europeo';
+          if (/nazional|minis|govern/i.test(page.content)) tipo = 'statale';
+          
+          let fonte = 'Altra Fonte';
+          if (/lombardia|regione/i.test(page.content)) fonte = 'Regione Lombardia';
+          if (/mise|sviluppo economico/i.test(page.content)) fonte = 'MISE';
+          if (/europ|ue|commission/i.test(page.content)) fonte = 'UE';
+          
+          const bandoId = `scraped-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          console.log(`Bando estratto: ${titoloBando} (ID: ${bandoId})`);
+          
+          bandiEstratti.push({
+            id: bandoId,
+            titolo: titoloBando,
+            fonte,
+            tipo,
+            settori: settori.length > 0 ? settori : ['Altro'],
+            importoMin: importoMax * 0.1,
+            importoMax,
+            scadenza,
+            descrizione,
+            url: urlBando
+          });
+        }
+      } catch (error) {
+        console.error('Errore nell\'elaborazione della pagina:', error);
       }
     }
     
-    console.log('Bandi estratti:', bandiEstratti);
+    console.log(`Totale bandi estratti: ${bandiEstratti.length}`);
+    if (bandiEstratti.length === 0) {
+      console.warn('Nessun bando estratto dai dati di crawl');
+    }
     
     // Salva i bandi estratti
     this.saveScrapedBandi(bandiEstratti);
@@ -167,7 +193,8 @@ export class FirecrawlService {
   static saveScrapedBandi(bandi: Bando[]): void {
     try {
       localStorage.setItem(this.SCRAPED_BANDI_STORAGE_KEY, JSON.stringify(bandi));
-      console.log('Bandi estratti salvati temporaneamente:', bandi.length);
+      console.log('Bandi estratti salvati in localStorage:', bandi.length);
+      console.log('Primi 2 bandi salvati:', JSON.stringify(bandi.slice(0, 2)));
     } catch (error) {
       console.error('Errore nel salvataggio dei bandi estratti:', error);
     }
@@ -183,6 +210,7 @@ export class FirecrawlService {
       
       const bandi = JSON.parse(bandiJson) as Bando[];
       console.log('Bandi estratti recuperati da localStorage:', bandi.length);
+      console.log('Primi 2 bandi recuperati:', JSON.stringify(bandi.slice(0, 2)));
       return bandi;
     } catch (error) {
       console.error('Errore nel parsing dei bandi estratti:', error);

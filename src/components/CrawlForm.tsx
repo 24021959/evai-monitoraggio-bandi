@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast"; 
 import { Button } from "@/components/ui/button";
@@ -80,6 +79,7 @@ export const CrawlForm = () => {
 
     try {
       setIsLoading(true);
+      console.log("Test API key:", apiKey.substring(0, 5) + '...');
       const isValid = await FirecrawlService.testApiKey(apiKey);
       
       if (isValid) {
@@ -100,6 +100,7 @@ export const CrawlForm = () => {
         });
       }
     } catch (error) {
+      console.error("Errore completo nel test API key:", error);
       toast({
         title: "Errore",
         description: "Errore nel test della API key",
@@ -162,11 +163,12 @@ export const CrawlForm = () => {
           duration: 3000,
         });
         
-        console.log('Estrazione bandi dai dati del crawl:', result.data);
+        console.log('Estrazione bandi dai dati del crawl, dimensione dati:', 
+          JSON.stringify(result.data).length);
         const bandi = await FirecrawlService.extractBandiFromCrawlData(result.data);
         setExtractedBandi(bandi);
         
-        console.log('Bandi estratti:', bandi);
+        console.log('Bandi estratti:', bandi.length);
         
         if (bandi.length > 0) {
           toast({
@@ -191,10 +193,10 @@ export const CrawlForm = () => {
         });
       }
     } catch (error) {
-      console.error('Errore durante l\'analisi del sito web:', error);
+      console.error('Errore completo durante l\'analisi del sito web:', error);
       toast({
         title: "Errore",
-        description: "Impossibile eseguire l'analisi del sito web",
+        description: error instanceof Error ? error.message : "Impossibile eseguire l'analisi del sito web",
         variant: "destructive",
         duration: 3000,
       });
@@ -204,18 +206,43 @@ export const CrawlForm = () => {
   };
 
   const handleViewResults = () => {
+    console.log("Redirezione a /risultati-scraping");
     navigate('/risultati-scraping');
   };
 
   const handleSaveBandi = () => {
     if (extractedBandi.length > 0) {
-      FirecrawlService.saveBandi(extractedBandi);
+      console.log("Salvando bandi:", extractedBandi.length);
+      try {
+        FirecrawlService.saveBandi(extractedBandi);
+        toast({
+          title: "Bandi salvati",
+          description: `${extractedBandi.length} bandi salvati nel sistema`,
+          duration: 3000,
+        });
+        
+        // Verifica in tempo reale che i bandi siano stati effettivamente salvati
+        const savedBandi = FirecrawlService.getSavedBandi();
+        console.log("Bandi verificati dopo il salvataggio:", savedBandi.length);
+        
+        // Redirezione alla pagina dei risultati
+        navigate('/risultati-scraping');
+      } catch (error) {
+        console.error("Errore nel salvataggio dei bandi:", error);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore nel salvataggio dei bandi",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } else {
       toast({
-        title: "Bandi salvati",
-        description: `${extractedBandi.length} bandi salvati nel sistema`,
+        title: "Nessun bando",
+        description: "Non ci sono bandi da salvare",
+        variant: "destructive",
         duration: 3000,
       });
-      navigate('/risultati-scraping');
     }
   };
 
