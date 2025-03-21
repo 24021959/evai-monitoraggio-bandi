@@ -44,7 +44,7 @@ export class FirecrawlService {
 
   static async testApiKey(apiKey: string): Promise<boolean> {
     try {
-      console.log('Test della API key con Firecrawl API');
+      console.log('Test della API key');
       this.firecrawlApp = new FirecrawlApp({ apiKey });
       // Test semplice per verificare la API key
       const testResponse = await this.firecrawlApp.crawlUrl('https://example.com', {
@@ -64,7 +64,7 @@ export class FirecrawlService {
     }
 
     try {
-      console.log('Richiesta di crawling a Firecrawl API');
+      console.log('Richiesta di crawling');
       if (!this.firecrawlApp) {
         this.firecrawlApp = new FirecrawlApp({ apiKey });
       }
@@ -93,7 +93,7 @@ export class FirecrawlService {
       console.error('Errore durante il crawl:', error);
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Impossibile connettersi a Firecrawl API' 
+        error: error instanceof Error ? error.message : 'Impossibile connettersi al servizio di crawl' 
       };
     }
   }

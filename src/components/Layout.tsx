@@ -263,7 +263,7 @@ const Sidebar = () => {
               />
             </div>
             <p className="text-sm text-gray-500">
-              Puoi ottenere una chiave API registrandoti sul portale del servizio di monitoraggio bandi.
+              Contatta l'amministratore per ottenere una chiave API valida.
             </p>
           </div>
           <DialogFooter>
