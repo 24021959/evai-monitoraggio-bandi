@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CrawlForm } from '@/components/CrawlForm';
-import { Settings, Database, Wrench, AlertCircle } from 'lucide-react';
+import { Settings, Database, Wrench, AlertCircle, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ConfigScraping = () => {
@@ -21,6 +21,20 @@ const ConfigScraping = () => {
             https://www.mimit.gov.it/index.php/it/incentivi-mise/incentivi-in-evidenza
           </code>
           Il sistema esplorerà anche le pagine collegate per trovare i bandi di finanziamento.
+        </AlertDescription>
+      </Alert>
+      
+      <Alert className="bg-blue-50 border-blue-200">
+        <HelpCircle className="h-4 w-4 text-blue-500" />
+        <AlertTitle>Informazioni Tecniche</AlertTitle>
+        <AlertDescription>
+          <p className="mb-2">Se stai riscontrando problemi con l'estrazione:</p>
+          <ol className="list-decimal list-inside space-y-1 text-sm">
+            <li>Verifica che l'API key sia impostata correttamente nelle impostazioni</li>
+            <li>Assicurati che l'URL sia completo e corretto (incluso https://)</li>
+            <li>L'estrazione richiede alcuni minuti per siti con molte pagine come MIMIT</li>
+            <li>Dopo l'estrazione, i bandi saranno visibili nella pagina "Risultati Scraping"</li>
+          </ol>
         </AlertDescription>
       </Alert>
       

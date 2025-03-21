@@ -73,19 +73,14 @@ export class FirecrawlService {
 
       // Configurazione speciale per MIMIT
       const isMimitUrl = url.includes('mimit.gov.it');
+      
+      // FIX: Ensure we're using proper format types as expected by the library
       const crawlOptions = {
         limit: isMimitUrl ? 200 : 100, // Aumenta il limite per MIMIT
         maxDepth: isMimitUrl ? 3 : 2,  // Aumenta la profondità per MIMIT
         scrapeOptions: {
-          formats: ['markdown', 'html'],
-          selectors: isMimitUrl ? [
-            // Selettori specifici per MIMIT
-            '.container',
-            '.incentive-card',
-            '.card-title',
-            '.incentivi-block',
-            '.article-content'
-          ] : undefined
+          formats: ["markdown", "html"] as ("markdown" | "html" | "rawHtml" | "content" | "links" | "screenshot" | "screenshot@fullPage" | "extract" | "json")[],
+          // Removed 'selectors' as it's causing the error
         }
       };
 
@@ -669,4 +664,3 @@ function determinaFonte(url: string, content: string): string {
   
   return 'Altra Fonte';
 }
-
