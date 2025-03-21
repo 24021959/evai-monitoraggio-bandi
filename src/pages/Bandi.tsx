@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import BandiTable from "@/components/BandiTable";
-import BandoCard from '@/components/BandoCard'; // Corretto: import default invece di import nominale
+import BandoCard from '@/components/BandoCard';
 import { Bando } from "@/types";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { useToast } from "@/components/ui/use-toast";
@@ -27,26 +26,19 @@ const Bandi = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [filtro, setFiltro] = useState<string>('');
-  const [settoreFiltro, setSettoreFiltro] = useState<string>('');
+  const [settoreFiltro, setSettoreFiltro] = useState<string>('tutti');
   const [visualizzazione, setVisualizzazione] = useState<'tabella' | 'cards'>('tabella');
   const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
 
-  // Carica SOLO i bandi salvati dal FirecrawlService
   useEffect(() => {
-    // Clear any scraped bandi to ensure they don't appear
     FirecrawlService.clearScrapedBandi();
-    
-    // Get only the saved bandi
     const loadedBandi = FirecrawlService.getSavedBandi();
-    
-    // Set the state with the real saved bandi (no mock data)
     setBandi(loadedBandi);
     console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
   }, []);
 
-  // Calcoliamo i settori unici solo dai bandi attualmente mostrati
   useEffect(() => {
     const settori = new Set<string>();
     bandi.forEach(bando => {
@@ -57,19 +49,17 @@ const Bandi = () => {
     setSettoriDisponibili(Array.from(settori).sort());
   }, [bandi]);
 
-  // Filtra i bandi in base al testo di ricerca e al settore
   const bandiFiltrati = bandi.filter(bando => {
     const matchTestoRicerca = !filtro || 
       bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
       bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
-      bando.fonte.toLowerCase().includes(filtro.toLowerCase()); // Corretto: Cambiato 'ente' a 'fonte' per corrispondere al tipo Bando
+      bando.fonte.toLowerCase().includes(filtro.toLowerCase());
       
-    const matchSettore = !settoreFiltro || bando.settori.includes(settoreFiltro);
+    const matchSettore = settoreFiltro === 'tutti' || bando.settori.includes(settoreFiltro);
     
     return matchTestoRicerca && matchSettore;
   });
 
-  // Pagina corrente dei risultati (per la vista a tabella)
   const RISULTATI_PER_PAGINA = 10;
   const indicePrimoRisultato = (paginaCorrente - 1) * RISULTATI_PER_PAGINA;
   const indiceUltimoRisultato = indicePrimoRisultato + RISULTATI_PER_PAGINA;
@@ -83,7 +73,6 @@ const Bandi = () => {
   const handleDeleteBando = (id: string) => {
     FirecrawlService.deleteBando(id);
     
-    // Aggiorna lo stato locale dopo l'eliminazione
     setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
     
     toast({
@@ -127,12 +116,12 @@ const Bandi = () => {
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
                       <span className="truncate">
-                        {settoreFiltro || "Tutti i settori"}
+                        {settoreFiltro === 'tutti' ? "Tutti i settori" : settoreFiltro}
                       </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tutti i settori</SelectItem>
+                    <SelectItem value="tutti">Tutti i settori</SelectItem>
                     {settoriDisponibili.map(settore => (
                       <SelectItem key={settore} value={settore}>
                         {settore}
@@ -173,8 +162,8 @@ const Bandi = () => {
             {visualizzazione === 'tabella' ? (
               <BandiTable 
                 bandi={bandiPaginati} 
-                onViewDetails={handleViewDetail} // Corretto: Cambiato il nome della prop da 'onViewDetail' a 'onViewDetails'
-                onDeleteBando={handleDeleteBando} // Corretto: Cambiato il nome della prop per corrispondere alla definizione di BandiTable
+                onViewDetails={handleViewDetail}
+                onDeleteBando={handleDeleteBando}
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -182,7 +171,7 @@ const Bandi = () => {
                   <BandoCard 
                     key={bando.id} 
                     bando={bando} 
-                    onViewDetails={handleViewDetail} // Corretto: Cambiato il nome della prop per corrispondere alla definizione di BandoCard
+                    onViewDetails={handleViewDetail}
                     onDelete={handleDeleteBando}
                   />
                 ))}
