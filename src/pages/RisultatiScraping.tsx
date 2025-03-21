@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -140,8 +141,9 @@ const RisultatiScraping = () => {
     loadScrapedBandi();
   };
 
+  // Modifica questa funzione per navigare alla pagina "fonti" invece di "configura-scraping"
   const handleTornaScraping = () => {
-    navigate('/configura-scraping');
+    navigate('/fonti');
   };
 
   return (
@@ -402,3 +404,4 @@ const RisultatiScraping = () => {
 };
 
 export default RisultatiScraping;
+
