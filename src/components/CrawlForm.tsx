@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast"; 
 import { Button } from "@/components/ui/button";
@@ -186,7 +187,7 @@ export const CrawlForm = () => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-blue-500" />
-              <CardTitle>Configura Firecrawl API</CardTitle>
+              <CardTitle>Configura API</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -205,13 +206,12 @@ export const CrawlForm = () => {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Attenzione</AlertTitle>
                 <AlertDescription>
-                  È necessaria una API key di Firecrawl per utilizzare il servizio di scraping. 
-                  Visita <a href="https://firecrawl.dev" className="text-blue-500 underline" target="_blank" rel="noopener noreferrer">firecrawl.dev</a> per ottenere una API key.
+                  È necessaria una API key per utilizzare il servizio di scraping.
                 </AlertDescription>
               </Alert>
               
               <div className="space-y-2">
-                <Label htmlFor="apiKey">Firecrawl API Key</Label>
+                <Label htmlFor="apiKey">API Key</Label>
                 <Input
                   id="apiKey"
                   type="password"
@@ -246,7 +246,7 @@ export const CrawlForm = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
-              L'API key di Firecrawl è stata configurata correttamente. Puoi procedere con l'estrazione dei bandi.
+              L'API key è stata configurata correttamente. Puoi procedere con l'estrazione dei bandi.
             </p>
             <Button 
               variant="outline" 

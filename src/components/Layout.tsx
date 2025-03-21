@@ -231,11 +231,11 @@ const Sidebar = () => {
       <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Configura Firecrawl API Key</DialogTitle>
+            <DialogTitle>Configura API Key</DialogTitle>
             <DialogDescription>
               {apiKeyAlreadyExists 
                 ? "La tua API key è già configurata. Puoi modificarla se necessario."
-                : "Inserisci la tua chiave API di Firecrawl per attivare il monitoraggio automatico dei bandi."}
+                : "Inserisci la tua chiave API per attivare il monitoraggio automatico dei bandi."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -250,7 +250,7 @@ const Sidebar = () => {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="api-key">Firecrawl API Key</Label>
+              <Label htmlFor="api-key">API Key</Label>
               <Input
                 id="api-key"
                 type="password"
@@ -263,7 +263,7 @@ const Sidebar = () => {
               />
             </div>
             <p className="text-sm text-gray-500">
-              Puoi ottenere una chiave API registrandoti su <a href="https://firecrawl.dev" className="text-blue-500 underline" target="_blank" rel="noopener noreferrer">firecrawl.dev</a>
+              Puoi ottenere una chiave API registrandoti sul portale del servizio di monitoraggio bandi.
             </p>
           </div>
           <DialogFooter>
