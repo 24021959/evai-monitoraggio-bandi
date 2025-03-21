@@ -162,8 +162,11 @@ export const CrawlForm = () => {
           duration: 3000,
         });
         
+        console.log('Estrazione bandi dai dati del crawl:', result.data);
         const bandi = await FirecrawlService.extractBandiFromCrawlData(result.data);
         setExtractedBandi(bandi);
+        
+        console.log('Bandi estratti:', bandi);
         
         if (bandi.length > 0) {
           toast({

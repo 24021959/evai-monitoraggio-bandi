@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle, Trash2 } from 'lucide-react';
+import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle, Trash2, RefreshCw } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Bando, TipoBando } from '@/types';
@@ -17,6 +17,7 @@ const RisultatiScraping = () => {
   const [bandiSalvati, setBandiSalvati] = useState(false);
   const [matchSalvati, setMatchSalvati] = useState(false);
   const [bandiEstrati, setBandiEstrati] = useState<Bando[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Carica i bandi estratti all'avvio del componente o quando si torna a questa pagina
   useEffect(() => {
@@ -25,9 +26,31 @@ const RisultatiScraping = () => {
   
   // Funzione per caricare i bandi estratti dal localStorage
   const loadScrapedBandi = () => {
-    const loadedBandi = FirecrawlService.getScrapedBandi();
-    setBandiEstrati(loadedBandi);
-    console.log("Caricati bandi estratti:", loadedBandi.length);
+    setIsLoading(true);
+    try {
+      const loadedBandi = FirecrawlService.getScrapedBandi();
+      console.log("Caricati bandi estratti:", loadedBandi);
+      setBandiEstrati(loadedBandi);
+      
+      if (loadedBandi.length === 0) {
+        toast({
+          title: "Nessun dato trovato",
+          description: "Non sono stati trovati bandi estratti. Prova a eseguire una nuova estrazione.",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Errore nel caricamento dei bandi:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore nel caricamento dei dati.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const [matchSuggeriti, setMatchSuggeriti] = useState(() => {
@@ -63,15 +86,23 @@ const RisultatiScraping = () => {
   });
   
   const handleSalvaBandi = () => {
-    FirecrawlService.saveBandi(bandiEstrati);
-    
-    toast({
-      title: "Bandi salvati",
-      description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
-      duration: 3000,
-    });
-    setBandiSalvati(true);
-    setBandiEstrati([]); // Svuota l'array dei bandi estratti dopo averli salvati
+    if (bandiEstrati.length > 0) {
+      FirecrawlService.saveBandi(bandiEstrati);
+      toast({
+        title: "Bandi salvati",
+        description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
+        duration: 3000,
+      });
+      setBandiSalvati(true);
+      setBandiEstrati([]); // Svuota l'array dei bandi estratti dopo averli salvati
+    } else {
+      toast({
+        title: "Nessun bando da salvare",
+        description: "Non ci sono bandi da salvare nel sistema.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
   const handleSalvaMatch = () => {
@@ -95,15 +126,9 @@ const RisultatiScraping = () => {
     navigate('/fonti');
   };
 
-  // Funzione aggiornata per gestire l'eliminazione di un bando
   const handleDeleteBando = (id: string) => {
-    // Rimuove il bando dallo stato locale
     setBandiEstrati(prev => prev.filter(bando => bando.id !== id));
-    
-    // Elimina anche dalla memoria persistente tramite FirecrawlService
     FirecrawlService.deleteScrapedBando(id);
-    
-    // Notifica l'utente
     toast({
       title: "Bando rimosso",
       description: "Il bando è stato rimosso dalla lista",
@@ -111,11 +136,33 @@ const RisultatiScraping = () => {
     });
   };
 
+  const handleRefresh = () => {
+    loadScrapedBandi();
+  };
+
+  const handleTornaScraping = () => {
+    navigate('/configura-scraping');
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Risultati Monitoraggio</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Risultati Estrazione</h1>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleRefresh} 
+            disabled={isLoading}
+            title="Ricarica i risultati"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleTornaScraping}>
+            Nuova Estrazione
+          </Button>
           <Button onClick={handleEsportaCSV} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Esporta CSV
@@ -137,11 +184,15 @@ const RisultatiScraping = () => {
                 <CardTitle>Bandi Estratti</CardTitle>
               </div>
               <CardDescription>
-                Il sistema ha estratto {bandiEstrati.length} bandi dalle fonti configurate
+                {isLoading ? 'Caricamento bandi in corso...' : `Sono stati estratti ${bandiEstrati.length} bandi dalle fonti configurate`}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {bandiSalvati ? (
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : bandiSalvati ? (
                 <Alert className="bg-green-50 border-green-200">
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <AlertTitle>Bandi salvati con successo</AlertTitle>
@@ -160,6 +211,11 @@ const RisultatiScraping = () => {
                   <AlertTitle>Nessun bando trovato</AlertTitle>
                   <AlertDescription>
                     Non sono stati trovati bandi dalle fonti configurate. Prova ad aggiungere nuove fonti o modificare i criteri di ricerca.
+                    <div className="mt-4">
+                      <Button onClick={handleTornaScraping}>
+                        Torna all'estrazione
+                      </Button>
+                    </div>
                   </AlertDescription>
                 </Alert>
               ) : (

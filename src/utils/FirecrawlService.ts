@@ -1,3 +1,4 @@
+
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { Bando, Fonte } from '@/types';
 import { mockBandi } from '@/data/mockData';
@@ -99,7 +100,10 @@ export class FirecrawlService {
   }
 
   static async extractBandiFromCrawlData(crawlData: any): Promise<Bando[]> {
+    console.log('Inizio estrazione bandi da crawlData:', crawlData);
+    
     if (!crawlData || !crawlData.data || !Array.isArray(crawlData.data)) {
+      console.warn('Dati di crawl non validi o vuoti');
       return [];
     }
     
@@ -139,7 +143,7 @@ export class FirecrawlService {
         if (/europ|ue|commission/i.test(page.content)) fonte = 'UE';
         
         bandiEstratti.push({
-          id: `scraped-${bandiEstratti.length + 1}`,
+          id: `scraped-${Date.now()}-${bandiEstratti.length}`,  // Modificato per avere ID univoci
           titolo: titoloBando,
           fonte,
           tipo,
@@ -153,21 +157,33 @@ export class FirecrawlService {
       }
     }
     
+    console.log('Bandi estratti:', bandiEstratti);
+    
+    // Salva i bandi estratti
     this.saveScrapedBandi(bandiEstratti);
     return bandiEstratti;
   }
 
   static saveScrapedBandi(bandi: Bando[]): void {
-    localStorage.setItem(this.SCRAPED_BANDI_STORAGE_KEY, JSON.stringify(bandi));
-    console.log('Bandi estratti salvati temporaneamente:', bandi.length);
+    try {
+      localStorage.setItem(this.SCRAPED_BANDI_STORAGE_KEY, JSON.stringify(bandi));
+      console.log('Bandi estratti salvati temporaneamente:', bandi.length);
+    } catch (error) {
+      console.error('Errore nel salvataggio dei bandi estratti:', error);
+    }
   }
 
   static getScrapedBandi(): Bando[] {
-    const bandiJson = localStorage.getItem(this.SCRAPED_BANDI_STORAGE_KEY);
-    if (!bandiJson) return [];
-    
     try {
-      return JSON.parse(bandiJson) as Bando[];
+      const bandiJson = localStorage.getItem(this.SCRAPED_BANDI_STORAGE_KEY);
+      if (!bandiJson) {
+        console.log('Nessun bando estratto trovato in localStorage');
+        return [];
+      }
+      
+      const bandi = JSON.parse(bandiJson) as Bando[];
+      console.log('Bandi estratti recuperati da localStorage:', bandi.length);
+      return bandi;
     } catch (error) {
       console.error('Errore nel parsing dei bandi estratti:', error);
       return [];
