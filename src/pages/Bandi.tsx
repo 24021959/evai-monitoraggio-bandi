@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import BandiTable from "@/components/BandiTable";
+import BandoCard from '@/components/BandoCard'; // Corretto: import default invece di import nominale
 import { Bando } from "@/types";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { useToast } from "@/components/ui/use-toast";
@@ -21,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import BandoCard from '@/components/BandoCard'; // Fixed: Changed from named import to default import
 
 const Bandi = () => {
   const { toast } = useToast();
@@ -62,7 +62,7 @@ const Bandi = () => {
     const matchTestoRicerca = !filtro || 
       bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
       bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
-      bando.fonte.toLowerCase().includes(filtro.toLowerCase()); // Fixed: Changed 'ente' to 'fonte' to match the Bando type
+      bando.fonte.toLowerCase().includes(filtro.toLowerCase()); // Corretto: Cambiato 'ente' a 'fonte' per corrispondere al tipo Bando
       
     const matchSettore = !settoreFiltro || bando.settori.includes(settoreFiltro);
     
@@ -173,8 +173,8 @@ const Bandi = () => {
             {visualizzazione === 'tabella' ? (
               <BandiTable 
                 bandi={bandiPaginati} 
-                onViewDetails={handleViewDetail} // Fixed: Changed prop name from 'onViewDetail' to 'onViewDetails'
-                onDeleteBando={handleDeleteBando} // Fixed: Changed prop name to match BandiTable definition
+                onViewDetails={handleViewDetail} // Corretto: Cambiato il nome della prop da 'onViewDetail' a 'onViewDetails'
+                onDeleteBando={handleDeleteBando} // Corretto: Cambiato il nome della prop per corrispondere alla definizione di BandiTable
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -182,7 +182,7 @@ const Bandi = () => {
                   <BandoCard 
                     key={bando.id} 
                     bando={bando} 
-                    onViewDetails={handleViewDetail} // Fixed: Changed prop name to match BandoCard definition
+                    onViewDetails={handleViewDetail} // Corretto: Cambiato il nome della prop per corrispondere alla definizione di BandoCard
                     onDelete={handleDeleteBando}
                   />
                 ))}
