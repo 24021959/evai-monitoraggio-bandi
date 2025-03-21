@@ -2,7 +2,8 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CrawlForm } from '@/components/CrawlForm';
-import { Settings, Database, Wrench } from 'lucide-react';
+import { Settings, Database, Wrench, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ConfigScraping = () => {
   return (
@@ -10,6 +11,18 @@ const ConfigScraping = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Configurazione Scraping</h1>
       </div>
+      
+      <Alert className="bg-amber-50 border-amber-200">
+        <AlertCircle className="h-4 w-4 text-amber-500" />
+        <AlertTitle>Estrazione da MIMIT</AlertTitle>
+        <AlertDescription>
+          Per estrarre i bandi dal Ministero delle Imprese e del Made in Italy, usa questo URL:
+          <code className="block mt-2 p-2 bg-gray-100 rounded text-sm font-mono overflow-auto">
+            https://www.mimit.gov.it/index.php/it/incentivi-mise/incentivi-in-evidenza
+          </code>
+          Il sistema esplorerà anche le pagine collegate per trovare i bandi di finanziamento.
+        </AlertDescription>
+      </Alert>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -64,7 +77,7 @@ const ConfigScraping = () => {
                   <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mt-0.5">IT</span>
                   <div>
                     <p className="font-medium">Ministero Imprese</p>
-                    <p className="text-gray-600">mise.gov.it/bandi</p>
+                    <p className="text-gray-600">mimit.gov.it/incentivi-mise</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
