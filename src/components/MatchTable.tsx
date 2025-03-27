@@ -1,111 +1,141 @@
 
-import React, { useState } from 'react';
-import { Match } from '../types';
-import { Check, X } from 'lucide-react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { mockBandi, mockClienti } from '@/data/mockData';
+import React from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, FileText } from 'lucide-react';
 
-interface MatchTableProps {
-  matches: Match[];
-  onViewDetails?: (id: string) => void;
-  onSelectionChange?: (selectedIds: string[]) => void;
+export interface MatchTableProps {
+  matches?: Array<{
+    id: string;
+    cliente: {
+      id: string;
+      nome: string;
+      settore: string;
+    };
+    bando: {
+      id: string;
+      titolo: string;
+      fonte: string;
+      scadenza: string;
+    };
+    punteggio: number;
+    dataMatch: string;
+  }>;
 }
 
-const MatchTable: React.FC<MatchTableProps> = ({ 
-  matches, 
-  onSelectionChange 
-}) => {
-  const [selectedMatches, setSelectedMatches] = useState<string[]>([]);
-
-  const getCompatibilitaClass = (compatibilita: number) => {
-    if (compatibilita >= 80) return 'bg-green-500';
-    if (compatibilita >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const getClienteName = (id: string) => {
-    const cliente = mockClienti.find(c => c.id === id);
-    return cliente ? cliente.nome : 'Cliente sconosciuto';
-  };
-
-  const getBandoName = (id: string) => {
-    const bando = mockBandi.find(b => b.id === id);
-    return bando ? bando.titolo : 'Bando sconosciuto';
-  };
-
-  const getBandoScadenza = (id: string) => {
-    const bando = mockBandi.find(b => b.id === id);
-    return bando ? new Date(bando.scadenza).toLocaleDateString('it-IT') : 'N/D';
-  };
-
-  const handleCheckboxChange = (id: string) => {
-    setSelectedMatches(prev => {
-      const newSelection = prev.includes(id)
-        ? prev.filter(matchId => matchId !== id)
-        : [...prev, id];
-      
-      // Notify parent component about selection change
-      if (onSelectionChange) {
-        onSelectionChange(newSelection);
-      }
-      
-      return newSelection;
-    });
-  };
-
+const MatchTable: React.FC<MatchTableProps> = ({ matches = [] }) => {
+  // Dati di esempio se non ci sono match
+  const exampleMatches = [
+    {
+      id: '1',
+      cliente: {
+        id: 'c1',
+        nome: 'Tecno Soluzioni SRL',
+        settore: 'Informatica'
+      },
+      bando: {
+        id: 'b1',
+        titolo: 'Innovazione Digitale PMI',
+        fonte: 'MIMIT',
+        scadenza: '2023-12-31'
+      },
+      punteggio: 94,
+      dataMatch: '2023-06-15'
+    },
+    {
+      id: '2',
+      cliente: {
+        id: 'c2',
+        nome: 'Green Power SpA',
+        settore: 'Energia'
+      },
+      bando: {
+        id: 'b2',
+        titolo: 'Green Energy Transition',
+        fonte: 'UE',
+        scadenza: '2023-11-30'
+      },
+      punteggio: 88,
+      dataMatch: '2023-06-14'
+    },
+    {
+      id: '3',
+      cliente: {
+        id: 'c3',
+        nome: 'Agritech SA',
+        settore: 'Agricoltura'
+      },
+      bando: {
+        id: 'b3',
+        titolo: 'Agricoltura Sostenibile',
+        fonte: 'Regione',
+        scadenza: '2023-10-15'
+      },
+      punteggio: 79,
+      dataMatch: '2023-06-13'
+    }
+  ];
+  
+  const displayMatches = matches.length > 0 ? matches : exampleMatches;
+  
   return (
-    <div className="rounded-md border">
+    <div className="space-y-4">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">Selezione</TableHead>
             <TableHead>Cliente</TableHead>
             <TableHead>Bando</TableHead>
+            <TableHead>Match</TableHead>
             <TableHead>Scadenza</TableHead>
-            <TableHead>Compatibilità</TableHead>
-            <TableHead>Notificato</TableHead>
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {matches.map((match) => (
+          {displayMatches.map((match) => (
             <TableRow key={match.id}>
               <TableCell>
-                <Checkbox 
-                  checked={selectedMatches.includes(match.id)}
-                  onCheckedChange={() => handleCheckboxChange(match.id)}
-                />
-              </TableCell>
-              <TableCell className="font-medium">{getClienteName(match.clienteId)}</TableCell>
-              <TableCell>{getBandoName(match.bandoId)}</TableCell>
-              <TableCell>{getBandoScadenza(match.bandoId)}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2.5">
-                    <div 
-                      className={`h-2.5 rounded-full ${getCompatibilitaClass(match.compatibilita)}`} 
-                      style={{ width: `${match.compatibilita}%` }}
-                    ></div>
-                  </div>
-                  <span>{match.compatibilita}%</span>
-                </div>
+                <div className="font-medium">{match.cliente.nome}</div>
+                <div className="text-xs text-gray-500">{match.cliente.settore}</div>
               </TableCell>
               <TableCell>
-                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${match.notificato ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                  {match.notificato ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                </span>
+                <div className="font-medium">{match.bando.titolo}</div>
+                <div className="text-xs text-gray-500">{match.bando.fonte}</div>
+              </TableCell>
+              <TableCell>
+                <Badge className={
+                  match.punteggio > 85 ? "bg-green-100 text-green-800" : 
+                  match.punteggio > 70 ? "bg-yellow-100 text-yellow-800" : 
+                  "bg-gray-100 text-gray-800"
+                }>
+                  {match.punteggio}%
+                </Badge>
+              </TableCell>
+              <TableCell>
+                {new Date(match.bando.scadenza).toLocaleDateString('it-IT')}
+              </TableCell>
+              <TableCell>
+                <Button variant="ghost" size="icon">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      
+      {displayMatches === exampleMatches && (
+        <div className="text-xs text-gray-500 italic text-center">
+          Dati di esempio visualizzati. Importa bandi e clienti per vedere match reali.
+        </div>
+      )}
+      
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Visualizza tutti i match
+        </Button>
+      </div>
     </div>
   );
 };

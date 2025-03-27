@@ -99,8 +99,8 @@ const ImportaScraping = () => {
             <InfoIcon className="h-4 w-4" />
             <AlertTitle>Informazioni sul formato</AlertTitle>
             <AlertDescription>
-              Il foglio Google Sheets deve essere pubblico e contenere le seguenti colonne: 
-              titolo, fonte, tipo, settori, importoMin, importoMax, scadenza, descrizione, url.
+              Il foglio Google Sheets deve essere pubblico e contenere colonne come: 
+              data_scraping, titolo_incentivo, fonte, descrizione, url_dettaglio, requisiti, scadenza_dettagliata, budget_disponibile.
             </AlertDescription>
           </Alert>
           
@@ -200,15 +200,17 @@ const ImportaScraping = () => {
                 Il foglio Google Sheets deve contenere le seguenti colonne:
               </p>
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>titolo</strong>: Titolo del bando</li>
-                <li><strong>fonte</strong>: Fonte del bando (es. sito web)</li>
-                <li><strong>tipo</strong>: Tipo di bando (europeo, statale, regionale, altro)</li>
-                <li><strong>settori</strong>: Settori di interesse separati da virgola</li>
-                <li><strong>importoMin</strong>: Importo minimo del finanziamento</li>
-                <li><strong>importoMax</strong>: Importo massimo del finanziamento</li>
-                <li><strong>scadenza</strong>: Data di scadenza (formato YYYY-MM-DD)</li>
-                <li><strong>descrizione</strong>: Descrizione del bando</li>
-                <li><strong>url</strong>: URL completo del bando</li>
+                <li><strong>data_scraping</strong>: Data di estrazione del bando</li>
+                <li><strong>titolo_incentivo</strong>: Titolo del bando</li>
+                <li><strong>fonte</strong>: Fonte del bando (es. MIMIT, UE)</li>
+                <li><strong>descrizione</strong>: Breve descrizione del bando</li>
+                <li><strong>url_dettaglio</strong>: URL completo del bando</li>
+                <li><strong>descrizione_dettagliata</strong>: Dettagli completi del bando</li>
+                <li><strong>requisiti</strong>: Requisiti di partecipazione</li>
+                <li><strong>modalita_presentazione</strong>: Come presentare la domanda</li>
+                <li><strong>scadenza_dettagliata</strong>: Data di scadenza per la presentazione</li>
+                <li><strong>budget_disponibile</strong>: Importo del finanziamento</li>
+                <li><strong>ultimi_aggiornamenti</strong>: Data degli ultimi aggiornamenti</li>
               </ul>
             </CardContent>
           </Card>

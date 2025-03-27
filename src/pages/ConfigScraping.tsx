@@ -38,15 +38,15 @@ const ConfigScraping = () => {
         <AlertDescription>
           Il foglio Google Sheets deve contenere le seguenti colonne:
           <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>titolo: Titolo del bando</li>
-            <li>fonte: Fonte del bando (es. sito web)</li>
-            <li>tipo: Tipo di bando (europeo, statale, regionale, altro)</li>
-            <li>settori: Settori di interesse separati da virgola</li>
-            <li>importoMin: Importo minimo del finanziamento</li>
-            <li>importoMax: Importo massimo del finanziamento</li>
-            <li>scadenza: Data di scadenza (formato YYYY-MM-DD)</li>
-            <li>descrizione: Descrizione del bando</li>
-            <li>url: URL completo del bando</li>
+            <li>data_scraping: Data di estrazione</li>
+            <li>titolo_incentivo: Titolo del bando</li>
+            <li>fonte: Fonte del bando (es. MIMIT, UE)</li>
+            <li>descrizione: Breve descrizione</li>
+            <li>url_dettaglio: URL completo del bando</li>
+            <li>descrizione_dettagliata: Dettagli completi</li>
+            <li>requisiti: Requisiti di partecipazione</li>
+            <li>scadenza_dettagliata: Data di scadenza</li>
+            <li>budget_disponibile: Importo del finanziamento</li>
           </ul>
         </AlertDescription>
       </Alert>

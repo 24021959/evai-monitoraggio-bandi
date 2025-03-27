@@ -44,7 +44,7 @@ export class GoogleSheetsService {
       // Use Google Sheets API to get published CSV
       const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
       
-      console.log('Fetching data from Google Sheets:', apiUrl);
+      console.log('Recupero dati da Google Sheets:', apiUrl);
       
       const response = await fetch(apiUrl);
       if (!response.ok) {
@@ -72,7 +72,7 @@ export class GoogleSheetsService {
       return [];
     }
 
-    // Assuming the first line contains headers
+    // Assumiamo che la prima riga contenga le intestazioni
     const headers = this.parseCsvLine(lines[0]);
     
     const bandi: Bando[] = [];
@@ -84,7 +84,7 @@ export class GoogleSheetsService {
       const values = this.parseCsvLine(line);
       const bando: any = {};
       
-      // Map CSV columns to Bando properties based on headers
+      // Mappatura delle colonne del CSV alle proprietà di Bando in base al nuovo formato
       headers.forEach((header, index) => {
         if (index < values.length) {
           const value = values[index];
@@ -93,54 +93,100 @@ export class GoogleSheetsService {
             case 'id':
               bando.id = value || `imported-${Date.now()}-${i}`;
               break;
-            case 'titolo':
+            case 'data_scraping': // Nuova colonna
+              bando.dataEstrazione = value;
+              break;
+            case 'titolo_incentivo': // Nuova colonna per il titolo
               bando.titolo = value;
               break;
             case 'fonte':
               bando.fonte = value;
               break;
+            case 'descrizione':
+              bando.descrizione = value;
+              break;
+            case 'descrizione_dettagliata': // Nuova colonna
+              bando.descrizioneCompleta = value;
+              if (!bando.descrizione) {
+                bando.descrizione = value?.substring(0, 150) + "...";
+              }
+              break;
+            case 'url_dettaglio': // URL del bando
+              bando.url = value;
+              break;
             case 'tipo':
               bando.tipo = this.mapTipoBando(value);
+              break;
+            case 'requisiti': // Nuova colonna
+              bando.requisiti = value;
+              // Estrai settori dai requisiti se sono elencati
+              if (value && !bando.settori) {
+                const potentialSectors = value.split(',').map(s => s.trim());
+                if (potentialSectors.length > 0) {
+                  bando.settori = potentialSectors;
+                }
+              }
+              break;
+            case 'modalita_presentazione': // Nuova colonna
+              bando.modalitaPresentazione = value;
+              break;
+            case 'scadenza_dettagliata': // Nuova colonna per la scadenza
+              if (value) {
+                // Prova a estrarre una data dalla stringa
+                const dateMatch = value.match(/(\d{1,2})[\s\/\-\.]+(\d{1,2})[\s\/\-\.]+(\d{4})/);
+                if (dateMatch) {
+                  // Formatta come YYYY-MM-DD
+                  const day = dateMatch[1].padStart(2, '0');
+                  const month = dateMatch[2].padStart(2, '0');
+                  const year = dateMatch[3];
+                  bando.scadenza = `${year}-${month}-${day}`;
+                } else {
+                  bando.scadenza = new Date().toISOString().split('T')[0]; // Data di oggi come fallback
+                }
+                bando.scadenzaDettagliata = value;
+              } else {
+                bando.scadenza = new Date().toISOString().split('T')[0];
+              }
+              break;
+            case 'budget_disponibile': // Nuova colonna per l'importo
+              if (value) {
+                // Cerca cifre nel testo del budget
+                const importMatch = value.match(/(\d+(?:[\.,]\d+)?)\s*(?:milion[ei]|mln)/i);
+                if (importMatch) {
+                  const importoValue = parseFloat(importMatch[1].replace(',', '.'));
+                  if (!isNaN(importoValue)) {
+                    bando.importoMax = importoValue * 1000000; // Converti in euro da milioni
+                  }
+                }
+                bando.budgetDisponibile = value;
+              }
               break;
             case 'settori':
               bando.settori = value.split(',').map((s: string) => s.trim());
               break;
-            case 'importomin':
-            case 'importo min':
-            case 'importo_min':
-              bando.importoMin = value ? parseFloat(value) : undefined;
-              break;
-            case 'importomax':
-            case 'importo max':
-            case 'importo_max':
-              bando.importoMax = value ? parseFloat(value) : undefined;
-              break;
-            case 'scadenza':
-              bando.scadenza = value;
-              break;
-            case 'descrizione':
-              bando.descrizione = value;
-              break;
-            case 'url':
-              bando.url = value;
+            case 'ultimi_aggiornamenti': // Nuova colonna
+              bando.ultimiAggiornamenti = value;
               break;
             default:
-              // Handle additional fields
+              // Gestisce campi addizionali
               bando[header] = value;
           }
         }
       });
       
-      // Ensure required fields have values
+      // Assicurati che i campi obbligatori abbiano valori
       if (bando.titolo && bando.fonte) {
         if (!bando.id) {
           bando.id = `imported-${Date.now()}-${i}`;
         }
         if (!bando.settori || !Array.isArray(bando.settori)) {
-          bando.settori = [];
+          bando.settori = ["Generico"];
         }
-        if (!bando.scadenza) {
-          bando.scadenza = new Date().toISOString().split('T')[0];
+        if (!bando.tipo) {
+          bando.tipo = 'altro';
+        }
+        if (!bando.importoMin && !bando.importoMax) {
+          bando.importoMax = 0; // Valore di default
         }
         
         bandi.push(bando as Bando);
@@ -168,7 +214,7 @@ export class GoogleSheetsService {
       }
     }
     
-    // Add the last value
+    // Aggiungi l'ultimo valore
     result.push(currentValue.trim());
     
     return result;
@@ -179,7 +225,7 @@ export class GoogleSheetsService {
     
     if (tipoLower.includes('europe') || tipoLower.includes('ue') || tipoLower.includes('eu')) {
       return 'europeo';
-    } else if (tipoLower.includes('stato') || tipoLower.includes('nazional') || tipoLower.includes('state')) {
+    } else if (tipoLower.includes('stato') || tipoLower.includes('nazional') || tipoLower.includes('mise') || tipoLower.includes('mimit')) {
       return 'statale';
     } else if (tipoLower.includes('region')) {
       return 'regionale';
