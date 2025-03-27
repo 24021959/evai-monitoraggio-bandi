@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -9,7 +10,8 @@ import {
   Database,
   KeyRound,
   CheckCircle,
-  FileSearch
+  FileSearch,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,6 +122,16 @@ const Sidebar = () => {
     });
   };
 
+  const handleImportaGoogleSheetsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/importa-scraping');
+    toast({
+      title: "Importa da Google Sheets",
+      description: "Sei stato reindirizzato alla pagina di importazione da Google Sheets",
+      duration: 3000,
+    });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-800 text-white p-5 text-xl font-medium">
@@ -135,6 +147,17 @@ const Sidebar = () => {
             <div className="flex items-center gap-3">
               <FileSearch className="w-5 h-5" />
               Estrai Bandi
+            </div>
+          </NavLink>
+          
+          <NavLink
+            to="#"
+            className="p-5 mb-2 bg-blue-500 text-white hover:bg-blue-600"
+            onClick={handleImportaGoogleSheetsClick}
+          >
+            <div className="flex items-center gap-3">
+              <FileSpreadsheet className="w-5 h-5" />
+              Importa da Google Sheets
             </div>
           </NavLink>
           

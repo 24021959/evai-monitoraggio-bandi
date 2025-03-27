@@ -1,9 +1,8 @@
-
-import React, { useState } from 'react';
-import { mockMatches, getCliente, getBando, mockClienti } from '@/data/mockData';
+import React, { useState, useEffect } from 'react';
+import { mockMatches, mockClienti } from '@/data/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import MatchTable from '@/components/MatchTable';
-import { ArrowLeftRight, Send } from 'lucide-react';
+import { ArrowLeftRight, Send, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -16,15 +15,96 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useNavigate } from 'react-router-dom';
+import { Bando, Match as MatchType, Cliente } from '@/types';
 
 const Match = () => {
   const { toast } = useToast();
-  const [matches, setMatches] = useState(mockMatches);
+  const navigate = useNavigate();
+  const [matches, setMatches] = useState<MatchType[]>(mockMatches);
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [isNotificheDialogOpen, setIsNotificheDialogOpen] = useState(false);
   const [testoNotifica, setTestoNotifica] = useState(
     'Gentile cliente,\n\nAbbiamo individuato un\'opportunità di finanziamento che potrebbe essere interessante per la vostra azienda.\n\nBando: [NOME_BANDO]\nScadenza: [SCADENZA_BANDO]\nCompatibilità stimata: [COMPATIBILITA]%\n\nPer maggiori informazioni, non esitate a contattarci.\n\nCordiali saluti,\nIl team di Firecrawl'
   );
+  const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
+
+  useEffect(() => {
+    const bandiStorageData = sessionStorage.getItem('bandiImportati');
+    if (bandiStorageData) {
+      try {
+        const bandi = JSON.parse(bandiStorageData);
+        setBandiImportati(bandi);
+        
+        if (bandi.length > 0) {
+          const nuoviMatches = generaMatch(mockClienti, bandi);
+          setMatches(nuoviMatches);
+          
+          toast({
+            title: "Match generati",
+            description: `Generati ${nuoviMatches.length} match potenziali tra clienti e bandi importati`,
+            duration: 3000
+          });
+        }
+      } catch (error) {
+        console.error('Errore nel parsing dei bandi importati:', error);
+      }
+    }
+  }, []);
+
+  const generaMatch = (clienti: Cliente[], bandi: Bando[]): MatchType[] => {
+    const nuoviMatches: MatchType[] = [];
+    
+    clienti.forEach(cliente => {
+      bandi.forEach(bando => {
+        const compatibilita = calcolaCompatibilita(cliente, bando);
+        
+        if (compatibilita > 30) {
+          nuoviMatches.push({
+            id: `${cliente.id}-${bando.id}`,
+            clienteId: cliente.id,
+            bandoId: bando.id,
+            compatibilita,
+            notificato: false
+          });
+        }
+      });
+    });
+    
+    return nuoviMatches.sort((a, b) => b.compatibilita - a.compatibilita);
+  };
+
+  const calcolaCompatibilita = (cliente: Cliente, bando: Bando): number => {
+    let punteggio = 0;
+    
+    const settoriCliente = cliente.interessiSettoriali.map(s => s.toLowerCase());
+    const settoriBando = bando.settori.map(s => s.toLowerCase());
+    
+    let matchSettori = 0;
+    settoriCliente.forEach(settoreCliente => {
+      if (settoriBando.some(settoreBando => settoreBando.includes(settoreCliente) || settoreCliente.includes(settoreBando))) {
+        matchSettori++;
+      }
+    });
+    
+    if (settoriCliente.length > 0) {
+      punteggio += (matchSettori / settoriCliente.length) * 70;
+    }
+    
+    if (bando.descrizione && bando.descrizione.toLowerCase().includes(cliente.regione.toLowerCase())) {
+      punteggio += 20;
+    }
+    
+    if (bando.importoMin && bando.importoMax) {
+      const rapportoFatturato = cliente.fatturato / bando.importoMax;
+      if (rapportoFatturato >= 0.5 && rapportoFatturato <= 10) {
+        punteggio += 10;
+      }
+    }
+    
+    return Math.min(100, Math.round(punteggio));
+  };
 
   const handleSelectionChange = (selectedIds: string[]) => {
     setSelectedMatchIds(selectedIds);
@@ -40,7 +120,6 @@ const Match = () => {
       return;
     }
 
-    // Aggiorna lo stato dei match selezionati a "notificato"
     const matchesAggiornati = matches.map(match => {
       if (selectedMatchIds.includes(match.id)) {
         return { ...match, notificato: true };
@@ -49,7 +128,6 @@ const Match = () => {
     });
     setMatches(matchesAggiornati);
 
-    // Ottieni gli indirizzi email dei clienti selezionati
     const clientiNotificati = selectedMatchIds.map(matchId => {
       const match = matches.find(m => m.id === matchId);
       if (match) {
@@ -59,22 +137,49 @@ const Match = () => {
       return 'Cliente sconosciuto';
     });
 
-    // Mostra un toast con il messaggio di successo
     toast({
       title: "Notifiche inviate",
       description: `Inviate ${selectedMatchIds.length} notifiche a: ${clientiNotificati.join(", ")}`,
       duration: 3000
     });
 
-    // Reset della selezione
     setSelectedMatchIds([]);
+  };
+
+  const handleImportaDaGoogleSheets = () => {
+    navigate('/importa-scraping');
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Match Bandi-Clienti</h1>
+        <Button 
+          onClick={handleImportaDaGoogleSheets} 
+          className="flex items-center gap-2"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Importa da Google Sheets
+        </Button>
       </div>
+      
+      {bandiImportati.length > 0 ? (
+        <Alert className="bg-blue-50 border-blue-100">
+          <InfoIcon className="h-4 w-4 text-blue-500" />
+          <AlertTitle>Dati importati</AlertTitle>
+          <AlertDescription>
+            Sono stati importati {bandiImportati.length} bandi da Google Sheets e generati {matches.length} potenziali match.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Nessun dato importato</AlertTitle>
+          <AlertDescription>
+            Clicca su "Importa da Google Sheets" per importare i dati dello scraping e generare automaticamente i match.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <Card>
         <CardHeader className="pb-3">
