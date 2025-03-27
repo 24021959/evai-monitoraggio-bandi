@@ -59,41 +59,63 @@ const BandoCard: React.FC<BandoCardProps> = ({
   };
 
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow transition-shadow">
+    <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow transition-shadow h-full flex flex-col">
       <div className="flex justify-between items-start mb-3">
-        <h3 className="font-medium truncate text-lg">{bando.titolo}</h3>
+        <h3 className="font-medium text-lg">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="truncate max-w-[200px]">{bando.titolo}</div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="max-w-md">{bando.titolo}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </h3>
         <span className={`text-xs text-white px-2 py-1 rounded-full ${getTipoClass(bando.tipo)}`}>
           {bando.tipo}
         </span>
       </div>
-      <div className="text-sm text-gray-600 mb-4">
+      <div className="text-sm text-gray-600 mb-4 flex-grow">
         <div className="flex justify-between mb-1">
-          <span>Fonte:</span>
-          <span className="font-medium">{bando.fonte}</span>
+          <span className="font-medium w-1/3">Fonte:</span>
+          <span className="w-2/3 text-right">{bando.fonte}</span>
         </div>
         <div className="flex justify-between mb-1">
-          <span>Settori:</span>
-          <span className="font-medium">
-            {(bando.settori && bando.settori.join(', ')) || 'Generico'}
+          <span className="font-medium w-1/3">Settori:</span>
+          <span className="w-2/3 text-right">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="truncate">
+                    {(bando.settori && bando.settori.join(', ')) || 'Generico'}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>{(bando.settori && bando.settori.join(', ')) || 'Generico'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </span>
         </div>
         <div className="flex justify-between mb-1">
-          <span>Importo (€):</span>
-          <span className="font-medium">
+          <span className="font-medium w-1/3">Importo (€):</span>
+          <span className="w-2/3 text-right">
             {formatImporto(bando.importoMin, bando.importoMax, bando.budgetDisponibile)}
           </span>
         </div>
         <div className="flex justify-between mb-1">
-          <span>Scadenza:</span>
-          <span className="font-medium">
+          <span className="font-medium w-1/3">Scadenza:</span>
+          <span className="w-2/3 text-right">
             {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
           </span>
         </div>
         
         {showFullDetails && bando.dataEstrazione && (
           <div className="flex justify-between mb-1">
-            <span>Data Estrazione:</span>
-            <span className="font-medium">{bando.dataEstrazione}</span>
+            <span className="font-medium w-1/3">Data Estrazione:</span>
+            <span className="w-2/3 text-right">{bando.dataEstrazione}</span>
           </div>
         )}
         
@@ -104,10 +126,12 @@ const BandoCard: React.FC<BandoCardProps> = ({
                 <TooltipTrigger asChild>
                   <div>
                     <strong className="block mb-1">Requisiti:</strong>
-                    <p className="truncate text-xs text-gray-500">{bando.requisiti}</p>
+                    <p className="text-xs text-gray-500 max-h-24 overflow-y-auto border p-2 rounded bg-gray-50">
+                      {bando.requisiti}
+                    </p>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-md">
+                <TooltipContent side="bottom" className="max-w-md max-h-[300px] overflow-y-auto">
                   <p>{bando.requisiti}</p>
                 </TooltipContent>
               </Tooltip>
@@ -128,7 +152,7 @@ const BandoCard: React.FC<BandoCardProps> = ({
         )}
       </div>
       
-      <div className="flex gap-2">
+      <div className="flex gap-2 mt-auto pt-2">
         {onViewDetails && (
           <Button 
             variant="outline" 

@@ -14,7 +14,9 @@ import {
   FileText, 
   Search, 
   Filter,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   Select,
@@ -24,6 +26,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const Bandi = () => {
   const { toast } = useToast();
@@ -36,6 +46,7 @@ const Bandi = () => {
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
   const [showGoogleSheetsBandi, setShowGoogleSheetsBandi] = useState<boolean>(false);
   const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
+  const [risultatiPerPagina, setRisultatiPerPagina] = useState<number>(10);
 
   useEffect(() => {
     FirecrawlService.clearScrapedBandi();
@@ -90,11 +101,10 @@ const Bandi = () => {
   };
 
   const bandiFiltrati = getBandiFiltrati();
-  const RISULTATI_PER_PAGINA = 10;
-  const indicePrimoRisultato = (paginaCorrente - 1) * RISULTATI_PER_PAGINA;
-  const indiceUltimoRisultato = indicePrimoRisultato + RISULTATI_PER_PAGINA;
+  const indicePrimoRisultato = (paginaCorrente - 1) * risultatiPerPagina;
+  const indiceUltimoRisultato = indicePrimoRisultato + risultatiPerPagina;
   const bandiPaginati = bandiFiltrati.slice(indicePrimoRisultato, indiceUltimoRisultato);
-  const totalePagine = Math.ceil(bandiFiltrati.length / RISULTATI_PER_PAGINA);
+  const totalePagine = Math.ceil(bandiFiltrati.length / risultatiPerPagina);
 
   const handleViewDetail = (id: string) => {
     navigate(`/bandi/${id}`);
@@ -122,6 +132,90 @@ const Bandi = () => {
   const toggleBandiSource = () => {
     setShowGoogleSheetsBandi(!showGoogleSheetsBandi);
     setPaginaCorrente(1); // Reset to first page when switching
+  };
+
+  const renderPagination = () => {
+    if (totalePagine <= 1) return null;
+
+    const pageItems = [];
+    const maxVisiblePages = 5;
+    const halfVisible = Math.floor(maxVisiblePages / 2);
+    
+    let startPage = Math.max(1, paginaCorrente - halfVisible);
+    let endPage = Math.min(totalePagine, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    if (startPage > 1) {
+      pageItems.push(
+        <PaginationItem key="first">
+          <PaginationLink onClick={() => setPaginaCorrente(1)}>1</PaginationLink>
+        </PaginationItem>
+      );
+      
+      if (startPage > 2) {
+        pageItems.push(
+          <PaginationItem key="ellipsis-start">
+            <span className="flex h-9 w-9 items-center justify-center">...</span>
+          </PaginationItem>
+        );
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageItems.push(
+        <PaginationItem key={i}>
+          <PaginationLink 
+            isActive={paginaCorrente === i} 
+            onClick={() => setPaginaCorrente(i)}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    if (endPage < totalePagine) {
+      if (endPage < totalePagine - 1) {
+        pageItems.push(
+          <PaginationItem key="ellipsis-end">
+            <span className="flex h-9 w-9 items-center justify-center">...</span>
+          </PaginationItem>
+        );
+      }
+      
+      pageItems.push(
+        <PaginationItem key="last">
+          <PaginationLink onClick={() => setPaginaCorrente(totalePagine)}>
+            {totalePagine}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return (
+      <Pagination className="my-4">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={() => setPaginaCorrente(prev => Math.max(prev - 1, 1))}
+              className={paginaCorrente === 1 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+          
+          {pageItems}
+          
+          <PaginationItem>
+            <PaginationNext 
+              onClick={() => setPaginaCorrente(prev => Math.min(prev + 1, totalePagine))}
+              className={paginaCorrente === totalePagine ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
   };
 
   return (
@@ -173,7 +267,7 @@ const Bandi = () => {
               />
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <div className="w-48">
                 <Select value={settoreFiltro} onValueChange={setSettoreFiltro}>
                   <SelectTrigger>
@@ -195,7 +289,25 @@ const Bandi = () => {
                 </Select>
               </div>
               
-              <div>
+              <div className="flex items-center gap-3">
+                <Select 
+                  value={risultatiPerPagina.toString()} 
+                  onValueChange={(value) => {
+                    setRisultatiPerPagina(Number(value));
+                    setPaginaCorrente(1);
+                  }}
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <span>{risultatiPerPagina} per pagina</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 per pagina</SelectItem>
+                    <SelectItem value="10">10 per pagina</SelectItem>
+                    <SelectItem value="20">20 per pagina</SelectItem>
+                    <SelectItem value="50">50 per pagina</SelectItem>
+                  </SelectContent>
+                </Select>
+                
                 <Tabs value={visualizzazione} onValueChange={(v) => setVisualizzazione(v as 'tabella' | 'cards')}>
                   <TabsList>
                     <TabsTrigger value="tabella">Tabella</TabsTrigger>
@@ -223,6 +335,10 @@ const Bandi = () => {
           </Card>
         ) : (
           <>
+            <div className="text-sm text-gray-500 mb-2">
+              Mostra {indicePrimoRisultato + 1}-{Math.min(indiceUltimoRisultato, bandiFiltrati.length)} di {bandiFiltrati.length} bandi
+            </div>
+            
             {visualizzazione === 'tabella' ? (
               <BandiTable 
                 bandi={bandiPaginati} 
@@ -232,7 +348,7 @@ const Bandi = () => {
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {bandiFiltrati.map(bando => (
+                {bandiPaginati.map(bando => (
                   <BandoCard 
                     key={bando.id} 
                     bando={bando} 
@@ -244,31 +360,7 @@ const Bandi = () => {
               </div>
             )}
             
-            {visualizzazione === 'tabella' && totalePagine > 1 && (
-              <div className="flex justify-between items-center mt-4">
-                <div className="text-sm text-gray-500">
-                  Mostra {indicePrimoRisultato + 1}-{Math.min(indiceUltimoRisultato, bandiFiltrati.length)} di {bandiFiltrati.length} bandi
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={paginaCorrente === 1}
-                    onClick={() => setPaginaCorrente(prev => Math.max(prev - 1, 1))}
-                  >
-                    Precedente
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={paginaCorrente === totalePagine}
-                    onClick={() => setPaginaCorrente(prev => Math.min(prev + 1, totalePagine))}
-                  >
-                    Successiva
-                  </Button>
-                </div>
-              </div>
-            )}
+            {renderPagination()}
           </>
         )}
       </div>

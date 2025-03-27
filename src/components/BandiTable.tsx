@@ -62,20 +62,20 @@ const BandiTable: React.FC<BandiTableProps> = ({
   };
 
   return (
-    <div className="rounded-md border overflow-auto">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Titolo</TableHead>
-            <TableHead>Fonte</TableHead>
-            <TableHead>Tipo</TableHead>
-            {showFullDetails && <TableHead>Requisiti</TableHead>}
-            <TableHead>Settori</TableHead>
-            <TableHead>Importo (€)</TableHead>
-            <TableHead>Scadenza</TableHead>
-            {showFullDetails && <TableHead>Link</TableHead>}
-            {showFullDetails && <TableHead>Data Estrazione</TableHead>}
-            <TableHead>Azioni</TableHead>
+            <TableHead className="w-[25%] min-w-[200px]">Titolo</TableHead>
+            <TableHead className="w-[10%] min-w-[100px]">Fonte</TableHead>
+            <TableHead className="w-[8%] min-w-[80px]">Tipo</TableHead>
+            {showFullDetails && <TableHead className="w-[15%] min-w-[150px]">Requisiti</TableHead>}
+            <TableHead className="w-[12%] min-w-[120px]">Settori</TableHead>
+            <TableHead className="w-[10%] min-w-[100px]">Importo (€)</TableHead>
+            <TableHead className="w-[10%] min-w-[100px]">Scadenza</TableHead>
+            {showFullDetails && <TableHead className="w-[5%] min-w-[50px]">Link</TableHead>}
+            {showFullDetails && <TableHead className="w-[10%] min-w-[100px]">Data Estrazione</TableHead>}
+            <TableHead className="w-[10%] min-w-[120px]">Azioni</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -101,24 +101,28 @@ const BandiTable: React.FC<BandiTableProps> = ({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="max-w-xs truncate">
+                        <div className="max-h-20 overflow-y-auto text-sm">
                           {bando.requisiti || 'N/D'}
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-md">
+                      <TooltipContent side="bottom" className="max-w-md max-h-[300px] overflow-y-auto">
                         <p>{bando.requisiti || 'Nessun requisito specificato'}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </TableCell>
               )}
-              <TableCell>{(bando.settori && bando.settori.join(', ')) || 'Generico'}</TableCell>
+              <TableCell>
+                <div className="max-w-[150px] truncate" title={(bando.settori && bando.settori.join(', ')) || 'Generico'}>
+                  {(bando.settori && bando.settori.join(', ')) || 'Generico'}
+                </div>
+              </TableCell>
               <TableCell>{formatImporto(bando.importoMin, bando.importoMax, bando.budgetDisponibile)}</TableCell>
               <TableCell>
                 {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
               </TableCell>
               {showFullDetails && (
-                <TableCell onClick={(e) => e.stopPropagation()}>
+                <TableCell onClick={(e) => e.stopPropagation()} className="text-center">
                   {bando.url ? (
                     <Button 
                       size="sm" 
