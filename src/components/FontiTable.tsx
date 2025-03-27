@@ -82,7 +82,7 @@ const FontiTable: React.FC<FontiTableProps> = ({
         toast({
           title: "URL aggiornato parzialmente",
           description: "L'URL è stato aggiornato localmente. L'aggiornamento nel foglio Google richiede autorizzazioni aggiuntive.",
-          variant: "warning"
+          variant: "default" // Changed from "warning" to "default"
         });
       }
     } catch (error) {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,10 +37,8 @@ const ImportaScraping = () => {
     setError(null);
     
     try {
-      // Salva l'URL del foglio Google Sheets
       GoogleSheetsService.setSheetUrl(googleSheetUrl);
       
-      // Recupera i dati dal foglio
       const bandi = await GoogleSheetsService.fetchBandiFromSheet(googleSheetUrl);
       
       if (bandi.length === 0) {
@@ -52,7 +49,6 @@ const ImportaScraping = () => {
           variant: "destructive",
         });
       } else {
-        // Mostra anteprima
         setBandiAnteprima(bandi.slice(0, 5));
         
         toast({
@@ -60,10 +56,8 @@ const ImportaScraping = () => {
           description: `Importati ${bandi.length} bandi dal foglio Google Sheets`,
         });
         
-        // Salva i bandi importati in sessionStorage per il match
         sessionStorage.setItem('bandiImportati', JSON.stringify(bandi));
         
-        // Passa alla pagina di match dopo un breve ritardo
         setTimeout(() => {
           navigate('/match');
         }, 1500);
@@ -95,24 +89,20 @@ const ImportaScraping = () => {
     setError(null);
     
     try {
-      // Salva l'URL del foglio Google Sheets
       GoogleSheetsService.setSheetUrl(googleSheetUrl);
       
-      // Recupera le fonti dal foglio
       const fonti = await GoogleSheetsService.fetchFontiFromSheet(googleSheetUrl);
       
       if (fonti.length === 0) {
-        setError("Nessuna fonte trovata nel foglio Google Sheets. Verifica che sia presente un foglio 'Fonti' con il formato corretto.");
+        setError("Nessuna fonte trovata nel foglio Google Sheets. Verifica che sia presente un foglio 'Lista Fonti' con il formato corretto.");
         toast({
           title: "Nessuna fonte trovata",
-          description: "Verifica che sia presente un foglio 'Fonti' con il formato corretto",
+          description: "Verifica che sia presente un foglio 'Lista Fonti' con il formato corretto",
           variant: "destructive",
         });
       } else {
-        // Mostra anteprima
         setFontiAnteprima(fonti.slice(0, 5));
         
-        // Salva le fonti usando FirecrawlService
         FirecrawlService.saveFonti(fonti);
         
         toast({
@@ -120,7 +110,6 @@ const ImportaScraping = () => {
           description: `Importate ${fonti.length} fonti dal foglio Google Sheets`,
         });
         
-        // Passa alla pagina delle fonti dopo un breve ritardo
         setTimeout(() => {
           navigate('/fonti');
         }, 1500);
@@ -159,7 +148,7 @@ const ImportaScraping = () => {
             <InfoIcon className="h-4 w-4" />
             <AlertTitle>Informazioni sul formato</AlertTitle>
             <AlertDescription>
-              Il foglio Google Sheets deve essere pubblico. Per importare le fonti, è necessario un foglio chiamato "Fonti" con colonne come: nome, url, tipo e stato.
+              Il foglio Google Sheets deve essere pubblico. Per importare le fonti, è necessario un foglio chiamato "Lista Fonti" con colonne come: id_number, url, stato_elaborazione, data_ultimo_aggiornamento, nome e tipo.
             </AlertDescription>
           </Alert>
           
@@ -297,7 +286,7 @@ const ImportaScraping = () => {
                 <li>Assicurati che il foglio Google Sheets sia pubblico (File &gt; Condividi &gt; Chiunque abbia il link)</li>
                 <li>Copia l'URL completo del foglio dalla barra degli indirizzi</li>
                 <li>Incolla l'URL nel campo sopra e scegli cosa importare (Bandi o Fonti)</li>
-                <li>Per importare le fonti, assicurati di avere un foglio chiamato "Fonti" nel documento</li>
+                <li>Per importare le fonti, assicurati di avere un foglio chiamato "Lista Fonti" nel documento</li>
               </ol>
             </CardContent>
           </Card>
@@ -334,16 +323,15 @@ const ImportaScraping = () => {
             </CardHeader>
             <CardContent>
               <p className="mb-4 text-gray-600">
-                Il foglio "Fonti" di Google Sheets deve contenere le seguenti colonne:
+                Il foglio "Lista Fonti" di Google Sheets deve contenere le seguenti colonne:
               </p>
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>id</strong>: Identificativo univoco della fonte (facoltativo, generato automaticamente se mancante)</li>
-                <li><strong>nome</strong>: Nome della fonte</li>
+                <li><strong>id_number</strong>: Numero identificativo della fonte</li>
                 <li><strong>url</strong>: URL completo della fonte</li>
-                <li><strong>tipo</strong>: Tipo di fonte (es. europeo, statale, regionale, altro)</li>
-                <li><strong>stato</strong>: Stato della fonte (attivo o inattivo)</li>
-                <li><strong>frequenza_aggiornamento</strong>: Frequenza di aggiornamento della fonte (facoltativo)</li>
-                <li><strong>note</strong>: Note aggiuntive sulla fonte (facoltativo)</li>
+                <li><strong>stato_elaborazione</strong>: Stato dell'elaborazione (es. "Elaborato" o altro)</li>
+                <li><strong>data_ultimo_aggiornamento</strong>: Data dell'ultimo aggiornamento della fonte</li>
+                <li><strong>nome</strong>: Nome della fonte (facoltativo, generato automaticamente se mancante)</li>
+                <li><strong>tipo</strong>: Tipo di fonte (facoltativo, derivato dall'URL se mancante)</li>
               </ul>
             </CardContent>
           </Card>

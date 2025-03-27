@@ -125,7 +125,7 @@ export class GoogleSheetsService {
       }
 
       // Specifichiamo un foglio specifico per le fonti (assumendo che sia nella seconda scheda)
-      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Fonti`;
+      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Lista%20Fonti`;
       
       console.log('Recupero fonti da Google Sheets:', apiUrl);
       
@@ -350,30 +350,47 @@ export class GoogleSheetsService {
       if (!line) continue;
       
       const values = this.parseCsvLine(line);
+      // Skip empty rows
+      if (values.every(v => !v)) continue;
+      
       const fonte: any = {
         stato: 'attivo' // Default stato
       };
       
-      // Mappatura delle colonne del CSV alle proprietà di Fonte
+      // Mapping based on the screenshot: id_number, url, stato_elaborazione, data_ultimo_aggiornamento
       headers.forEach((header, index) => {
         if (index < values.length) {
           const value = values[index];
           
           switch(header.toLowerCase()) {
-            case 'id':
+            case 'id_number':
               fonte.id = value || `fonte-${Date.now()}-${i}`;
-              break;
-            case 'nome':
-              fonte.nome = value;
               break;
             case 'url':
               fonte.url = value;
               break;
+            case 'stato_elaborazione':
+              fonte.stato = value.toLowerCase().includes('elaborat') ? 'attivo' : 'inattivo';
+              // Use the same value for nome if not provided elsewhere
+              if (!fonte.nome) {
+                // Extract domain from URL for the name
+                try {
+                  const domain = new URL(value).hostname.replace('www.', '');
+                  fonte.nome = domain.charAt(0).toUpperCase() + domain.slice(1);
+                } catch {
+                  fonte.nome = `Fonte ${i}`;
+                }
+              }
+              break;
+            case 'data_ultimo_aggiornamento':
+              fonte.ultimoAggiornamento = value;
+              break;
+            // Map additional columns based on the screenshot
+            case 'nome':
+              fonte.nome = value;
+              break;
             case 'tipo':
               fonte.tipo = this.mapTipoFonte(value);
-              break;
-            case 'stato':
-              fonte.stato = value.toLowerCase() === 'attivo' ? 'attivo' : 'inattivo';
               break;
             case 'frequenza_aggiornamento':
               fonte.frequenzaAggiornamento = value;
@@ -382,14 +399,37 @@ export class GoogleSheetsService {
               fonte.note = value;
               break;
             default:
-              // Gestisce campi addizionali
+              // Store any additional columns
               fonte[header] = value;
           }
         }
       });
       
+      // Use URL for name if name is still not set
+      if (!fonte.nome && fonte.url) {
+        try {
+          const domain = new URL(fonte.url).hostname.replace('www.', '');
+          fonte.nome = domain.charAt(0).toUpperCase() + domain.slice(1);
+        } catch {
+          fonte.nome = `Fonte ${i}`;
+        }
+      }
+
+      // Derive tipo from URL if not set
+      if (!fonte.tipo && fonte.url) {
+        if (fonte.url.includes('europa.eu') || fonte.url.includes('ec.europa')) {
+          fonte.tipo = 'europeo';
+        } else if (fonte.url.includes('.gov.it') || fonte.url.includes('mise.gov') || fonte.url.includes('mimit')) {
+          fonte.tipo = 'statale';
+        } else if (fonte.url.includes('regione')) {
+          fonte.tipo = 'regionale';
+        } else {
+          fonte.tipo = 'altro';
+        }
+      }
+      
       // Assicurati che i campi obbligatori abbiano valori
-      if (fonte.nome && fonte.url) {
+      if (fonte.url) {
         if (!fonte.id) {
           fonte.id = `fonte-${Date.now()}-${i}`;
         }
@@ -405,6 +445,8 @@ export class GoogleSheetsService {
   }
 
   private mapTipoFonte(tipo: string): 'europeo' | 'statale' | 'regionale' | 'altro' {
+    if (!tipo) return 'altro';
+    
     const tipoLower = tipo.toLowerCase();
     
     if (tipoLower.includes('europe') || tipoLower.includes('ue') || tipoLower.includes('eu')) {
