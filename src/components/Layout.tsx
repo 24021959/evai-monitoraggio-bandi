@@ -40,18 +40,7 @@ const Sidebar = () => {
         Sistema Monitoraggio Bandi
       </div>
       <div className="bg-gray-100 flex-grow">
-        <nav className="flex flex-col">
-          <NavLink
-            to="#"
-            className={`p-5 mb-2 hover:bg-blue-50 ${isImportActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`}
-            onClick={handleImportaGoogleSheetsClick}
-          >
-            <div className="flex items-center gap-3">
-              <FileSpreadsheet className="w-5 h-5" />
-              Importa da Google Sheets
-            </div>
-          </NavLink>
-          
+        <nav className="flex flex-col">          
           <NavLink
             to="/"
             className={({ isActive }) =>
@@ -108,6 +97,18 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
+          
+          {/* Moved Importa da Google Sheets to the bottom */}
+          <NavLink
+            to="#"
+            className={`p-5 hover:bg-blue-50 ${isImportActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`}
+            onClick={handleImportaGoogleSheetsClick}
+          >
+            <div className="flex items-center gap-3">
+              <FileSpreadsheet className="w-5 h-5" />
+              Importa da Google Sheets
+            </div>
+          </NavLink>
         </nav>
       </div>
     </div>
