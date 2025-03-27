@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -28,7 +29,7 @@ import {
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
-  columns: any[];
+  columns: ColumnDef<TData, TValue>[];
   data: TData[];
   searchColumn?: string;
   pageSizes?: number[];
