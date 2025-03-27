@@ -43,7 +43,7 @@ const Sidebar = () => {
         <nav className="flex flex-col">
           <NavLink
             to="#"
-            className={`p-5 mb-2 hover:bg-blue-600 text-white ${isImportActive ? 'bg-blue-500' : 'bg-gray-100 text-black hover:bg-blue-50'}`}
+            className={`p-5 mb-2 hover:bg-blue-50 ${isImportActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`}
             onClick={handleImportaGoogleSheetsClick}
           >
             <div className="flex items-center gap-3">
@@ -105,17 +105,6 @@ const Sidebar = () => {
             <div className="flex items-center gap-3">
               <FileBarChart className="w-5 h-5" />
               Report
-            </div>
-          </NavLink>
-          <NavLink
-            to="/risultati-scraping"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5" />
-              Risultati Monitoraggio
             </div>
           </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
