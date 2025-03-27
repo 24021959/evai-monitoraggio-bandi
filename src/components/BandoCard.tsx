@@ -1,16 +1,34 @@
+
 import React from 'react';
 import { Bando } from '../types';
-import { Info } from 'lucide-react';
+import { Info, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
+import { Badge } from '@/components/ui/badge';
 
 interface BandoCardProps {
   bando: Bando;
   onViewDetails?: (id: string) => void;
   onDelete?: (id: string) => void;
+  showFullDetails?: boolean;
 }
 
-const BandoCard: React.FC<BandoCardProps> = ({ bando, onViewDetails, onDelete }) => {
-  const formatImporto = (min?: number, max?: number) => {
+const BandoCard: React.FC<BandoCardProps> = ({ 
+  bando, 
+  onViewDetails, 
+  onDelete,
+  showFullDetails = false
+}) => {
+  const formatImporto = (min?: number, max?: number, budgetDisponibile?: string) => {
+    if (budgetDisponibile) {
+      return budgetDisponibile;
+    }
+    
     if (min && max) {
       return `${min / 1000}K - ${max / 1000}K`;
     } else if (min) {
@@ -34,6 +52,12 @@ const BandoCard: React.FC<BandoCardProps> = ({ bando, onViewDetails, onDelete })
     }
   };
 
+  const openUrl = (url: string) => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow transition-shadow">
       <div className="flex justify-between items-start mb-3">
@@ -49,17 +73,61 @@ const BandoCard: React.FC<BandoCardProps> = ({ bando, onViewDetails, onDelete })
         </div>
         <div className="flex justify-between mb-1">
           <span>Settori:</span>
-          <span className="font-medium">{bando.settori.join(', ')}</span>
+          <span className="font-medium">
+            {(bando.settori && bando.settori.join(', ')) || 'Generico'}
+          </span>
         </div>
         <div className="flex justify-between mb-1">
           <span>Importo (€):</span>
-          <span className="font-medium">{formatImporto(bando.importoMin, bando.importoMax)}</span>
+          <span className="font-medium">
+            {formatImporto(bando.importoMin, bando.importoMax, bando.budgetDisponibile)}
+          </span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between mb-1">
           <span>Scadenza:</span>
-          <span className="font-medium">{new Date(bando.scadenza).toLocaleDateString('it-IT')}</span>
+          <span className="font-medium">
+            {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
+          </span>
         </div>
+        
+        {showFullDetails && bando.dataEstrazione && (
+          <div className="flex justify-between mb-1">
+            <span>Data Estrazione:</span>
+            <span className="font-medium">{bando.dataEstrazione}</span>
+          </div>
+        )}
+        
+        {showFullDetails && bando.requisiti && (
+          <div className="mt-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <strong className="block mb-1">Requisiti:</strong>
+                    <p className="truncate text-xs text-gray-500">{bando.requisiti}</p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-md">
+                  <p>{bando.requisiti}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
+        
+        {showFullDetails && bando.url && (
+          <div className="mt-2">
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-blue-500"
+              onClick={() => openUrl(bando.url as string)}
+            >
+              <Link2 className="h-4 w-4 mr-1" /> Vai al bando
+            </Button>
+          </div>
+        )}
       </div>
+      
       <div className="flex gap-2">
         {onViewDetails && (
           <Button 

@@ -1,17 +1,24 @@
-
 export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro';
 
 export interface Bando {
   id: string;
   titolo: string;
   fonte: string;
-  tipo: TipoBando;
+  descrizione?: string;
+  descrizioneCompleta?: string;
+  tipo: 'europeo' | 'statale' | 'regionale' | 'altro';
   settori: string[];
+  scadenza: string;
   importoMin?: number;
   importoMax?: number;
-  scadenza: string;
-  descrizione?: string;
   url?: string;
+  
+  dataEstrazione?: string;
+  requisiti?: string;
+  scadenzaDettagliata?: string;
+  budgetDisponibile?: string;
+  modalitaPresentazione?: string;
+  ultimiAggiornamenti?: string;
 }
 
 export interface Cliente {

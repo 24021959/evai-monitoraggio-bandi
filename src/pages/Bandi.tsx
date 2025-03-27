@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   Search, 
-  Filter 
+  Filter,
+  FileSpreadsheet
 } from 'lucide-react';
 import {
   Select,
@@ -21,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Bandi = () => {
   const { toast } = useToast();
@@ -31,35 +34,62 @@ const Bandi = () => {
   const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
+  const [showGoogleSheetsBandi, setShowGoogleSheetsBandi] = useState<boolean>(false);
+  const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
 
   useEffect(() => {
     FirecrawlService.clearScrapedBandi();
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);
     console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
+    
+    // Controllo se ci sono bandi importati da Google Sheets
+    const importedBandi = sessionStorage.getItem('bandiImportati');
+    if (importedBandi) {
+      try {
+        const parsedBandi = JSON.parse(importedBandi);
+        setBandiImportati(parsedBandi);
+        console.log('Bandi importati recuperati:', parsedBandi.length);
+        if (parsedBandi.length > 0) {
+          setShowGoogleSheetsBandi(true);
+        }
+      } catch (error) {
+        console.error('Errore nel parsing dei bandi importati:', error);
+      }
+    }
   }, []);
 
   useEffect(() => {
     const settori = new Set<string>();
-    bandi.forEach(bando => {
-      bando.settori.forEach(settore => {
-        settori.add(settore);
-      });
+    const bandiToAnalyze = showGoogleSheetsBandi ? bandiImportati : bandi;
+    
+    bandiToAnalyze.forEach(bando => {
+      if (bando.settori && Array.isArray(bando.settori)) {
+        bando.settori.forEach(settore => {
+          settori.add(settore);
+        });
+      }
     });
     setSettoriDisponibili(Array.from(settori).sort());
-  }, [bandi]);
+  }, [bandi, bandiImportati, showGoogleSheetsBandi]);
 
-  const bandiFiltrati = bandi.filter(bando => {
-    const matchTestoRicerca = !filtro || 
-      bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
-      bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
-      bando.fonte.toLowerCase().includes(filtro.toLowerCase());
-      
-    const matchSettore = settoreFiltro === 'tutti' || bando.settori.includes(settoreFiltro);
+  const getBandiFiltrati = () => {
+    const bandiToFilter = showGoogleSheetsBandi ? bandiImportati : bandi;
     
-    return matchTestoRicerca && matchSettore;
-  });
+    return bandiToFilter.filter(bando => {
+      const matchTestoRicerca = !filtro || 
+        bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
+        bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
+        bando.fonte.toLowerCase().includes(filtro.toLowerCase());
+        
+      const matchSettore = settoreFiltro === 'tutti' || 
+        (bando.settori && bando.settori.includes(settoreFiltro));
+      
+      return matchTestoRicerca && matchSettore;
+    });
+  };
 
+  const bandiFiltrati = getBandiFiltrati();
   const RISULTATI_PER_PAGINA = 10;
   const indicePrimoRisultato = (paginaCorrente - 1) * RISULTATI_PER_PAGINA;
   const indiceUltimoRisultato = indicePrimoRisultato + RISULTATI_PER_PAGINA;
@@ -71,9 +101,16 @@ const Bandi = () => {
   };
 
   const handleDeleteBando = (id: string) => {
-    FirecrawlService.deleteBando(id);
-    
-    setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
+    if (showGoogleSheetsBandi) {
+      setBandiImportati(prevBandi => {
+        const updatedBandi = prevBandi.filter(bando => bando.id !== id);
+        sessionStorage.setItem('bandiImportati', JSON.stringify(updatedBandi));
+        return updatedBandi;
+      });
+    } else {
+      FirecrawlService.deleteBando(id);
+      setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
+    }
     
     toast({
       title: "Bando eliminato",
@@ -82,15 +119,42 @@ const Bandi = () => {
     });
   };
 
+  const toggleBandiSource = () => {
+    setShowGoogleSheetsBandi(!showGoogleSheetsBandi);
+    setPaginaCorrente(1); // Reset to first page when switching
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Catalogo Bandi</h1>
-        <Button variant="outline" onClick={() => navigate('/risultati-scraping')}>
-          <FileText className="w-4 h-4 mr-2" />
-          Estrai Nuovi Bandi
-        </Button>
+        <div className="flex gap-2">
+          {bandiImportati.length > 0 && (
+            <Button 
+              variant={showGoogleSheetsBandi ? "default" : "outline"}
+              onClick={toggleBandiSource}
+              className="flex items-center gap-2"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Bandi da Google Sheets
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => navigate('/importa-scraping')}>
+            <FileText className="w-4 h-4 mr-2" />
+            Importa Nuovi Bandi
+          </Button>
+        </div>
       </div>
+      
+      {bandiImportati.length > 0 && showGoogleSheetsBandi && (
+        <Alert className="bg-green-50 border-green-200">
+          <FileSpreadsheet className="h-4 w-4 text-green-600" />
+          <AlertTitle>Visualizzazione bandi importati da Google Sheets</AlertTitle>
+          <AlertDescription>
+            Stai visualizzando {bandiImportati.length} bandi importati dal tuo foglio Google Sheets.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <Card>
         <CardHeader className="pb-4">
@@ -152,7 +216,7 @@ const Bandi = () => {
                 <FileText className="mx-auto h-12 w-12 mb-4 text-gray-400" />
                 <h3 className="text-lg font-medium mb-2">Nessun bando trovato</h3>
                 <p className="text-sm max-w-md mx-auto">
-                  Non sono stati trovati bandi che corrispondono ai criteri di ricerca. Prova a modificare i filtri o estrai nuovi bandi.
+                  Non sono stati trovati bandi che corrispondono ai criteri di ricerca. Prova a modificare i filtri o importa nuovi bandi.
                 </p>
               </div>
             </CardContent>
@@ -164,6 +228,7 @@ const Bandi = () => {
                 bandi={bandiPaginati} 
                 onViewDetails={handleViewDetail}
                 onDeleteBando={handleDeleteBando}
+                showFullDetails={showGoogleSheetsBandi}
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -173,6 +238,7 @@ const Bandi = () => {
                     bando={bando} 
                     onViewDetails={handleViewDetail}
                     onDelete={handleDeleteBando}
+                    showFullDetails={showGoogleSheetsBandi}
                   />
                 ))}
               </div>
