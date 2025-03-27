@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   BarChart3, 
   FileText, 
@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 const Sidebar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const location = useLocation();
 
   const handleImportaGoogleSheetsClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -25,6 +26,14 @@ const Sidebar = () => {
     });
   };
 
+  // Function to check if a path is active
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+  
+  // Special check for importa-scraping page
+  const isImportActive = location.pathname === '/importa-scraping';
+
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-800 text-white p-5 text-xl font-medium">
@@ -34,7 +43,7 @@ const Sidebar = () => {
         <nav className="flex flex-col">
           <NavLink
             to="#"
-            className="p-5 mb-2 bg-blue-500 text-white hover:bg-blue-600"
+            className={`p-5 mb-2 hover:bg-blue-600 text-white ${isImportActive ? 'bg-blue-500' : 'bg-blue-500'}`}
             onClick={handleImportaGoogleSheetsClick}
           >
             <div className="flex items-center gap-3">
@@ -46,7 +55,7 @@ const Sidebar = () => {
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
           >
             <div className="flex items-center gap-3">
@@ -57,7 +66,7 @@ const Sidebar = () => {
           <NavLink
             to="/bandi"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
           >
             <div className="flex items-center gap-3">
@@ -68,7 +77,7 @@ const Sidebar = () => {
           <NavLink
             to="/clienti"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
           >
             <div className="flex items-center gap-3">
@@ -79,7 +88,7 @@ const Sidebar = () => {
           <NavLink
             to="/match"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
           >
             <div className="flex items-center gap-3">
@@ -90,7 +99,7 @@ const Sidebar = () => {
           <NavLink
             to="/report"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
           >
             <div className="flex items-center gap-3">
@@ -101,7 +110,7 @@ const Sidebar = () => {
           <NavLink
             to="/risultati-scraping"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-50' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
           >
             <div className="flex items-center gap-3">
