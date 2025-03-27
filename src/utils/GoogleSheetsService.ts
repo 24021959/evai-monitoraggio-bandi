@@ -1,4 +1,4 @@
-import { Bando } from '@/types';
+import { Bando, Fonte } from '@/types';
 
 // This service handles the Google Sheets integration
 export class GoogleSheetsService {
@@ -106,6 +106,55 @@ export class GoogleSheetsService {
       return allBandi;
     } catch (error) {
       console.error('Errore durante il recupero dei bandi dal foglio Google:', error);
+      throw error;
+    }
+  }
+
+  public async fetchFontiFromSheet(sheetUrl?: string): Promise<Fonte[]> {
+    try {
+      const url = sheetUrl || this.getSheetUrl();
+      
+      if (!url) {
+        throw new Error('URL del foglio Google non configurato');
+      }
+
+      // Extract the sheet ID from the URL
+      const sheetId = this.extractSheetId(url);
+      if (!sheetId) {
+        throw new Error('ID del foglio non valido');
+      }
+
+      // Specifichiamo un foglio specifico per le fonti (assumendo che sia nella seconda scheda)
+      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Fonti`;
+      
+      console.log('Recupero fonti da Google Sheets:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`Errore nel recupero delle fonti: ${response.statusText}`);
+      }
+      
+      const csvData = await response.text();
+      
+      // Parse CSV to get fonti
+      return this.parseCsvToFonti(csvData);
+    } catch (error) {
+      console.error('Errore durante il recupero delle fonti dal foglio Google:', error);
+      throw error;
+    }
+  }
+
+  public async updateFonteInSheet(fonte: Fonte): Promise<boolean> {
+    try {
+      // Questo è solo un placeholder - gli aggiornamenti reali dovrebbero utilizzare l'API Google Sheets
+      // che richiede autenticazione OAuth, che non possiamo implementare solo lato frontend
+      console.log('Fonte da aggiornare nel foglio Google:', fonte);
+      
+      // In un'implementazione reale, qui invieremmo una richiesta all'API di Google Sheets
+      // Per ora, salviamo solo localmente e mostriamo un messaggio di successo simulato
+      return true;
+    } catch (error) {
+      console.error('Errore durante l\'aggiornamento della fonte:', error);
       throw error;
     }
   }
@@ -272,6 +321,90 @@ export class GoogleSheetsService {
   }
 
   private mapTipoBando(tipo: string): 'europeo' | 'statale' | 'regionale' | 'altro' {
+    const tipoLower = tipo.toLowerCase();
+    
+    if (tipoLower.includes('europe') || tipoLower.includes('ue') || tipoLower.includes('eu')) {
+      return 'europeo';
+    } else if (tipoLower.includes('stato') || tipoLower.includes('nazional') || tipoLower.includes('mise') || tipoLower.includes('mimit')) {
+      return 'statale';
+    } else if (tipoLower.includes('region')) {
+      return 'regionale';
+    }
+    
+    return 'altro';
+  }
+
+  private parseCsvToFonti(csvData: string): Fonte[] {
+    const lines = csvData.split('\n');
+    if (lines.length <= 1) {
+      return [];
+    }
+
+    // Prima riga contiene le intestazioni
+    const headers = this.parseCsvLine(lines[0]);
+    
+    const fonti: Fonte[] = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const values = this.parseCsvLine(line);
+      const fonte: any = {
+        stato: 'attivo' // Default stato
+      };
+      
+      // Mappatura delle colonne del CSV alle proprietà di Fonte
+      headers.forEach((header, index) => {
+        if (index < values.length) {
+          const value = values[index];
+          
+          switch(header.toLowerCase()) {
+            case 'id':
+              fonte.id = value || `fonte-${Date.now()}-${i}`;
+              break;
+            case 'nome':
+              fonte.nome = value;
+              break;
+            case 'url':
+              fonte.url = value;
+              break;
+            case 'tipo':
+              fonte.tipo = this.mapTipoFonte(value);
+              break;
+            case 'stato':
+              fonte.stato = value.toLowerCase() === 'attivo' ? 'attivo' : 'inattivo';
+              break;
+            case 'frequenza_aggiornamento':
+              fonte.frequenzaAggiornamento = value;
+              break;
+            case 'note':
+              fonte.note = value;
+              break;
+            default:
+              // Gestisce campi addizionali
+              fonte[header] = value;
+          }
+        }
+      });
+      
+      // Assicurati che i campi obbligatori abbiano valori
+      if (fonte.nome && fonte.url) {
+        if (!fonte.id) {
+          fonte.id = `fonte-${Date.now()}-${i}`;
+        }
+        if (!fonte.tipo) {
+          fonte.tipo = 'altro';
+        }
+        
+        fonti.push(fonte as Fonte);
+      }
+    }
+    
+    return fonti;
+  }
+
+  private mapTipoFonte(tipo: string): 'europeo' | 'statale' | 'regionale' | 'altro' {
     const tipoLower = tipo.toLowerCase();
     
     if (tipoLower.includes('europe') || tipoLower.includes('ue') || tipoLower.includes('eu')) {

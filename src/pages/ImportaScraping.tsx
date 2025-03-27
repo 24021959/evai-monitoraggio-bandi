@@ -11,7 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileSpreadsheet, ArrowRight, AlertCircle, InfoIcon } from 'lucide-react';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
-import { Bando } from '@/types';
+import { Bando, Fonte } from '@/types';
+import { FirecrawlService } from '@/utils/FirecrawlService';
 
 const ImportaScraping = () => {
   const navigate = useNavigate();
@@ -19,9 +20,11 @@ const ImportaScraping = () => {
   const [googleSheetUrl, setGoogleSheetUrl] = useState(GoogleSheetsService.getSheetUrl() || '');
   const [isLoading, setIsLoading] = useState(false);
   const [bandiAnteprima, setBandiAnteprima] = useState<Bando[]>([]);
+  const [fontiAnteprima, setFontiAnteprima] = useState<Fonte[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("bandi");
   
-  const handleImport = async () => {
+  const handleImportBandi = async () => {
     if (!googleSheetUrl) {
       toast({
         title: "URL mancante",
@@ -78,6 +81,63 @@ const ImportaScraping = () => {
     }
   };
   
+  const handleImportFonti = async () => {
+    if (!googleSheetUrl) {
+      toast({
+        title: "URL mancante",
+        description: "Inserisci l'URL del foglio Google Sheets",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Salva l'URL del foglio Google Sheets
+      GoogleSheetsService.setSheetUrl(googleSheetUrl);
+      
+      // Recupera le fonti dal foglio
+      const fonti = await GoogleSheetsService.fetchFontiFromSheet(googleSheetUrl);
+      
+      if (fonti.length === 0) {
+        setError("Nessuna fonte trovata nel foglio Google Sheets. Verifica che sia presente un foglio 'Fonti' con il formato corretto.");
+        toast({
+          title: "Nessuna fonte trovata",
+          description: "Verifica che sia presente un foglio 'Fonti' con il formato corretto",
+          variant: "destructive",
+        });
+      } else {
+        // Mostra anteprima
+        setFontiAnteprima(fonti.slice(0, 5));
+        
+        // Salva le fonti usando FirecrawlService
+        FirecrawlService.saveFonti(fonti);
+        
+        toast({
+          title: "Importazione completata",
+          description: `Importate ${fonti.length} fonti dal foglio Google Sheets`,
+        });
+        
+        // Passa alla pagina delle fonti dopo un breve ritardo
+        setTimeout(() => {
+          navigate('/fonti');
+        }, 1500);
+      }
+    } catch (error: any) {
+      console.error('Errore durante l\'importazione delle fonti:', error);
+      setError(error.message || "Errore durante l'importazione delle fonti");
+      toast({
+        title: "Errore di importazione",
+        description: error.message || "Si è verificato un errore durante l'importazione delle fonti",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -88,10 +148,10 @@ const ImportaScraping = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-blue-500" />
-            <CardTitle>Importa Bandi da Google Sheets</CardTitle>
+            <CardTitle>Importa Dati da Google Sheets</CardTitle>
           </div>
           <CardDescription>
-            Importa i risultati dello scraping da un foglio Google Sheets per fare il match con i clienti
+            Importa bandi o fonti da un foglio Google Sheets per gestire il sistema di monitoraggio
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -99,8 +159,7 @@ const ImportaScraping = () => {
             <InfoIcon className="h-4 w-4" />
             <AlertTitle>Informazioni sul formato</AlertTitle>
             <AlertDescription>
-              Il foglio Google Sheets deve essere pubblico e contenere colonne come: 
-              data_scraping, titolo_incentivo, fonte, descrizione, url_dettaglio, requisiti, scadenza_dettagliata, budget_disponibile.
+              Il foglio Google Sheets deve essere pubblico. Per importare le fonti, è necessario un foglio chiamato "Fonti" con colonne come: nome, url, tipo e stato.
             </AlertDescription>
           </Alert>
           
@@ -114,18 +173,102 @@ const ImportaScraping = () => {
                 onChange={(e) => setGoogleSheetUrl(e.target.value)}
               />
               <p className="text-sm text-gray-500">
-                Inserisci l'URL completo del foglio Google Sheets contenente i dati dello scraping
+                Inserisci l'URL completo del foglio Google Sheets contenente i dati
               </p>
             </div>
             
-            <Button 
-              onClick={handleImport} 
-              disabled={isLoading || !googleSheetUrl} 
-              className="w-full"
-            >
-              {isLoading ? 'Importazione in corso...' : 'Importa e vai al Match'}
-              {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
-            </Button>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-2 mb-6">
+                <TabsTrigger value="bandi">Importa Bandi</TabsTrigger>
+                <TabsTrigger value="fonti">Importa Fonti</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="bandi">
+                <Button 
+                  onClick={handleImportBandi} 
+                  disabled={isLoading || !googleSheetUrl} 
+                  className="w-full"
+                >
+                  {isLoading && activeTab === "bandi" ? 'Importazione bandi in corso...' : 'Importa Bandi e vai al Match'}
+                  {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                </Button>
+                
+                {bandiAnteprima.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <Separator />
+                    <h3 className="font-medium">Anteprima bandi importati</h3>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-gray-50">
+                            <th className="px-4 py-3 text-left">Titolo</th>
+                            <th className="px-4 py-3 text-left">Fonte</th>
+                            <th className="px-4 py-3 text-left">Tipo</th>
+                            <th className="px-4 py-3 text-left">Scadenza</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bandiAnteprima.map((bando, index) => (
+                            <tr key={index} className="border-b">
+                              <td className="px-4 py-3">{bando.titolo}</td>
+                              <td className="px-4 py-3">{bando.fonte}</td>
+                              <td className="px-4 py-3">{bando.tipo}</td>
+                              <td className="px-4 py-3">{bando.scadenza}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-sm text-gray-500 italic">
+                      Visualizzazione dei primi 5 record importati.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="fonti">
+                <Button 
+                  onClick={handleImportFonti} 
+                  disabled={isLoading || !googleSheetUrl} 
+                  className="w-full"
+                >
+                  {isLoading && activeTab === "fonti" ? 'Importazione fonti in corso...' : 'Importa Fonti e vai alla gestione Fonti'}
+                  {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                </Button>
+                
+                {fontiAnteprima.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <Separator />
+                    <h3 className="font-medium">Anteprima fonti importate</h3>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-gray-50">
+                            <th className="px-4 py-3 text-left">Nome</th>
+                            <th className="px-4 py-3 text-left">URL</th>
+                            <th className="px-4 py-3 text-left">Tipo</th>
+                            <th className="px-4 py-3 text-left">Stato</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {fontiAnteprima.map((fonte, index) => (
+                            <tr key={index} className="border-b">
+                              <td className="px-4 py-3">{fonte.nome}</td>
+                              <td className="px-4 py-3">{fonte.url}</td>
+                              <td className="px-4 py-3">{fonte.tipo}</td>
+                              <td className="px-4 py-3">{fonte.stato}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-sm text-gray-500 italic">
+                      Visualizzazione dei primi 5 record importati.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
           
           {error && (
@@ -135,45 +278,14 @@ const ImportaScraping = () => {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
-          {bandiAnteprima.length > 0 && (
-            <div className="space-y-2">
-              <Separator />
-              <h3 className="font-medium">Anteprima dati importati</h3>
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="px-4 py-3 text-left">Titolo</th>
-                      <th className="px-4 py-3 text-left">Fonte</th>
-                      <th className="px-4 py-3 text-left">Tipo</th>
-                      <th className="px-4 py-3 text-left">Scadenza</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bandiAnteprima.map((bando, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="px-4 py-3">{bando.titolo}</td>
-                        <td className="px-4 py-3">{bando.fonte}</td>
-                        <td className="px-4 py-3">{bando.tipo}</td>
-                        <td className="px-4 py-3">{bando.scadenza}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-sm text-gray-500 italic">
-                Visualizzazione dei primi 5 record importati.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
       
       <Tabs defaultValue="instruction">
         <TabsList>
           <TabsTrigger value="instruction">Istruzioni</TabsTrigger>
-          <TabsTrigger value="format">Formato Dati</TabsTrigger>
+          <TabsTrigger value="format-bandi">Formato Bandi</TabsTrigger>
+          <TabsTrigger value="format-fonti">Formato Fonti</TabsTrigger>
         </TabsList>
         <TabsContent value="instruction" className="space-y-4">
           <Card>
@@ -184,20 +296,20 @@ const ImportaScraping = () => {
               <ol className="list-decimal pl-5 space-y-2">
                 <li>Assicurati che il foglio Google Sheets sia pubblico (File &gt; Condividi &gt; Chiunque abbia il link)</li>
                 <li>Copia l'URL completo del foglio dalla barra degli indirizzi</li>
-                <li>Incolla l'URL nel campo sopra e clicca "Importa e vai al Match"</li>
-                <li>I dati importati verranno automaticamente utilizzati per il match con i clienti</li>
+                <li>Incolla l'URL nel campo sopra e scegli cosa importare (Bandi o Fonti)</li>
+                <li>Per importare le fonti, assicurati di avere un foglio chiamato "Fonti" nel documento</li>
               </ol>
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="format">
+        <TabsContent value="format-bandi">
           <Card>
             <CardHeader>
-              <CardTitle>Formato dei dati richiesto</CardTitle>
+              <CardTitle>Formato dei bandi richiesto</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="mb-4 text-gray-600">
-                Il foglio Google Sheets deve contenere le seguenti colonne:
+                Il foglio Google Sheets dei bandi deve contenere le seguenti colonne:
               </p>
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>data_scraping</strong>: Data di estrazione del bando</li>
@@ -211,6 +323,27 @@ const ImportaScraping = () => {
                 <li><strong>scadenza_dettagliata</strong>: Data di scadenza per la presentazione</li>
                 <li><strong>budget_disponibile</strong>: Importo del finanziamento</li>
                 <li><strong>ultimi_aggiornamenti</strong>: Data degli ultimi aggiornamenti</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="format-fonti">
+          <Card>
+            <CardHeader>
+              <CardTitle>Formato delle fonti richiesto</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4 text-gray-600">
+                Il foglio "Fonti" di Google Sheets deve contenere le seguenti colonne:
+              </p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>id</strong>: Identificativo univoco della fonte (facoltativo, generato automaticamente se mancante)</li>
+                <li><strong>nome</strong>: Nome della fonte</li>
+                <li><strong>url</strong>: URL completo della fonte</li>
+                <li><strong>tipo</strong>: Tipo di fonte (es. europeo, statale, regionale, altro)</li>
+                <li><strong>stato</strong>: Stato della fonte (attivo o inattivo)</li>
+                <li><strong>frequenza_aggiornamento</strong>: Frequenza di aggiornamento della fonte (facoltativo)</li>
+                <li><strong>note</strong>: Note aggiuntive sulla fonte (facoltativo)</li>
               </ul>
             </CardContent>
           </Card>
