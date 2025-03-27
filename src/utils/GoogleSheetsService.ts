@@ -1,4 +1,3 @@
-
 import { Bando } from '@/types';
 
 // This service handles the Google Sheets integration
@@ -52,7 +51,59 @@ export class GoogleSheetsService {
       }
       
       const csvData = await response.text();
-      return this.parseCsvToBandi(csvData);
+      
+      // Parse CSV to get bandi
+      const parsedBandi = this.parseCsvToBandi(csvData);
+      
+      // Get existing bandi from session storage to check for duplicates
+      const existingBandiStr = sessionStorage.getItem('bandiImportati');
+      let existingBandi: Bando[] = [];
+      
+      if (existingBandiStr) {
+        try {
+          existingBandi = JSON.parse(existingBandiStr);
+        } catch (error) {
+          console.error('Errore nel parsing dei bandi esistenti:', error);
+        }
+      }
+      
+      // Filter out duplicates based on ID or matching title and fonte
+      const existingIds = new Set(existingBandi.map(b => b.id));
+      const existingTitleSourcePairs = new Set(
+        existingBandi.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+      );
+      
+      const uniqueNewBandi = parsedBandi.filter(bando => {
+        // Check if the ID already exists
+        if (existingIds.has(bando.id)) return false;
+        
+        // Check if the title and source combination already exists
+        const titleSourcePair = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+        return !existingTitleSourcePairs.has(titleSourcePair);
+      });
+      
+      // Set the current date for all newly imported bandi if not already set
+      const today = new Date().toISOString().split('T')[0];
+      uniqueNewBandi.forEach(bando => {
+        if (!bando.dataEstrazione) {
+          bando.dataEstrazione = today;
+        }
+      });
+      
+      // Combine new bandi with existing ones, prioritizing the newest ones
+      const allBandi = [...uniqueNewBandi, ...existingBandi];
+      
+      // Sort by extraction date (newest first)
+      allBandi.sort((a, b) => {
+        const dateA = a.dataEstrazione ? new Date(a.dataEstrazione).getTime() : 0;
+        const dateB = b.dataEstrazione ? new Date(b.dataEstrazione).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      // Save the combined list back to session storage
+      sessionStorage.setItem('bandiImportati', JSON.stringify(allBandi));
+      
+      return allBandi;
     } catch (error) {
       console.error('Errore durante il recupero dei bandi dal foglio Google:', error);
       throw error;

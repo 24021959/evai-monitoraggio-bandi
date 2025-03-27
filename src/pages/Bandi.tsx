@@ -1,10 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import BandiTable from "@/components/BandiTable";
 import BandoCard from '@/components/BandoCard';
 import { Bando } from "@/types";
 import { FirecrawlService } from '@/utils/FirecrawlService';
@@ -15,8 +13,6 @@ import {
   Search, 
   Filter,
   FileSpreadsheet,
-  ChevronLeft,
-  ChevronRight
 } from 'lucide-react';
 import {
   Select,
@@ -40,7 +36,6 @@ const Bandi = () => {
   const navigate = useNavigate();
   const [filtro, setFiltro] = useState<string>('');
   const [settoreFiltro, setSettoreFiltro] = useState<string>('tutti');
-  const [visualizzazione, setVisualizzazione] = useState<'tabella' | 'cards'>('tabella');
   const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
@@ -307,13 +302,6 @@ const Bandi = () => {
                     <SelectItem value="50">50 per pagina</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Tabs value={visualizzazione} onValueChange={(v) => setVisualizzazione(v as 'tabella' | 'cards')}>
-                  <TabsList>
-                    <TabsTrigger value="tabella">Tabella</TabsTrigger>
-                    <TabsTrigger value="cards">Schede</TabsTrigger>
-                  </TabsList>
-                </Tabs>
               </div>
             </div>
           </div>
@@ -339,26 +327,17 @@ const Bandi = () => {
               Mostra {indicePrimoRisultato + 1}-{Math.min(indiceUltimoRisultato, bandiFiltrati.length)} di {bandiFiltrati.length} bandi
             </div>
             
-            {visualizzazione === 'tabella' ? (
-              <BandiTable 
-                bandi={bandiPaginati} 
-                onViewDetails={handleViewDetail}
-                onDeleteBando={handleDeleteBando}
-                showFullDetails={showGoogleSheetsBandi}
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {bandiPaginati.map(bando => (
-                  <BandoCard 
-                    key={bando.id} 
-                    bando={bando} 
-                    onViewDetails={handleViewDetail}
-                    onDelete={handleDeleteBando}
-                    showFullDetails={showGoogleSheetsBandi}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {bandiPaginati.map(bando => (
+                <BandoCard 
+                  key={bando.id} 
+                  bando={bando} 
+                  onViewDetails={handleViewDetail}
+                  onDelete={handleDeleteBando}
+                  showFullDetails={showGoogleSheetsBandi}
+                />
+              ))}
+            </div>
             
             {renderPagination()}
           </>
