@@ -7,7 +7,8 @@ import {
   Users, 
   GitCompare, 
   FileBarChart, 
-  FileSpreadsheet
+  FileSpreadsheet,
+  Database
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
@@ -96,13 +97,25 @@ const Sidebar = () => {
               Report
             </div>
           </NavLink>
+          <NavLink
+            to="/fonti"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <Database className="w-5 h-5" />
+              Fonti
+            </div>
+          </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
           
-          {/* Moved Importa da Google Sheets to the bottom */}
+          {/* Separate menu item for importing from Google Sheets */}
           <NavLink
-            to="#"
-            className={`p-5 hover:bg-blue-50 ${isImportActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`}
-            onClick={handleImportaGoogleSheetsClick}
+            to="/importa-scraping"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`
+            }
           >
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-5 h-5" />

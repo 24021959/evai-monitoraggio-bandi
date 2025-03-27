@@ -14,8 +14,8 @@ import DettaglioCliente from "./pages/DettaglioCliente";
 import Match from "./pages/Match";
 import Report from "./pages/Report";
 import Fonti from "./pages/Fonti";
-import NotFound from "./pages/NotFound";
 import ImportaScraping from './pages/ImportaScraping';
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
