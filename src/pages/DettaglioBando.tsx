@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FirecrawlService } from '@/utils/FirecrawlService';
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Euro, FileText, Target, ExternalLink, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, Euro, FileText, Target, ExternalLink, Info, Users, Clock, List } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 const DettaglioBando = () => {
@@ -17,8 +18,18 @@ const DettaglioBando = () => {
 
   useEffect(() => {
     if (id) {
+      // First check saved bandi
       const tuttiBandi = FirecrawlService.getSavedBandi();
-      const bandoTrovato = tuttiBandi.find(b => b.id === id);
+      let bandoTrovato = tuttiBandi.find(b => b.id === id);
+      
+      // If not found, check imported bandi from session storage
+      if (!bandoTrovato) {
+        const bandiImportatiString = sessionStorage.getItem('bandiImportati');
+        if (bandiImportatiString) {
+          const bandiImportati = JSON.parse(bandiImportatiString);
+          bandoTrovato = bandiImportati.find((b: Bando) => b.id === id);
+        }
+      }
       
       if (bandoTrovato) {
         setBando(bandoTrovato);
@@ -35,8 +46,23 @@ const DettaglioBando = () => {
   }, [id]);
 
   const handleEliminaBando = () => {
-    if (id) {
-      FirecrawlService.deleteBando(id);
+    if (id && bando) {
+      // Check if the bando is from the imported ones in session storage
+      const bandiImportatiString = sessionStorage.getItem('bandiImportati');
+      if (bandiImportatiString) {
+        const bandiImportati = JSON.parse(bandiImportatiString);
+        const isBandoImportato = bandiImportati.some((b: Bando) => b.id === id);
+        
+        if (isBandoImportato) {
+          const newBandiImportati = bandiImportati.filter((b: Bando) => b.id !== id);
+          sessionStorage.setItem('bandiImportati', JSON.stringify(newBandiImportati));
+        } else {
+          FirecrawlService.deleteBando(id);
+        }
+      } else {
+        FirecrawlService.deleteBando(id);
+      }
+      
       toast({
         title: "Bando eliminato",
         description: "Il bando è stato eliminato con successo"
@@ -65,7 +91,11 @@ const DettaglioBando = () => {
     });
   };
 
-  const formatImporto = (min?: number, max?: number) => {
+  const formatImporto = (min?: number, max?: number, budgetDisponibile?: string) => {
+    if (budgetDisponibile) {
+      return budgetDisponibile;
+    }
+    
     if (min && max) {
       return `${min.toLocaleString('it-IT')} € - ${max.toLocaleString('it-IT')} €`;
     } else if (min) {
@@ -131,64 +161,100 @@ const DettaglioBando = () => {
       </div>
       
       <Card className="overflow-hidden">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <span className={`text-xs text-white px-2 py-1 rounded-full ${getTipoClass(bando.tipo)}`}>
-              {bando.tipo}
-            </span>
-            <CardTitle className="text-2xl">{bando.titolo}</CardTitle>
+        <CardHeader className="pb-3 border-b">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className={`text-xs text-white px-2 py-1 rounded-full ${getTipoClass(bando.tipo)}`}>
+                {bando.tipo}
+              </span>
+              <span className="text-sm text-gray-500">{bando.fonte}</span>
+            </div>
+            <CardTitle className="text-2xl leading-tight">{bando.titolo}</CardTitle>
           </div>
-          <CardDescription className="text-lg">
-            {bando.fonte}
-          </CardDescription>
         </CardHeader>
         
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-green-600" />
+        <CardContent className="py-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div className="flex items-start gap-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <Calendar className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-500">Scadenza</p>
-                  <p className="font-medium">{new Date(bando.scadenza).toLocaleDateString('it-IT')}</p>
+                  <h3 className="font-semibold text-blue-800">Scadenza</h3>
+                  <p className="text-lg">{bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Euro className="h-5 w-5 text-green-600" />
+              <div className="flex items-start gap-4 bg-green-50 p-4 rounded-lg border border-green-100">
+                <Euro className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-500">Importo Finanziamento</p>
-                  <p className="font-medium">{formatImporto(bando.importoMin, bando.importoMax)}</p>
+                  <h3 className="font-semibold text-green-800">Importo Finanziamento</h3>
+                  <p className="text-lg">{formatImporto(bando.importoMin, bando.importoMax, bando.budgetDisponibile)}</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-green-600" />
+              <div className="flex items-start gap-4 bg-purple-50 p-4 rounded-lg border border-purple-100">
+                <Target className="h-6 w-6 text-purple-600 mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-500">Settori Target</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {bando.settori.map((settore, index) => (
-                      <Badge key={index} variant="outline" className="bg-blue-50">{settore}</Badge>
+                  <h3 className="font-semibold text-purple-800">Settori Target</h3>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {bando.settori && bando.settori.map((settore, index) => (
+                      <Badge key={index} variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+                        {settore}
+                      </Badge>
                     ))}
                   </div>
                 </div>
               </div>
+              
+              {bando.dataEstrazione && (
+                <div className="flex items-start gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <Clock className="h-6 w-6 text-gray-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Data Estrazione</h3>
+                    <p>{bando.dataEstrazione}</p>
+                  </div>
+                </div>
+              )}
             </div>
             
-            <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-5 w-5 text-green-600" />
-                <h3 className="font-medium">Dettagli del Bando</h3>
+            <div className="space-y-6">
+              <div className="bg-amber-50 p-5 rounded-lg border border-amber-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="h-6 w-6 text-amber-600" />
+                  <h3 className="font-semibold text-amber-800 text-lg">Descrizione del Bando</h3>
+                </div>
+                <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                  {bando.descrizioneCompleta || bando.descrizione || 'Nessuna descrizione disponibile'}
+                </p>
               </div>
-              <p className="text-gray-700 whitespace-pre-line">{bando.descrizione || 'Nessun dettaglio disponibile'}</p>
+              
+              {bando.requisiti && (
+                <div className="bg-indigo-50 p-5 rounded-lg border border-indigo-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="h-6 w-6 text-indigo-600" />
+                    <h3 className="font-semibold text-indigo-800 text-lg">Requisiti</h3>
+                  </div>
+                  <p className="text-gray-700 whitespace-pre-line leading-relaxed">{bando.requisiti}</p>
+                </div>
+              )}
+              
+              {bando.modalitaPresentazione && (
+                <div className="bg-teal-50 p-5 rounded-lg border border-teal-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <List className="h-6 w-6 text-teal-600" />
+                    <h3 className="font-semibold text-teal-800 text-lg">Modalità di Presentazione</h3>
+                  </div>
+                  <p className="text-gray-700 whitespace-pre-line leading-relaxed">{bando.modalitaPresentazione}</p>
+                </div>
+              )}
             </div>
           </div>
           
-          <Separator />
+          <Separator className="my-6" />
           
           <div className="flex flex-col md:flex-row md:justify-between gap-4">
             <div>
-              <h3 className="font-semibold mb-2">Azioni Rapide</h3>
+              <h3 className="font-semibold mb-3">Azioni Rapide</h3>
               <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline" 

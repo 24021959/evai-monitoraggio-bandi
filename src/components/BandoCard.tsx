@@ -68,16 +68,8 @@ const BandoCard: React.FC<BandoCardProps> = ({
     <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow transition-shadow h-full flex flex-col">
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-medium text-lg">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="truncate max-w-[200px]">{bando.titolo}</div>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-md">
-                <p>{bando.titolo}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Making title fully readable - removing truncation and tooltip */}
+          <div className="break-words">{bando.titolo}</div>
         </h3>
         <span className={`text-xs text-white px-2 py-1 rounded-full ${getTipoClass(bando.tipo)}`}>
           {bando.tipo}
