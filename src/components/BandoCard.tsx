@@ -9,6 +9,11 @@ import {
   TooltipProvider, 
   TooltipTrigger 
 } from "@/components/ui/tooltip";
+import { 
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger
+} from "@/components/ui/hover-card";
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
@@ -144,41 +149,39 @@ const BandoCard: React.FC<BandoCardProps> = ({
         
         {showFullDetails && bando.requisiti && (
           <div className="mt-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <strong className="block mb-1">Requisiti:</strong>
-                    <p className="text-xs text-gray-500 max-h-24 overflow-y-auto border p-2 rounded bg-gray-50">
-                      {bando.requisiti}
-                    </p>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-md max-h-[300px] overflow-y-auto">
-                  <p>{bando.requisiti}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <div>
+                  <strong className="block mb-1">Requisiti:</strong>
+                  <p className="text-xs text-gray-500 h-12 line-clamp-3 overflow-hidden border p-2 rounded bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
+                    {bando.requisiti}
+                  </p>
+                </div>
+              </HoverCardTrigger>
+              <HoverCardContent className="max-w-md max-h-[300px] overflow-y-auto bg-white p-4 shadow-lg border">
+                <h4 className="font-medium mb-2">Requisiti completi</h4>
+                <p className="text-sm">{bando.requisiti}</p>
+              </HoverCardContent>
+            </HoverCard>
           </div>
         )}
         
         {showFullDetails && bando.modalitaPresentazione && (
           <div className="mt-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <strong className="block mb-1">Modalità Presentazione:</strong>
-                    <p className="text-xs text-gray-500 max-h-16 overflow-y-auto border p-2 rounded bg-gray-50">
-                      {bando.modalitaPresentazione}
-                    </p>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-md max-h-[300px] overflow-y-auto">
-                  <p>{bando.modalitaPresentazione}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <div>
+                  <strong className="block mb-1">Modalità Presentazione:</strong>
+                  <p className="text-xs text-gray-500 h-12 line-clamp-3 overflow-hidden border p-2 rounded bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
+                    {bando.modalitaPresentazione}
+                  </p>
+                </div>
+              </HoverCardTrigger>
+              <HoverCardContent className="max-w-md max-h-[300px] overflow-y-auto bg-white p-4 shadow-lg border">
+                <h4 className="font-medium mb-2">Modalità di presentazione complete</h4>
+                <p className="text-sm">{bando.modalitaPresentazione}</p>
+              </HoverCardContent>
+            </HoverCard>
           </div>
         )}
       </div>
