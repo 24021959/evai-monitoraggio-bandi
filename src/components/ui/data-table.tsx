@@ -16,6 +16,7 @@ import {
   getSortedRowModel,
   useReactTable,
   SortingState,
+  RowModel,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,9 +46,11 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [filteredData, setFilteredData] = React.useState<TData[]>(data);
 
+  // Create table instance
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -70,13 +73,16 @@ export function DataTable<TData, TValue>({
         const value = row[searchColumn];
         return value && value.toString().toLowerCase().includes(searchQuery.toLowerCase());
       });
-      table.setRowSelection({});
-      table.resetRowSelection();
-      table.setData(filtered);
+      setFilteredData(filtered);
     } else {
-      table.setData(data);
+      setFilteredData(data);
     }
   }, [searchQuery, data, searchColumn]);
+
+  // Update filtered data when data prop changes
+  React.useEffect(() => {
+    setFilteredData(data);
+  }, [data]);
 
   return (
     <div className="space-y-4">
