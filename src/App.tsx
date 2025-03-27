@@ -17,7 +17,6 @@ import Fonti from "./pages/Fonti";
 import RisultatiScraping from "./pages/RisultatiScraping";
 import NotFound from "./pages/NotFound";
 import ConfiguraNotifiche from './pages/ConfiguraNotifiche';
-import ConfigScraping from './pages/ConfigScraping';
 import ImportaScraping from './pages/ImportaScraping';
 
 const queryClient = new QueryClient();
@@ -41,7 +40,6 @@ const App = () => (
             <Route path="fonti" element={<Fonti />} />
             <Route path="risultati-scraping" element={<RisultatiScraping />} />
             <Route path="configura-notifiche" element={<ConfiguraNotifiche />} />
-            <Route path="importazione" element={<ConfigScraping />} />
             <Route path="importa-scraping" element={<ImportaScraping />} />
           </Route>
           <Route path="*" element={<NotFound />} />

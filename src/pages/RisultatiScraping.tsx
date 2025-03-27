@@ -1,460 +1,285 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, AlertCircle, FileText, ArrowLeftRight, CheckCircle, Trash2, RefreshCw, ExternalLink } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/ui/data-table";
+import { Separator } from "@/components/ui/separator";
+import { FileSpreadsheet, Save, ArrowRight, AlertCircle, FileText, Sparkles } from 'lucide-react';
 import { FirecrawlService } from '@/utils/FirecrawlService';
-import { Bando, TipoBando } from '@/types';
+import BandoCard from '@/components/BandoCard';
+import { Bando } from '@/types';
 
 const RisultatiScraping = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [bandiSalvati, setBandiSalvati] = useState(false);
-  const [matchSalvati, setMatchSalvati] = useState(false);
-  const [bandiEstrati, setBandiEstrati] = useState<Bando[]>([]);
+  const [bandi, setBandi] = useState<Bando[]>([]);
+  const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
+  const [visualizzazione, setVisualizzazione] = useState<'tabella' | 'cards'>('tabella');
   const [isLoading, setIsLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('');
   
+  // Carica bandi estratti e importati
   useEffect(() => {
     console.log("RisultatiScraping: Componente montato, caricamento bandi");
-    loadScrapedBandi();
+    
+    // Carica bandi estratti (dal processo di scraping)
+    console.log("Iniziando caricamento dei bandi estratti...");
+    const extractedBandi = FirecrawlService.getScrapedBandi();
+    if (extractedBandi.length > 0) {
+      console.log("Caricati bandi estratti, quantità:", extractedBandi.length);
+      setBandi(extractedBandi);
+    } else {
+      console.log("Nessun bando estratto trovato in localStorage");
+    }
+    
+    // Carica bandi importati da Google Sheets
+    const importedBandiStr = sessionStorage.getItem('bandiImportati');
+    if (importedBandiStr) {
+      try {
+        const parsedBandi = JSON.parse(importedBandiStr);
+        console.log("Caricati bandi importati da Google Sheets, quantità:", parsedBandi.length);
+        setBandiImportati(parsedBandi);
+      } catch (error) {
+        console.error("Errore nel parsing dei bandi importati:", error);
+      }
+    }
   }, []);
   
-  const loadScrapedBandi = () => {
+  const handleViewDetail = (id: string) => {
+    navigate(`/bandi/${id}`);
+  };
+  
+  const handleSaveBandi = async () => {
+    if (bandi.length === 0 && bandiImportati.length === 0) {
+      return;
+    }
+    
     setIsLoading(true);
-    setDebugInfo('');
     
     try {
-      console.log("Iniziando caricamento dei bandi estratti...");
-      const loadedBandi = FirecrawlService.getScrapedBandi();
-      console.log("Caricati bandi estratti, quantità:", loadedBandi.length);
+      // Salva sia i bandi estratti che quelli importati
+      const allBandi = [...bandi, ...bandiImportati];
       
-      const storageInfo = {
-        scrapedBandi: localStorage.getItem('scraped_bandi'),
-        savedBandi: localStorage.getItem('saved_bandi')
-      };
-      
-      const debugText = `
-        Chiavi localStorage: ${Object.keys(localStorage).join(', ')}
-        Bandi estratti trovati: ${loadedBandi.length}
-        scraped_bandi presente: ${storageInfo.scrapedBandi ? 'Sì' : 'No'}
-        saved_bandi presente: ${storageInfo.savedBandi ? 'Sì' : 'No'}
-      `;
-      
-      setDebugInfo(debugText);
-      setBandiEstrati(loadedBandi);
-      
-      if (loadedBandi.length === 0) {
-        toast({
-          title: "Nessun dato trovato",
-          description: "Non sono stati trovati bandi estratti. Prova a eseguire una nuova estrazione.",
-          variant: "destructive",
-          duration: 5000,
-        });
+      if (allBandi.length > 0) {
+        FirecrawlService.saveBandi(allBandi);
+        console.log("Bandi salvati con successo:", allBandi.length);
+        
+        // Reindirizza alla pagina dei bandi
+        navigate("/bandi");
       }
     } catch (error) {
-      console.error("Errore completo nel caricamento dei bandi:", error);
-      setDebugInfo(`Errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore nel caricamento dei dati.",
-        variant: "destructive",
-        duration: 3000,
-      });
+      console.error("Errore durante il salvataggio dei bandi:", error);
     } finally {
       setIsLoading(false);
     }
   };
   
-  const [matchSuggeriti, setMatchSuggeriti] = useState(() => {
-    return [
-      {
-        id: 'match-1',
-        bandoId: 'bando-1',
-        titoloBando: 'Bando Innovazione Digitale PMI',
-        clienteId: '1',
-        nomeCliente: 'TechSolutions SRL',
-        compatibilita: 92,
-        motivo: 'Il cliente opera nel settore tecnologico e ha un fatturato compatibile'
-      },
-      {
-        id: 'match-2',
-        bandoId: 'bando-2',
-        titoloBando: 'Fondo Ricerca e Sviluppo',
-        clienteId: '3',
-        nomeCliente: 'Agritech SPA',
-        compatibilita: 78,
-        motivo: 'Settore agricolo con componente tecnologica, adatto per R&S'
-      },
-      {
-        id: 'match-3',
-        bandoId: 'bando-3',
-        titoloBando: 'Horizon Europe Cluster 5',
-        clienteId: '2',
-        nomeCliente: 'GreenEnergy SRL',
-        compatibilita: 95,
-        motivo: 'Perfetta corrispondenza per focus su energia sostenibile'
-      }
-    ];
-  });
-  
-  const handleSalvaBandi = () => {
-    if (bandiEstrati.length > 0) {
-      try {
-        console.log("Salvando bandi nella memoria persistente...");
-        FirecrawlService.saveBandi(bandiEstrati);
-        toast({
-          title: "Bandi salvati",
-          description: `${bandiEstrati.length} bandi sono stati salvati nel sistema`,
-          duration: 3000,
-        });
-        setBandiSalvati(true);
-        
-        const savedBandi = FirecrawlService.getSavedBandi();
-        console.log("Controllo bandi salvati:", savedBandi.length);
-        
-        setBandiEstrati([]);
-      } catch (error) {
-        console.error("Errore completo nel salvataggio:", error);
-        toast({
-          title: "Errore",
-          description: `Errore nel salvataggio: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
-          variant: "destructive",
-          duration: 3000,
-        });
-      }
-    } else {
-      toast({
-        title: "Nessun bando da salvare",
-        description: "Non ci sono bandi da salvare nel sistema.",
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
+  const renderBandiTable = () => {
+    // Combina i bandi da entrambe le fonti
+    const allBandi = [...bandi, ...bandiImportati];
+    
+    return (
+      <div className="border rounded-lg overflow-x-auto">
+        <table className="w-full min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Titolo</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fonte</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Settori</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scadenza</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importo</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {allBandi.length > 0 ? (
+              allBandi.map((bando) => (
+                <tr key={bando.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{bando.titolo}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{bando.fonte}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${bando.tipo === 'europeo' ? 'bg-blue-100 text-blue-800' : 
+                        bando.tipo === 'statale' ? 'bg-green-100 text-green-800' : 
+                        bando.tipo === 'regionale' ? 'bg-teal-100 text-teal-800' : 
+                        'bg-gray-100 text-gray-800'}`}>
+                      {bando.tipo}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {bando.settori && bando.settori.slice(0, 2).join(', ')}
+                      {bando.settori && bando.settori.length > 2 && '...'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {bando.budgetDisponibile || 
+                        (bando.importoMax ? `fino a ${bando.importoMax / 1000}K` : 'N/D')}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleViewDetail(bando.id)}
+                    >
+                      Dettagli
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  Nessun bando disponibile
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
   };
   
-  const handleSalvaMatch = () => {
-    toast({
-      title: "Match salvati",
-      description: `${matchSuggeriti.length} match sono stati salvati nel sistema`,
-      duration: 3000,
-    });
-    setMatchSalvati(true);
-  };
-  
-  const handleEsportaCSV = () => {
-    toast({
-      title: "Esportazione CSV",
-      description: "I dati sono stati esportati in formato CSV",
-      duration: 3000,
-    });
-  };
-  
-  const handleNuovoMonitoraggio = () => {
-    navigate('/importazione');
-  };
-
-  const handleDeleteBando = (id: string) => {
-    setBandiEstrati(prev => prev.filter(bando => bando.id !== id));
-    FirecrawlService.deleteScrapedBando(id);
-    toast({
-      title: "Bando rimosso",
-      description: "Il bando è stato rimosso dalla lista",
-      duration: 3000,
-    });
-  };
-
-  const handleRefresh = () => {
-    loadScrapedBandi();
-  };
-
-  const handleTornaScraping = () => {
-    console.log("Navigazione a /importa-scraping");
-    navigate('/importa-scraping');
-  };
-
-  const handleViewBando = (url: string) => {
-    if (url) {
-      window.open(url, '_blank');
-    }
+  const renderBandiCards = () => {
+    // Combina i bandi da entrambe le fonti
+    const allBandi = [...bandi, ...bandiImportati];
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {allBandi.length > 0 ? (
+          allBandi.map((bando) => (
+            <BandoCard 
+              key={bando.id} 
+              bando={bando} 
+              onViewDetails={handleViewDetail}
+              showFullDetails={true}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-10 text-gray-500">
+            Nessun bando disponibile
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">Risultati Estrazione</h1>
+        <h1 className="text-2xl font-bold">Risultati Monitoraggio</h1>
+        <div className="flex gap-2">
           <Button 
             variant="outline" 
-            size="icon" 
-            onClick={handleRefresh} 
-            disabled={isLoading}
-            title="Ricarica i risultati"
+            onClick={() => setVisualizzazione(v => v === 'tabella' ? 'cards' : 'tabella')}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {visualizzazione === 'tabella' ? 'Vista Schede' : 'Vista Tabella'}
           </Button>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleTornaScraping}>
-            Nuova Estrazione
-          </Button>
-          <Button onClick={handleEsportaCSV} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Esporta CSV
+          
+          <Button 
+            onClick={handleSaveBandi} 
+            disabled={isLoading || (bandi.length === 0 && bandiImportati.length === 0)}
+            className="flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            Salva tutti i bandi
           </Button>
         </div>
       </div>
       
-      <Tabs defaultValue="bandi" className="w-full">
-        <TabsList className="grid grid-cols-2 mb-6">
-          <TabsTrigger value="bandi">Bandi Trovati</TabsTrigger>
-          <TabsTrigger value="match">Match Suggeriti</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="bandi">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-500" />
-                <CardTitle>Bandi Estratti</CardTitle>
-              </div>
-              <CardDescription>
-                {isLoading ? 'Caricamento bandi in corso...' : `Sono stati estratti ${bandiEstrati.length} bandi dalle fonti configurate`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : bandiSalvati ? (
-                <Alert className="bg-green-50 border-green-200">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <AlertTitle>Bandi salvati con successo</AlertTitle>
-                  <AlertDescription>
-                    I bandi sono stati salvati nel sistema. Puoi visualizzarli nella sezione Bandi.
-                    <div className="mt-4">
-                      <Button variant="outline" onClick={() => navigate('/bandi')} className="flex items-center gap-2">
-                        Vai alla sezione Bandi
-                      </Button>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              ) : bandiEstrati.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Nessun bando trovato</AlertTitle>
-                  <AlertDescription>
-                    Non sono stati trovati bandi dalle fonti configurate. Prova ad aggiungere nuove fonti o modificare i criteri di ricerca.
-                    <div className="mt-4">
-                      <Button onClick={handleTornaScraping}>
-                        Torna all'estrazione
-                      </Button>
-                    </div>
-                    
-                    {debugInfo && (
-                      <div className="mt-4 p-3 bg-gray-100 rounded text-xs font-mono whitespace-pre-wrap">
-                        <p className="font-semibold mb-1">Informazioni di debug:</p>
-                        {debugInfo}
-                      </div>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Titolo</TableHead>
-                        <TableHead>Fonte</TableHead>
-                        <TableHead>Settori</TableHead>
-                        <TableHead>Scadenza</TableHead>
-                        <TableHead>Importo Max</TableHead>
-                        <TableHead>Azioni</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {bandiEstrati.map((bando) => (
-                        <TableRow key={bando.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-1">
-                              {bando.titolo}
-                              {bando.url && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-5 w-5 p-0 text-blue-500 hover:text-blue-700"
-                                  onClick={() => handleViewBando(bando.url)}
-                                >
-                                  <ExternalLink className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{bando.fonte}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {bando.settori.map((settore, index) => (
-                                <Badge key={index} variant="outline" className="bg-blue-50">{settore}</Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>{new Date(bando.scadenza).toLocaleDateString('it-IT')}</TableCell>
-                          <TableCell>€{bando.importoMax.toLocaleString('it-IT')}</TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleDeleteBando(bando.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <div className="flex justify-end">
-                    <Button onClick={handleSalvaBandi}>
-                      Salva Bandi nel Sistema
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="match">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight className="h-5 w-5 text-green-500" />
-                <CardTitle>Match Suggeriti</CardTitle>
-              </div>
-              <CardDescription>
-                Il sistema ha identificato {matchSuggeriti.length} potenziali match tra i bandi trovati e i tuoi clienti
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {matchSalvati ? (
-                <Alert className="bg-green-50 border-green-200">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <AlertTitle>Match salvati con successo</AlertTitle>
-                  <AlertDescription>
-                    I match sono stati salvati nel sistema. Puoi visualizzarli nella sezione Match.
-                    <div className="mt-4">
-                      <Button variant="outline" onClick={() => navigate('/match')} className="flex items-center gap-2">
-                        Vai alla sezione Match
-                      </Button>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              ) : matchSuggeriti.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Nessun match trovato</AlertTitle>
-                  <AlertDescription>
-                    Non sono stati trovati match tra i bandi estratti e i clienti nel sistema. Prova ad aggiungere più dettagli ai profili dei clienti.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Bando</TableHead>
-                        <TableHead>Compatibilità</TableHead>
-                        <TableHead>Motivo</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {matchSuggeriti.map((match) => (
-                        <TableRow key={match.id}>
-                          <TableCell className="font-medium">{match.nomeCliente}</TableCell>
-                          <TableCell>{match.titoloBando}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <span className={`inline-block w-12 text-center font-medium ${
-                                match.compatibilita >= 80 ? 'text-green-600' : 
-                                match.compatibilita >= 60 ? 'text-yellow-600' : 'text-red-600'
-                              }`}>
-                                {match.compatibilita}%
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{match.motivo}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <div className="flex justify-end">
-                    <Button onClick={handleSalvaMatch}>
-                      Salva Match nel Sistema
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {bandiImportati.length > 0 && (
+        <Alert className="bg-green-50 border-green-200">
+          <FileSpreadsheet className="h-4 w-4 text-green-600" />
+          <AlertTitle>Dati da Google Sheets</AlertTitle>
+          <AlertDescription>
+            Sono stati importati {bandiImportati.length} bandi dal foglio Google Sheets.
+          </AlertDescription>
+        </Alert>
+      )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {bandi.length === 0 && bandiImportati.length === 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Nessun risultato</AlertTitle>
+          <AlertDescription>
+            Non sono stati trovati bandi estratti o importati. Prova a eseguire un'estrazione o un'importazione.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div>
+        {visualizzazione === 'tabella' ? renderBandiTable() : renderBandiCards()}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Informazioni sul Monitoraggio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Fonti analizzate:</span>
-                <span className="font-medium">3</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Pagine scansionate:</span>
-                <span className="font-medium">127</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Bandi identificati:</span>
-                <span className="font-medium">{bandiEstrati.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Match potenziali:</span>
-                <span className="font-medium">{matchSuggeriti.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Data monitoraggio:</span>
-                <span className="font-medium">{new Date().toLocaleDateString('it-IT')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Crediti API utilizzati:</span>
-                <span className="font-medium">45</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              <CardTitle>Suggerimenti</CardTitle>
             </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              I bandi estratti e importati non sono ancora stati salvati nel sistema. 
+              Clicca su "Salva tutti i bandi" per renderli permanenti e poterli utilizzare per il match con i clienti.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/importa-scraping')}
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Importa altri bandi da Google Sheets
+            </Button>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader>
-            <CardTitle>Azioni Suggerite</CardTitle>
+            <div className="flex items-center gap-2">
+              <ArrowRight className="h-5 w-5 text-blue-500" />
+              <CardTitle>Prossimi passi</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="p-3 bg-green-50 rounded border border-green-100">
-                <div className="font-medium">Notifica Clienti</div>
-                <p className="text-sm text-gray-600 mt-1">
-                  Ci sono 2 match con compatibilità superiore all'80%. Considera di notificare i clienti.
-                </p>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Badge variant="outline" className="mr-2">1</Badge>
+                <span className="text-sm">Salva i bandi nel sistema</span>
+              </div>
+              <div className="flex items-center">
+                <Badge variant="outline" className="mr-2">2</Badge>
+                <span className="text-sm">Esegui il match con i profili dei clienti</span>
+              </div>
+              <div className="flex items-center">
+                <Badge variant="outline" className="mr-2">3</Badge>
+                <span className="text-sm">Invia notifiche ai clienti interessati</span>
               </div>
             </div>
+            
+            <Button 
+              onClick={() => navigate('/match')} 
+              variant="default"
+              className="w-full flex items-center justify-center gap-2"
+            >
+              Vai al Match
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </CardContent>
         </Card>
       </div>

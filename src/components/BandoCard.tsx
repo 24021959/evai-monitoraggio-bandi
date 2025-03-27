@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Bando } from '../types';
-import { Info, Link2 } from 'lucide-react';
+import { Info, Link2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   Tooltip, 
@@ -10,6 +10,7 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface BandoCardProps {
   bando: Bando;
@@ -67,8 +68,8 @@ const BandoCard: React.FC<BandoCardProps> = ({
               <TooltipTrigger asChild>
                 <div className="truncate max-w-[200px]">{bando.titolo}</div>
               </TooltipTrigger>
-              <TooltipContent side="top">
-                <p className="max-w-md">{bando.titolo}</p>
+              <TooltipContent side="top" className="max-w-md">
+                <p>{bando.titolo}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -77,6 +78,7 @@ const BandoCard: React.FC<BandoCardProps> = ({
           {bando.tipo}
         </span>
       </div>
+      
       <div className="text-sm text-gray-600 mb-4 flex-grow">
         <div className="flex justify-between mb-1">
           <span className="font-medium w-1/3">Fonte:</span>
@@ -89,11 +91,11 @@ const BandoCard: React.FC<BandoCardProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="truncate">
-                    {(bando.settori && bando.settori.join(', ')) || 'Generico'}
+                    {(bando.settori && Array.isArray(bando.settori) && bando.settori.join(', ')) || 'Generico'}
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>{(bando.settori && bando.settori.join(', ')) || 'Generico'}</p>
+                <TooltipContent side="bottom" className="max-w-md">
+                  <p>{(bando.settori && Array.isArray(bando.settori) && bando.settori.join(', ')) || 'Generico'}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -119,6 +121,27 @@ const BandoCard: React.FC<BandoCardProps> = ({
           </div>
         )}
         
+        {showFullDetails && bando.descrizione && (
+          <div className="mt-2">
+            <Separator className="my-2" />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <strong className="block mb-1">Descrizione:</strong>
+                    <p className="text-xs text-gray-500 max-h-28 overflow-y-auto border p-2 rounded bg-gray-50">
+                      {bando.descrizione}
+                    </p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-md max-h-[300px] overflow-y-auto">
+                  <p>{bando.descrizioneCompleta || bando.descrizione}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
+        
         {showFullDetails && bando.requisiti && (
           <div className="mt-3">
             <TooltipProvider>
@@ -139,36 +162,57 @@ const BandoCard: React.FC<BandoCardProps> = ({
           </div>
         )}
         
-        {showFullDetails && bando.url && (
-          <div className="mt-2">
-            <Button 
-              variant="link" 
-              className="p-0 h-auto text-blue-500"
-              onClick={() => openUrl(bando.url as string)}
-            >
-              <Link2 className="h-4 w-4 mr-1" /> Vai al bando
-            </Button>
+        {showFullDetails && bando.modalitaPresentazione && (
+          <div className="mt-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <strong className="block mb-1">Modalità Presentazione:</strong>
+                    <p className="text-xs text-gray-500 max-h-16 overflow-y-auto border p-2 rounded bg-gray-50">
+                      {bando.modalitaPresentazione}
+                    </p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-md max-h-[300px] overflow-y-auto">
+                  <p>{bando.modalitaPresentazione}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         )}
       </div>
       
-      <div className="flex gap-2 mt-auto pt-2">
-        {onViewDetails && (
+      <div className="flex flex-col gap-2 mt-auto pt-2">
+        {bando.url && (
           <Button 
             variant="outline" 
             size="sm"
-            className="flex-1 flex items-center justify-center gap-2" 
+            className="w-full flex items-center justify-center gap-2"
+            onClick={() => openUrl(bando.url as string)}
+          >
+            <ExternalLink className="h-4 w-4" />
+            Apri Bando
+          </Button>
+        )}
+        
+        {onViewDetails && (
+          <Button 
+            variant="default" 
+            size="sm"
+            className="w-full flex items-center justify-center gap-2" 
             onClick={() => onViewDetails(bando.id)}
           >
             <Info className="h-4 w-4" />
             Dettagli
           </Button>
         )}
+        
         {onDelete && (
           <Button 
             variant="destructive" 
             size="sm"
-            className="flex-1"
+            className="w-full"
             onClick={() => onDelete(bando.id)}
           >
             Elimina

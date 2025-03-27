@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -8,27 +9,43 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeftRight, InfoIcon, AlertCircle, Mail, FileText, ChevronRight } from 'lucide-react';
 import MatchTable from '@/components/MatchTable';
+import { Bando } from '@/types';
+import { FirecrawlService } from '@/utils/FirecrawlService';
 
 export default function Match() {
   // Controllo se ci sono bandi importati da Google Sheets
-  const [bandiImportati, setBandiImportati] = React.useState<any[]>([]);
+  const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
+  const [savedBandi, setSavedBandi] = useState<Bando[]>([]);
+  const [allBandi, setAllBandi] = useState<Bando[]>([]);
   
-  React.useEffect(() => {
+  useEffect(() => {
     // Recupera i bandi importati da sessionStorage
     const importedBandi = sessionStorage.getItem('bandiImportati');
     if (importedBandi) {
       try {
         const parsedBandi = JSON.parse(importedBandi);
         setBandiImportati(parsedBandi);
-        console.log('Bandi importati recuperati:', parsedBandi.length);
+        console.log('Match: Bandi importati recuperati:', parsedBandi.length);
       } catch (error) {
         console.error('Errore nel parsing dei bandi importati:', error);
       }
     }
+    
+    // Recupera i bandi salvati
+    const loadedBandi = FirecrawlService.getSavedBandi();
+    setSavedBandi(loadedBandi);
+    console.log('Match: Bandi salvati recuperati:', loadedBandi.length);
   }, []);
   
+  // Combine all bandi sources when either changes
+  useEffect(() => {
+    const combined = [...savedBandi, ...bandiImportati];
+    setAllBandi(combined);
+    console.log("Match: Combined bandi count:", combined.length);
+  }, [savedBandi, bandiImportati]);
+  
   // Stato per il tab attivo
-  const [activeTab, setActiveTab] = React.useState('tutti');
+  const [activeTab, setActiveTab] = useState('tutti');
   
   // Dati di esempio per i match
   const clientiMatch = [
@@ -103,10 +120,10 @@ export default function Match() {
       {bandiImportati.length > 0 ? (
         <Alert className="bg-green-50 border-green-200">
           <ArrowLeftRight className="h-4 w-4 text-green-600" />
-          <AlertTitle>Bandi importati da Google Sheets</AlertTitle>
+          <AlertTitle>Bandi disponibili per il match</AlertTitle>
           <AlertDescription>
-            Abbiamo importato {bandiImportati.length} bandi dal tuo foglio Google Sheets. 
-            Questi bandi verranno utilizzati per il match con i clienti.
+            Abbiamo {allBandi.length} bandi disponibili per il match con i clienti 
+            ({bandiImportati.length} importati da Google Sheets, {savedBandi.length} salvati nel sistema).
           </AlertDescription>
         </Alert>
       ) : (
@@ -247,8 +264,8 @@ export default function Match() {
                     <div className="text-sm text-gray-600">Match medio</div>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-green-700">12</div>
-                    <div className="text-sm text-gray-600">Match totali</div>
+                    <div className="text-2xl font-bold text-green-700">{allBandi.length}</div>
+                    <div className="text-sm text-gray-600">Bandi disponibili</div>
                   </div>
                 </div>
                 

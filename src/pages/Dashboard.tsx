@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -12,40 +13,61 @@ import { Bando } from '@/types';
 const Dashboard = () => {
   const navigate = useNavigate();
   const [bandi, setBandi] = useState<Bando[]>([]);
+  const [importedBandi, setImportedBandi] = useState<Bando[]>([]);
+  const [allBandi, setAllBandi] = useState<Bando[]>([]);
   
-  // Carica SOLO i bandi salvati quando il componente viene montato
+  // Load saved and imported bandi
   useEffect(() => {
-    // Get only the real saved bandi, no mock data
+    // Get saved bandi
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);
-    console.log("Dashboard: Caricati bandi salvati:", loadedBandi.length);
+    
+    // Get imported bandi from Google Sheets
+    const importedBandiStr = sessionStorage.getItem('bandiImportati');
+    if (importedBandiStr) {
+      try {
+        const parsedBandi = JSON.parse(importedBandiStr);
+        setImportedBandi(parsedBandi);
+      } catch (error) {
+        console.error('Error parsing imported bandi:', error);
+      }
+    }
   }, []);
+  
+  // Combine all bandi sources when either changes
+  useEffect(() => {
+    const combined = [...bandi, ...importedBandi];
+    setAllBandi(combined);
+    console.log("Dashboard: Combined bandi count:", combined.length);
+  }, [bandi, importedBandi]);
   
   // Calcola le statistiche in base ai bandi caricati
   const calcStatistiche = () => {
     // Conta i bandi per tipo
-    const europei = bandi.filter(b => b.tipo === 'europeo').length;
-    const statali = bandi.filter(b => b.tipo === 'statale').length;
-    const regionali = bandi.filter(b => b.tipo === 'regionale').length;
+    const europei = allBandi.filter(b => b.tipo === 'europeo').length;
+    const statali = allBandi.filter(b => b.tipo === 'statale').length;
+    const regionali = allBandi.filter(b => b.tipo === 'regionale').length;
     
     // Calcola la distribuzione percentuale per settore
     const settoriCount: Record<string, number> = {};
-    bandi.forEach(bando => {
-      bando.settori.forEach(settore => {
-        settoriCount[settore] = (settoriCount[settore] || 0) + 1;
-      });
+    allBandi.forEach(bando => {
+      if (bando.settori && Array.isArray(bando.settori)) {
+        bando.settori.forEach(settore => {
+          settoriCount[settore] = (settoriCount[settore] || 0) + 1;
+        });
+      }
     });
     
     const bandoPerSettore = Object.entries(settoriCount)
       .map(([settore, count]) => ({
         settore,
-        percentuale: Math.round((count / bandi.length) * 100)
+        percentuale: allBandi.length > 0 ? Math.round((count / allBandi.length) * 100) : 0
       }))
       .sort((a, b) => b.percentuale - a.percentuale)
       .slice(0, 5); // Prendi i primi 5 settori più frequenti
     
     return {
-      bandiAttivi: bandi.length,
+      bandiAttivi: allBandi.length,
       distribuzioneBandi: { europei, statali, regionali },
       bandoPerSettore
     };
@@ -61,6 +83,8 @@ const Dashboard = () => {
   ];
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    if (percent === 0) return null;
+    
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -74,7 +98,7 @@ const Dashboard = () => {
   };
 
   // Filtra gli ultimi 5 bandi per scadenza
-  const ultimiBandi = [...bandi].sort((a, b) => 
+  const ultimiBandi = [...allBandi].sort((a, b) => 
     new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime()
   ).slice(0, 5);
 
@@ -93,52 +117,64 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartContainer title="Distribuzione Bandi">
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={distribuzioneBandiData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={renderCustomizedLabel}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {distribuzioneBandiData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {distribuzioneBandiData.some(d => d.value > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={distribuzioneBandiData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {distribuzioneBandiData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Nessun dato disponibile
+              </div>
+            )}
           </div>
         </ChartContainer>
         
         <ChartContainer title="Ultimi Bandi">
           <div className="overflow-y-auto max-h-64">
-            <table className="min-w-full">
-              <thead>
-                <tr>
-                  <th className="text-left py-2">Titolo</th>
-                  <th className="text-right py-2">Scadenza</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ultimiBandi.map((bando) => (
-                  <tr key={bando.id} className="border-t">
-                    <td className="py-2 text-blue-500 hover:underline">
-                      <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/bandi/${bando.id}`); }}>
-                        {bando.titolo}
-                      </a>
-                    </td>
-                    <td className="py-2 text-right">
-                      {new Date(bando.scadenza).toLocaleDateString('it-IT')}
-                    </td>
+            {ultimiBandi.length > 0 ? (
+              <table className="min-w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left py-2">Titolo</th>
+                    <th className="text-right py-2">Scadenza</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {ultimiBandi.map((bando) => (
+                    <tr key={bando.id} className="border-t">
+                      <td className="py-2 text-blue-500 hover:underline">
+                        <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/bandi/${bando.id}`); }}>
+                          {bando.titolo}
+                        </a>
+                      </td>
+                      <td className="py-2 text-right">
+                        {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="h-32 flex items-center justify-center text-gray-400">
+                Nessun bando disponibile
+              </div>
+            )}
           </div>
           <div className="mt-4 text-right">
             <Button variant="outline" size="sm" onClick={() => navigate('/bandi')}>
@@ -152,18 +188,24 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartContainer title="Distribuzione Bandi per Settore">
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={stats.bandoPerSettore}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
-              >
-                <XAxis type="number" />
-                <YAxis dataKey="settore" type="category" width={80} />
-                <Tooltip formatter={(value) => [`${value}%`, 'Percentuale']} />
-                <Bar dataKey="percentuale" fill="#3b82f6" barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
+            {stats.bandoPerSettore.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={stats.bandoPerSettore}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                >
+                  <XAxis type="number" />
+                  <YAxis dataKey="settore" type="category" width={80} />
+                  <Tooltip formatter={(value) => [`${value}%`, 'Percentuale']} />
+                  <Bar dataKey="percentuale" fill="#3b82f6" barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Nessun dato disponibile
+              </div>
+            )}
           </div>
         </ChartContainer>
         
