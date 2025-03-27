@@ -146,16 +146,52 @@ export class GoogleSheetsService {
 
   public async updateFonteInSheet(fonte: Fonte): Promise<boolean> {
     try {
-      // Questo è solo un placeholder - gli aggiornamenti reali dovrebbero utilizzare l'API Google Sheets
-      // che richiede autenticazione OAuth, che non possiamo implementare solo lato frontend
-      console.log('Fonte da aggiornare nel foglio Google:', fonte);
+      const url = this.getSheetUrl();
       
-      // In un'implementazione reale, qui invieremmo una richiesta all'API di Google Sheets
-      // Per ora, salviamo solo localmente e mostriamo un messaggio di successo simulato
-      return true;
+      if (!url) {
+        throw new Error('URL del foglio Google non configurato');
+      }
+
+      // Extract the sheet ID from the URL
+      const sheetId = this.extractSheetId(url);
+      if (!sheetId) {
+        throw new Error('ID del foglio non valido');
+      }
+
+      // In a real implementation, we would use Google Sheets API with proper auth
+      // For now, we'll use a more direct approach with Google Apps Script Web App
+      
+      // Create a URL for a Google Apps Script web app that can update the sheet
+      // This assumes the user has set up a web app with the appropriate permissions
+      const updateAppUrl = localStorage.getItem('googleSheetUpdateUrl');
+      
+      if (!updateAppUrl) {
+        console.log('URL per aggiornamento Google Sheet non configurato');
+        return false;
+      }
+      
+      const response = await fetch(updateAppUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sheetId,
+          action: 'updateFonte',
+          fonte
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Errore nell'aggiornamento: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return result.success;
     } catch (error) {
       console.error('Errore durante l\'aggiornamento della fonte:', error);
-      throw error;
+      // Returning false instead of throwing to handle the error in the UI
+      return false;
     }
   }
 
