@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -10,7 +9,6 @@ import {
   Database,
   KeyRound,
   CheckCircle,
-  FileSearch,
   FileSpreadsheet
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
@@ -26,8 +24,6 @@ import { FirecrawlService } from '@/utils/FirecrawlService';
 const Sidebar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(false);
@@ -112,16 +108,6 @@ const Sidebar = () => {
     }
   };
 
-  const handleEstraiBandiClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/configura-scraping');
-    toast({
-      title: "Estrazione Bandi",
-      description: "Sei stato reindirizzato alla pagina di estrazione bandi",
-      duration: 3000,
-    });
-  };
-
   const handleImportaGoogleSheetsClick = (e: React.MouseEvent) => {
     e.preventDefault();
     navigate('/importa-scraping');
@@ -139,17 +125,6 @@ const Sidebar = () => {
       </div>
       <div className="bg-gray-100 flex-grow">
         <nav className="flex flex-col">
-          <NavLink
-            to="#"
-            className="p-5 mb-2 bg-green-500 text-white hover:bg-green-600"
-            onClick={handleEstraiBandiClick}
-          >
-            <div className="flex items-center gap-3">
-              <FileSearch className="w-5 h-5" />
-              Estrai Bandi
-            </div>
-          </NavLink>
-          
           <NavLink
             to="#"
             className="p-5 mb-2 bg-blue-500 text-white hover:bg-blue-600"

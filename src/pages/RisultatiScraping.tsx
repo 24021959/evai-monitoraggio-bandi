@@ -156,7 +156,7 @@ const RisultatiScraping = () => {
   };
   
   const handleNuovoMonitoraggio = () => {
-    navigate('/fonti');
+    navigate('/importazione');
   };
 
   const handleDeleteBando = (id: string) => {
@@ -174,8 +174,8 @@ const RisultatiScraping = () => {
   };
 
   const handleTornaScraping = () => {
-    console.log("Navigazione a /fonti");
-    navigate('/fonti');
+    console.log("Navigazione a /importa-scraping");
+    navigate('/importa-scraping');
   };
 
   const handleViewBando = (url: string) => {
@@ -463,4 +463,3 @@ const RisultatiScraping = () => {
 };
 
 export default RisultatiScraping;
-

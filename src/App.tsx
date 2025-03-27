@@ -41,7 +41,7 @@ const App = () => (
             <Route path="fonti" element={<Fonti />} />
             <Route path="risultati-scraping" element={<RisultatiScraping />} />
             <Route path="configura-notifiche" element={<ConfiguraNotifiche />} />
-            <Route path="configura-scraping" element={<ConfigScraping />} />
+            <Route path="importazione" element={<ConfigScraping />} />
             <Route path="importa-scraping" element={<ImportaScraping />} />
           </Route>
           <Route path="*" element={<NotFound />} />

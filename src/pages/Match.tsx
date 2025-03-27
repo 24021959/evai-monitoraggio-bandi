@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeftRight, Info, AlertCircle, Mail, FileText, ChevronRight } from 'lucide-react';
-import { MatchTable } from '@/components/MatchTable';
+import { ArrowLeftRight, InfoIcon, AlertCircle, Mail, FileText, ChevronRight } from 'lucide-react';
+import MatchTable from '@/components/MatchTable';
 
 export default function Match() {
   // Controllo se ci sono bandi importati da Google Sheets
@@ -112,7 +111,7 @@ export default function Match() {
         </Alert>
       ) : (
         <Alert>
-          <Info className="h-4 w-4" />
+          <InfoIcon className="h-4 w-4" />
           <AlertTitle>Match automatico</AlertTitle>
           <AlertDescription>
             Il sistema analizza i profili dei clienti e li confronta con i bandi disponibili per trovare le migliori corrispondenze.
