@@ -193,10 +193,15 @@ const Dashboard = () => {
                 <BarChart
                   data={stats.bandoPerSettore}
                   layout="vertical"
-                  margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                  margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
                 >
                   <XAxis type="number" />
-                  <YAxis dataKey="settore" type="category" width={80} />
+                  <YAxis 
+                    dataKey="settore" 
+                    type="category" 
+                    width={120} 
+                    tick={{ fontSize: 12 }}
+                  />
                   <Tooltip formatter={(value) => [`${value}%`, 'Percentuale']} />
                   <Bar dataKey="percentuale" fill="#3b82f6" barSize={20} />
                 </BarChart>

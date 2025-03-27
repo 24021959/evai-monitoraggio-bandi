@@ -11,12 +11,18 @@ import { ArrowLeftRight, InfoIcon, AlertCircle, Mail, FileText, ChevronRight } f
 import MatchTable from '@/components/MatchTable';
 import { Bando } from '@/types';
 import { FirecrawlService } from '@/utils/FirecrawlService';
+import { mockClienti } from '@/data/mockData';
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Match() {
-  // Controllo se ci sono bandi importati da Google Sheets
+  const { toast } = useToast();
   const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
   const [savedBandi, setSavedBandi] = useState<Bando[]>([]);
   const [allBandi, setAllBandi] = useState<Bando[]>([]);
+  const [activeTab, setActiveTab] = useState('tutti');
+  const [matches, setMatches] = useState<any[]>([]);
+  const [clientiMatch, setClientiMatch] = useState<any[]>([]);
+  const [bandiMatch, setBandiMatch] = useState<any[]>([]);
   
   useEffect(() => {
     // Recupera i bandi importati da sessionStorage
@@ -44,57 +50,159 @@ export default function Match() {
     console.log("Match: Combined bandi count:", combined.length);
   }, [savedBandi, bandiImportati]);
   
-  // Stato per il tab attivo
-  const [activeTab, setActiveTab] = useState('tutti');
-  
-  // Dati di esempio per i match
-  const clientiMatch = [
-    {
-      id: '1',
-      nome: 'Tecno Soluzioni SRL',
-      settore: 'Informatica',
-      punteggio: 92,
-      bandi: 4
-    },
-    {
-      id: '2',
-      nome: 'Green Power SpA',
-      settore: 'Energia',
-      punteggio: 87,
-      bandi: 3
-    },
-    {
-      id: '3',
-      nome: 'Agritech SA',
-      settore: 'Agricoltura',
-      punteggio: 76,
-      bandi: 2
+  // Calculate real matches based on clients and grants
+  useEffect(() => {
+    if (allBandi.length > 0 && mockClienti.length > 0) {
+      // Calculate matches between clients and grants
+      const calculatedMatches = [];
+      const clientMatches: Record<string, {count: number, score: number}> = {};
+      const bandoMatches: Record<string, {count: number, score: number}> = {};
+      
+      for (const cliente of mockClienti) {
+        for (const bando of allBandi) {
+          const matchScore = calculateMatchScore(cliente, bando);
+          
+          if (matchScore > 60) { // Only consider matches above 60%
+            const matchId = `match-${cliente.id}-${bando.id}`;
+            
+            calculatedMatches.push({
+              id: matchId,
+              cliente: {
+                id: cliente.id,
+                nome: cliente.nome,
+                settore: cliente.settore
+              },
+              bando: {
+                id: bando.id,
+                titolo: bando.titolo,
+                fonte: bando.fonte,
+                scadenza: bando.scadenza
+              },
+              punteggio: matchScore,
+              dataMatch: new Date().toISOString().split('T')[0]
+            });
+            
+            // Update client match counts
+            if (!clientMatches[cliente.id]) {
+              clientMatches[cliente.id] = { count: 0, score: 0 };
+            }
+            clientMatches[cliente.id].count += 1;
+            clientMatches[cliente.id].score = Math.max(clientMatches[cliente.id].score, matchScore);
+            
+            // Update grant match counts
+            if (!bandoMatches[bando.id]) {
+              bandoMatches[bando.id] = { count: 0, score: 0 };
+            }
+            bandoMatches[bando.id].count += 1;
+            bandoMatches[bando.id].score = Math.max(bandoMatches[bando.id].score, matchScore);
+          }
+        }
+      }
+      
+      // Sort matches by score
+      calculatedMatches.sort((a, b) => b.punteggio - a.punteggio);
+      setMatches(calculatedMatches);
+      
+      // Prepare client match data
+      const clientMatchArray = mockClienti
+        .filter(cliente => clientMatches[cliente.id])
+        .map(cliente => ({
+          id: cliente.id,
+          nome: cliente.nome,
+          settore: cliente.settore,
+          punteggio: clientMatches[cliente.id]?.score || 0,
+          bandi: clientMatches[cliente.id]?.count || 0
+        }))
+        .sort((a, b) => b.punteggio - a.punteggio);
+      
+      setClientiMatch(clientMatchArray);
+      
+      // Prepare grant match data
+      const bandoMatchArray = allBandi
+        .filter(bando => bandoMatches[bando.id])
+        .map(bando => ({
+          id: bando.id,
+          titolo: bando.titolo,
+          fonte: bando.fonte,
+          punteggio: bandoMatches[bando.id]?.score || 0,
+          clienti: bandoMatches[bando.id]?.count || 0
+        }))
+        .sort((a, b) => b.punteggio - a.punteggio);
+      
+      setBandiMatch(bandoMatchArray);
+      
+      toast({
+        title: "Match completati",
+        description: `Trovati ${calculatedMatches.length} match tra ${clientMatchArray.length} clienti e ${bandoMatchArray.length} bandi`,
+      });
     }
-  ];
+  }, [allBandi]);
   
-  const bandiMatch = [
-    {
-      id: '1',
-      titolo: 'Innovazione Digitale PMI',
-      fonte: 'MIMIT',
-      punteggio: 94,
-      clienti: 3
-    },
-    {
-      id: '2',
-      titolo: 'Green Energy Transition',
-      fonte: 'UE',
-      punteggio: 88,
-      clienti: 2
-    },
-    {
-      id: '3',
-      titolo: 'Agricoltura Sostenibile',
-      fonte: 'Regione',
-      punteggio: 79,
-      clienti: 1
+  const calculateMatchScore = (cliente: any, bando: Bando): number => {
+    let score = 0;
+    let totalFactors = 0;
+    
+    // Match by sector
+    if (cliente.settore && bando.settori && Array.isArray(bando.settori)) {
+      const settoreLowerCase = cliente.settore.toLowerCase();
+      // Check if any of the bando sectors match the client sector
+      const sectorMatch = bando.settori.some(
+        settore => settore.toLowerCase().includes(settoreLowerCase) || 
+                   settoreLowerCase.includes(settore.toLowerCase())
+      );
+      
+      if (sectorMatch) {
+        score += 40;
+      }
+      totalFactors += 40;
     }
-  ];
+    
+    // Match by company size
+    if (cliente.dimensione && bando.requisiti) {
+      const requisiti = bando.requisiti.toLowerCase();
+      const dimensione = cliente.dimensione.toLowerCase();
+      
+      if (
+        (dimensione === 'piccola' && requisiti.includes('piccol')) ||
+        (dimensione === 'media' && requisiti.includes('medi')) ||
+        (dimensione === 'grande' && requisiti.includes('grand'))
+      ) {
+        score += 20;
+      }
+      totalFactors += 20;
+    }
+    
+    // Match by location
+    if (cliente.regione && bando.tipo) {
+      if (
+        (bando.tipo === 'regionale' && bando.requisiti && 
+         bando.requisiti.toLowerCase().includes(cliente.regione.toLowerCase())) ||
+        (bando.tipo === 'statale' || bando.tipo === 'europeo')
+      ) {
+        score += 20;
+      }
+      totalFactors += 20;
+    }
+    
+    // Match by finance amount
+    if (cliente.fatturato && bando.importoMin && bando.importoMax) {
+      const fatturato = parseFloat(cliente.fatturato.toString().replace(/[^0-9.]/g, ''));
+      
+      // For smaller companies, larger grants are better
+      // For larger companies, check if the grant amount is significant enough
+      if (
+        (fatturato < 2000000 && bando.importoMax > 50000) ||
+        (fatturato >= 2000000 && fatturato < 10000000 && bando.importoMax > 100000) ||
+        (fatturato >= 10000000 && bando.importoMax > 500000)
+      ) {
+        score += 20;
+      }
+      totalFactors += 20;
+    }
+    
+    // Calculate final percentage
+    return totalFactors > 0 ? Math.round((score / totalFactors) * 100) : 50;
+  };
   
   // Handle tab change
   const handleTabChange = (value: string) => {
@@ -117,7 +225,7 @@ export default function Match() {
         </div>
       </div>
       
-      {bandiImportati.length > 0 ? (
+      {allBandi.length > 0 ? (
         <Alert className="bg-green-50 border-green-200">
           <ArrowLeftRight className="h-4 w-4 text-green-600" />
           <AlertTitle>Bandi disponibili per il match</AlertTitle>
@@ -157,7 +265,7 @@ export default function Match() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <MatchTable />
+                  <MatchTable matches={matches} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -203,6 +311,12 @@ export default function Match() {
                         </div>
                       </div>
                     ))}
+                    
+                    {clientiMatch.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        Nessun match trovato per i clienti
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -244,6 +358,12 @@ export default function Match() {
                         </div>
                       </div>
                     ))}
+                    
+                    {bandiMatch.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        Nessun match trovato per i bandi
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -260,7 +380,11 @@ export default function Match() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-700">87%</div>
+                    <div className="text-2xl font-bold text-blue-700">
+                      {matches.length > 0 
+                        ? Math.round(matches.reduce((acc, match) => acc + match.punteggio, 0) / matches.length) 
+                        : 0}%
+                    </div>
                     <div className="text-sm text-gray-600">Match medio</div>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
@@ -280,6 +404,10 @@ export default function Match() {
                         <Badge variant="outline" className="bg-blue-50">{cliente.bandi} bandi</Badge>
                       </div>
                     ))}
+                    
+                    {clientiMatch.length === 0 && (
+                      <div className="text-sm text-gray-500">Nessun cliente con match</div>
+                    )}
                   </div>
                 </div>
                 
@@ -294,6 +422,10 @@ export default function Match() {
                         <Badge variant="outline" className="bg-green-50">{bando.clienti} clienti</Badge>
                       </div>
                     ))}
+                    
+                    {bandiMatch.length === 0 && (
+                      <div className="text-sm text-gray-500">Nessun bando con match</div>
+                    )}
                   </div>
                 </div>
               </div>
