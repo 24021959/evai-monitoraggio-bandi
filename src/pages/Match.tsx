@@ -1,311 +1,363 @@
-import React, { useState, useEffect } from 'react';
-import { mockMatches, mockClienti } from '@/data/mockData';
+
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import MatchTable from '@/components/MatchTable';
-import { ArrowLeftRight, Send, FileSpreadsheet, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useNavigate } from 'react-router-dom';
-import { Bando, Match as MatchType, Cliente } from '@/types';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeftRight, Info, AlertCircle, Mail, FileText, ChevronRight } from 'lucide-react';
+import { MatchTable } from '@/components/MatchTable';
 
-const Match = () => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [matches, setMatches] = useState<MatchType[]>(mockMatches);
-  const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
-  const [isNotificheDialogOpen, setIsNotificheDialogOpen] = useState(false);
-  const [testoNotifica, setTestoNotifica] = useState(
-    'Gentile cliente,\n\nAbbiamo individuato un\'opportunità di finanziamento che potrebbe essere interessante per la vostra azienda.\n\nBando: [NOME_BANDO]\nScadenza: [SCADENZA_BANDO]\nCompatibilità stimata: [COMPATIBILITA]%\n\nPer maggiori informazioni, non esitate a contattarci.\n\nCordiali saluti,\nIl team di Firecrawl'
-  );
-  const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
-
-  useEffect(() => {
-    const bandiStorageData = sessionStorage.getItem('bandiImportati');
-    if (bandiStorageData) {
+export default function Match() {
+  // Controllo se ci sono bandi importati da Google Sheets
+  const [bandiImportati, setBandiImportati] = React.useState<any[]>([]);
+  
+  React.useEffect(() => {
+    // Recupera i bandi importati da sessionStorage
+    const importedBandi = sessionStorage.getItem('bandiImportati');
+    if (importedBandi) {
       try {
-        const bandi = JSON.parse(bandiStorageData);
-        setBandiImportati(bandi);
-        
-        if (bandi.length > 0) {
-          const nuoviMatches = generaMatch(mockClienti, bandi);
-          setMatches(nuoviMatches);
-          
-          toast({
-            title: "Match generati",
-            description: `Generati ${nuoviMatches.length} match potenziali tra clienti e bandi importati`,
-            duration: 3000
-          });
-        }
+        const parsedBandi = JSON.parse(importedBandi);
+        setBandiImportati(parsedBandi);
+        console.log('Bandi importati recuperati:', parsedBandi.length);
       } catch (error) {
         console.error('Errore nel parsing dei bandi importati:', error);
       }
     }
   }, []);
-
-  const generaMatch = (clienti: Cliente[], bandi: Bando[]): MatchType[] => {
-    const nuoviMatches: MatchType[] = [];
-    
-    clienti.forEach(cliente => {
-      bandi.forEach(bando => {
-        const compatibilita = calcolaCompatibilita(cliente, bando);
-        
-        if (compatibilita > 30) {
-          nuoviMatches.push({
-            id: `${cliente.id}-${bando.id}`,
-            clienteId: cliente.id,
-            bandoId: bando.id,
-            compatibilita,
-            notificato: false
-          });
-        }
-      });
-    });
-    
-    return nuoviMatches.sort((a, b) => b.compatibilita - a.compatibilita);
-  };
-
-  const calcolaCompatibilita = (cliente: Cliente, bando: Bando): number => {
-    let punteggio = 0;
-    
-    const settoriCliente = cliente.interessiSettoriali.map(s => s.toLowerCase());
-    const settoriBando = bando.settori.map(s => s.toLowerCase());
-    
-    let matchSettori = 0;
-    settoriCliente.forEach(settoreCliente => {
-      if (settoriBando.some(settoreBando => settoreBando.includes(settoreCliente) || settoreCliente.includes(settoreBando))) {
-        matchSettori++;
-      }
-    });
-    
-    if (settoriCliente.length > 0) {
-      punteggio += (matchSettori / settoriCliente.length) * 70;
+  
+  // Stato per il tab attivo
+  const [activeTab, setActiveTab] = React.useState('tutti');
+  
+  // Dati di esempio per i match
+  const clientiMatch = [
+    {
+      id: '1',
+      nome: 'Tecno Soluzioni SRL',
+      settore: 'Informatica',
+      punteggio: 92,
+      bandi: 4
+    },
+    {
+      id: '2',
+      nome: 'Green Power SpA',
+      settore: 'Energia',
+      punteggio: 87,
+      bandi: 3
+    },
+    {
+      id: '3',
+      nome: 'Agritech SA',
+      settore: 'Agricoltura',
+      punteggio: 76,
+      bandi: 2
     }
-    
-    if (bando.descrizione && bando.descrizione.toLowerCase().includes(cliente.regione.toLowerCase())) {
-      punteggio += 20;
+  ];
+  
+  const bandiMatch = [
+    {
+      id: '1',
+      titolo: 'Innovazione Digitale PMI',
+      fonte: 'MIMIT',
+      punteggio: 94,
+      clienti: 3
+    },
+    {
+      id: '2',
+      titolo: 'Green Energy Transition',
+      fonte: 'UE',
+      punteggio: 88,
+      clienti: 2
+    },
+    {
+      id: '3',
+      titolo: 'Agricoltura Sostenibile',
+      fonte: 'Regione',
+      punteggio: 79,
+      clienti: 1
     }
-    
-    if (bando.importoMin && bando.importoMax) {
-      const rapportoFatturato = cliente.fatturato / bando.importoMax;
-      if (rapportoFatturato >= 0.5 && rapportoFatturato <= 10) {
-        punteggio += 10;
-      }
-    }
-    
-    return Math.min(100, Math.round(punteggio));
+  ];
+  
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
-
-  const handleSelectionChange = (selectedIds: string[]) => {
-    setSelectedMatchIds(selectedIds);
-  };
-
-  const inviaNotifiche = () => {
-    if (selectedMatchIds.length === 0) {
-      toast({
-        title: "Nessun match selezionato",
-        description: "Seleziona almeno un match per inviare notifiche",
-        duration: 3000
-      });
-      return;
-    }
-
-    const matchesAggiornati = matches.map(match => {
-      if (selectedMatchIds.includes(match.id)) {
-        return { ...match, notificato: true };
-      }
-      return match;
-    });
-    setMatches(matchesAggiornati);
-
-    const clientiNotificati = selectedMatchIds.map(matchId => {
-      const match = matches.find(m => m.id === matchId);
-      if (match) {
-        const cliente = mockClienti.find(c => c.id === match.clienteId);
-        return cliente ? cliente.nome : 'Cliente sconosciuto';
-      }
-      return 'Cliente sconosciuto';
-    });
-
-    toast({
-      title: "Notifiche inviate",
-      description: `Inviate ${selectedMatchIds.length} notifiche a: ${clientiNotificati.join(", ")}`,
-      duration: 3000
-    });
-
-    setSelectedMatchIds([]);
-  };
-
-  const handleImportaDaGoogleSheets = () => {
-    navigate('/importa-scraping');
-  };
-
+  
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Match Bandi-Clienti</h1>
-        <Button 
-          onClick={handleImportaDaGoogleSheets} 
-          className="flex items-center gap-2"
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          Importa da Google Sheets
-        </Button>
+        <h1 className="text-2xl font-bold">Match Clienti-Bandi</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Esporta Report
+          </Button>
+          <Button variant="outline" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Notifica Clienti
+          </Button>
+        </div>
       </div>
       
       {bandiImportati.length > 0 ? (
-        <Alert className="bg-blue-50 border-blue-100">
-          <InfoIcon className="h-4 w-4 text-blue-500" />
-          <AlertTitle>Dati importati</AlertTitle>
+        <Alert className="bg-green-50 border-green-200">
+          <ArrowLeftRight className="h-4 w-4 text-green-600" />
+          <AlertTitle>Bandi importati da Google Sheets</AlertTitle>
           <AlertDescription>
-            Sono stati importati {bandiImportati.length} bandi da Google Sheets e generati {matches.length} potenziali match.
+            Abbiamo importato {bandiImportati.length} bandi dal tuo foglio Google Sheets. 
+            Questi bandi verranno utilizzati per il match con i clienti.
           </AlertDescription>
         </Alert>
       ) : (
         <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Nessun dato importato</AlertTitle>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Match automatico</AlertTitle>
           <AlertDescription>
-            Clicca su "Importa da Google Sheets" per importare i dati dello scraping e generare automaticamente i match.
+            Il sistema analizza i profili dei clienti e li confronta con i bandi disponibili per trovare le migliori corrispondenze.
           </AlertDescription>
         </Alert>
       )}
       
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <ArrowLeftRight className="h-5 w-5 text-blue-500" />
-            <CardTitle>Corrispondenze Trovate</CardTitle>
-          </div>
-          <CardDescription>
-            Il sistema ha trovato {matches.length} potenziali corrispondenze tra i bandi attivi e i tuoi clienti
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MatchTable 
-            matches={matches}
-            onSelectionChange={handleSelectionChange}
-          />
-          <div className="mt-4 flex justify-end gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => setIsNotificheDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              Configura Notifiche
-            </Button>
-            <Button 
-              onClick={inviaNotifiche} 
-              disabled={selectedMatchIds.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Send className="h-4 w-4" />
-              Invia Notifiche ({selectedMatchIds.length})
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Come Funziona il Match</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="list-decimal pl-5 space-y-2">
-              <li>Il sistema analizza le caratteristiche dei bandi attivi (settore, requisiti, importi, ecc.)</li>
-              <li>Confronta queste caratteristiche con i profili dei tuoi clienti</li>
-              <li>Calcola un punteggio di compatibilità in base a diversi parametri</li>
-              <li>Mostra i risultati ordinati per rilevanza</li>
-            </ol>
-            <p className="mt-4 text-gray-600">
-              Per migliorare la qualità dei match, assicurati di mantenere aggiornati i profili dei clienti e di specificare il maggior numero possibile di informazioni.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="match" className="w-full">
+            <TabsList className="grid grid-cols-3 mb-6">
+              <TabsTrigger value="match">Match Trovati</TabsTrigger>
+              <TabsTrigger value="clienti">Per Cliente</TabsTrigger>
+              <TabsTrigger value="bandi">Per Bando</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="match">
+              <Card>
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-2">
+                    <ArrowLeftRight className="h-5 w-5 text-blue-500" />
+                    <CardTitle>Match recenti</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Le corrispondenze tra clienti e bandi con punteggio più alto
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MatchTable />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="clienti">
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle>Match per Cliente</CardTitle>
+                  <CardDescription>
+                    Clienti ordinati per numero di corrispondenze disponibili
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {clientiMatch.map((cliente) => (
+                      <div key={cliente.id} className="flex items-center justify-between border-b pb-4">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{cliente.nome.substring(0, 2)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{cliente.nome}</div>
+                            <div className="text-sm text-gray-500">{cliente.settore}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">Match</div>
+                            <div className={`font-medium ${
+                              cliente.punteggio > 85 ? 'text-green-600' : 
+                              cliente.punteggio > 70 ? 'text-yellow-600' : 'text-gray-600'
+                            }`}>
+                              {cliente.punteggio}%
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">Bandi</div>
+                            <div className="font-medium">{cliente.bandi}</div>
+                          </div>
+                          <Button size="sm" variant="ghost">
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="bandi">
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle>Match per Bando</CardTitle>
+                  <CardDescription>
+                    Bandi ordinati per numero di clienti compatibili
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {bandiMatch.map((bando) => (
+                      <div key={bando.id} className="flex items-center justify-between border-b pb-4">
+                        <div>
+                          <div className="font-medium">{bando.titolo}</div>
+                          <div className="text-sm text-gray-500">Fonte: {bando.fonte}</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">Match</div>
+                            <div className={`font-medium ${
+                              bando.punteggio > 85 ? 'text-green-600' : 
+                              bando.punteggio > 70 ? 'text-yellow-600' : 'text-gray-600'
+                            }`}>
+                              {bando.punteggio}%
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">Clienti</div>
+                            <div className="font-medium">{bando.clienti}</div>
+                          </div>
+                          <Button size="sm" variant="ghost">
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Notifiche</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-gray-600">
-              Puoi inviare notifiche automatiche ai tuoi clienti quando viene trovata una corrispondenza tra bandi e profili.
-            </p>
-            <p className="text-gray-600">
-              Puoi personalizzare il testo della notifica cliccando sul pulsante "Configura Notifiche".
-            </p>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistiche Match</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-700">87%</div>
+                    <div className="text-sm text-gray-600">Match medio</div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-green-700">12</div>
+                    <div className="text-sm text-gray-600">Match totali</div>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Clienti con più match</h4>
+                  <div className="space-y-2">
+                    {clientiMatch.slice(0, 2).map((cliente) => (
+                      <div key={cliente.id} className="flex justify-between items-center">
+                        <div className="text-sm">{cliente.nome}</div>
+                        <Badge variant="outline" className="bg-blue-50">{cliente.bandi} bandi</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Bandi più richiesti</h4>
+                  <div className="space-y-2">
+                    {bandiMatch.slice(0, 2).map((bando) => (
+                      <div key={bando.id} className="flex justify-between items-center">
+                        <div className="text-sm">{bando.titolo}</div>
+                        <Badge variant="outline" className="bg-green-50">{bando.clienti} clienti</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Filtra Match</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Per settore</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge 
+                      variant={activeTab === 'tutti' ? 'default' : 'outline'} 
+                      className="cursor-pointer"
+                      onClick={() => handleTabChange('tutti')}
+                    >
+                      Tutti
+                    </Badge>
+                    <Badge 
+                      variant={activeTab === 'informatica' ? 'default' : 'outline'} 
+                      className="cursor-pointer"
+                      onClick={() => handleTabChange('informatica')}
+                    >
+                      Informatica
+                    </Badge>
+                    <Badge 
+                      variant={activeTab === 'energia' ? 'default' : 'outline'} 
+                      className="cursor-pointer"
+                      onClick={() => handleTabChange('energia')}
+                    >
+                      Energia
+                    </Badge>
+                    <Badge 
+                      variant={activeTab === 'agri' ? 'default' : 'outline'} 
+                      className="cursor-pointer"
+                      onClick={() => handleTabChange('agri')}
+                    >
+                      Agricoltura
+                    </Badge>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Per livello di match</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="cursor-pointer bg-green-50">Alto (80%+)</Badge>
+                    <Badge variant="outline" className="cursor-pointer bg-yellow-50">Medio (60-80%)</Badge>
+                    <Badge variant="outline" className="cursor-pointer bg-red-50">Basso (&lt;60%)</Badge>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Per fonte</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="cursor-pointer">MIMIT</Badge>
+                    <Badge variant="outline" className="cursor-pointer">UE</Badge>
+                    <Badge variant="outline" className="cursor-pointer">Regione</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <Dialog open={isNotificheDialogOpen} onOpenChange={setIsNotificheDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Configura Notifica</DialogTitle>
-            <DialogDescription>
-              Personalizza il testo della notifica che verrà inviata ai clienti selezionati
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="testoNotifica">Testo Notifica</Label>
-              <Textarea 
-                id="testoNotifica"
-                value={testoNotifica}
-                onChange={(e) => setTestoNotifica(e.target.value)}
-                className="min-h-[200px]"
-              />
-              <p className="text-sm text-gray-500">
-                Puoi utilizzare i seguenti placeholder che verranno sostituiti automaticamente:
-              </p>
-              <ul className="text-sm text-gray-500 list-disc pl-5 space-y-1">
-                <li>[NOME_CLIENTE] - Nome del cliente</li>
-                <li>[NOME_BANDO] - Titolo del bando</li>
-                <li>[SCADENZA_BANDO] - Data di scadenza del bando</li>
-                <li>[COMPATIBILITA] - Percentuale di compatibilità</li>
-                <li>[LINK_BANDO] - Link al bando</li>
-              </ul>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setIsNotificheDialogOpen(false)}
-            >
-              Annulla
-            </Button>
-            <Button 
-              type="button"
-              onClick={() => {
-                toast({
-                  title: "Template salvato",
-                  description: "Il testo della notifica è stato salvato con successo",
-                  duration: 3000
-                });
-                setIsNotificheDialogOpen(false);
-              }}
-            >
-              Salva Template
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      
+      <Alert variant="default" className="bg-blue-50 border-blue-200">
+        <AlertCircle className="h-4 w-4 text-blue-600" />
+        <AlertTitle>Suggerimento</AlertTitle>
+        <AlertDescription>
+          Per migliorare la qualità dei match, completa il profilo dei tuoi clienti con informazioni dettagliate su settore, dimensione e fatturato.
+        </AlertDescription>
+      </Alert>
     </div>
   );
-};
-
-export default Match;
+}
