@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   BarChart3, 
   FileText, 
@@ -10,31 +10,10 @@ import {
   FileSpreadsheet,
   Database
 } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
 
 const Sidebar = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const location = useLocation();
-
-  const handleImportaGoogleSheetsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/importa-scraping');
-    toast({
-      title: "Importa da Google Sheets",
-      description: "Sei stato reindirizzato alla pagina di importazione da Google Sheets",
-      duration: 3000,
-    });
-  };
-
-  // Function to check if a path is active
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
   
-  // Special check for importa-scraping page
-  const isImportActive = location.pathname === '/importa-scraping';
-
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-800 text-white p-5 text-xl font-medium">
@@ -110,16 +89,16 @@ const Sidebar = () => {
           </NavLink>
           <div className="border-t border-gray-300 my-5"></div>
           
-          {/* Separate menu item for importing from Google Sheets */}
+          {/* Renamed to Importa Bandi */}
           <NavLink
-            to="/importa-scraping"
+            to="/importa-bandi"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`
             }
           >
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-5 h-5" />
-              Importa da Google Sheets
+              Importa Bandi
             </div>
           </NavLink>
         </nav>

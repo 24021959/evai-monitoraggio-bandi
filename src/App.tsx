@@ -14,7 +14,7 @@ import DettaglioCliente from "./pages/DettaglioCliente";
 import Match from "./pages/Match";
 import Report from "./pages/Report";
 import Fonti from "./pages/Fonti";
-import ImportaScraping from './pages/ImportaScraping';
+import ImportaBandi from './pages/ImportaBandi';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,7 +36,7 @@ const App = () => (
             <Route path="match" element={<Match />} />
             <Route path="report" element={<Report />} />
             <Route path="fonti" element={<Fonti />} />
-            <Route path="importa-scraping" element={<ImportaScraping />} />
+            <Route path="importa-bandi" element={<ImportaBandi />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
