@@ -43,7 +43,7 @@ const Sidebar = () => {
         <nav className="flex flex-col">
           <NavLink
             to="#"
-            className={`p-5 mb-2 hover:bg-blue-600 text-white ${isImportActive ? 'bg-blue-500' : 'bg-blue-500'}`}
+            className={`p-5 mb-2 hover:bg-blue-600 text-white ${isImportActive ? 'bg-blue-500' : 'bg-gray-100 text-black hover:bg-blue-50'}`}
             onClick={handleImportaGoogleSheetsClick}
           >
             <div className="flex items-center gap-3">
