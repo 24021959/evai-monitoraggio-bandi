@@ -26,59 +26,10 @@ export interface MatchTableProps {
 }
 
 const MatchTable: React.FC<MatchTableProps> = ({ matches = [], onExportCSV }) => {
-  // Dati di esempio se non ci sono match
-  const exampleMatches = [
-    {
-      id: '1',
-      cliente: {
-        id: 'c1',
-        nome: 'Tecno Soluzioni SRL',
-        settore: 'Informatica'
-      },
-      bando: {
-        id: 'b1',
-        titolo: 'Innovazione Digitale PMI',
-        fonte: 'MIMIT',
-        scadenza: '2023-12-31'
-      },
-      punteggio: 94,
-      dataMatch: '2023-06-15'
-    },
-    {
-      id: '2',
-      cliente: {
-        id: 'c2',
-        nome: 'Green Power SpA',
-        settore: 'Energia'
-      },
-      bando: {
-        id: 'b2',
-        titolo: 'Green Energy Transition',
-        fonte: 'UE',
-        scadenza: '2023-11-30'
-      },
-      punteggio: 88,
-      dataMatch: '2023-06-14'
-    },
-    {
-      id: '3',
-      cliente: {
-        id: 'c3',
-        nome: 'Agritech SA',
-        settore: 'Agricoltura'
-      },
-      bando: {
-        id: 'b3',
-        titolo: 'Agricoltura Sostenibile',
-        fonte: 'Regione',
-        scadenza: '2023-10-15'
-      },
-      punteggio: 79,
-      dataMatch: '2023-06-13'
-    }
-  ];
-  
-  const displayMatches = matches.length > 0 ? matches : exampleMatches;
+  // Sort matches by date in descending order (newest first)
+  const sortedMatches = [...matches].sort(
+    (a, b) => new Date(b.dataMatch).getTime() - new Date(a.dataMatch).getTime()
+  );
   
   return (
     <div className="space-y-4">
@@ -93,43 +44,45 @@ const MatchTable: React.FC<MatchTableProps> = ({ matches = [], onExportCSV }) =>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {displayMatches.map((match) => (
-            <TableRow key={match.id}>
-              <TableCell>
-                <div className="font-medium">{match.cliente.nome}</div>
-                <div className="text-xs text-gray-500">{match.cliente.settore}</div>
-              </TableCell>
-              <TableCell>
-                <div className="font-medium">{match.bando.titolo}</div>
-                <div className="text-xs text-gray-500">{match.bando.fonte}</div>
-              </TableCell>
-              <TableCell>
-                <Badge className={
-                  match.punteggio > 85 ? "bg-green-100 text-green-800" : 
-                  match.punteggio > 70 ? "bg-yellow-100 text-yellow-800" : 
-                  "bg-gray-100 text-gray-800"
-                }>
-                  {match.punteggio}%
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {new Date(match.bando.scadenza).toLocaleDateString('it-IT')}
-              </TableCell>
-              <TableCell>
-                <Button variant="ghost" size="icon">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+          {sortedMatches.length > 0 ? (
+            sortedMatches.map((match) => (
+              <TableRow key={match.id}>
+                <TableCell>
+                  <div className="font-medium">{match.cliente.nome}</div>
+                  <div className="text-xs text-gray-500">{match.cliente.settore}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="font-medium">{match.bando.titolo}</div>
+                  <div className="text-xs text-gray-500">{match.bando.fonte}</div>
+                </TableCell>
+                <TableCell>
+                  <Badge className={
+                    match.punteggio > 85 ? "bg-green-100 text-green-800" : 
+                    match.punteggio > 70 ? "bg-yellow-100 text-yellow-800" : 
+                    "bg-gray-100 text-gray-800"
+                  }>
+                    {match.punteggio}%
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {new Date(match.bando.scadenza).toLocaleDateString('it-IT')}
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-6 text-gray-500">
+                Nessun match trovato. Importa bandi e clienti per generare match.
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
-      
-      {displayMatches === exampleMatches && (
-        <div className="text-xs text-gray-500 italic text-center">
-          Dati di esempio visualizzati. Importa bandi e clienti per vedere match reali.
-        </div>
-      )}
       
       <div className="flex justify-end">
         <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={onExportCSV}>
