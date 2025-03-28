@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Alert, AlertCircle, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from 'lucide-react';
 import FontiTable from '@/components/FontiTable';
 import { Fonte } from '@/types';
 
