@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, BarChart3, PieChart, FileText } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import ChartContainer from '@/components/ChartContainer';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart as RePieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useToast } from "@/components/ui/use-toast";
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
@@ -22,7 +23,6 @@ const Report = () => {
       statali: 0,
       regionali: 0,
     },
-    bandoPerSettore: [],
     matchPerCliente: []
   });
   
@@ -62,29 +62,11 @@ const Report = () => {
       regionali: bandi.filter(b => b.tipo === 'regionale').length,
     };
     
-    const settoriMap = new Map();
-    bandi.forEach(bando => {
-      if (bando.settori && Array.isArray(bando.settori)) {
-        bando.settori.forEach(settore => {
-          const count = settoriMap.get(settore) || 0;
-          settoriMap.set(settore, count + 1);
-        });
-      }
-    });
-    
-    const bandoPerSettore = Array.from(settoriMap.entries())
-      .map(([settore, count]) => ({
-        settore: settore.length > 20 ? settore.substring(0, 20) + '...' : settore,
-        settoreOriginal: settore,
-        conteggio: count,
-        percentuale: Math.round((count / bandi.length) * 100)
-      }))
-      .sort((a, b) => b.conteggio - a.conteggio)
-      .slice(0, 8);
+    // Rimuovo la generazione dei dati per settore
     
     const clientiMatchMap = new Map();
     matches.forEach(match => {
-      const clienteId = match.cliente?.id;
+      const clienteId = match.clienteId;
       if (clienteId) {
         const count = clientiMatchMap.get(clienteId) || 0;
         clientiMatchMap.set(clienteId, count + 1);
@@ -106,7 +88,6 @@ const Report = () => {
     
     setStatistiche({
       distribuzioneBandi,
-      bandoPerSettore,
       matchPerCliente
     });
   };
@@ -177,11 +158,6 @@ const Report = () => {
     });
   };
 
-  const customBarTooltipFormatter = (value, name, props) => {
-    const item = props.payload;
-    return [`${item.conteggio} bandi (${value}%)`, 'Percentuale'];
-  };
-  
   const customPieTooltipFormatter = (value, name, props) => {
     const item = props.payload;
     if (item.clienteOriginal) {
@@ -206,56 +182,12 @@ const Report = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ChartContainer title="Distribuzione Bandi per Settore">
-              <div className="h-80">
-                {statistiche.bandoPerSettore.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={statistiche.bandoPerSettore}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
-                    >
-                      <XAxis type="number" />
-                      <YAxis 
-                        dataKey="settore" 
-                        type="category" 
-                        width={150} 
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip 
-                        formatter={customBarTooltipFormatter}
-                        labelFormatter={(label) => {
-                          const item = statistiche.bandoPerSettore.find(s => s.settore === label);
-                          return item ? item.settoreOriginal : label;
-                        }}
-                      />
-                      <Bar 
-                        dataKey="percentuale" 
-                        fill="#3b82f6" 
-                        barSize={20}
-                        label={{ 
-                          position: 'right',
-                          formatter: (value) => `${value}%`,
-                          fill: '#1f2937',
-                          fontSize: 12
-                        }}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    Nessun dato disponibile
-                  </div>
-                )}
-              </div>
-            </ChartContainer>
-            
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <ChartContainer title="Match per Cliente">
               <div className="h-80">
                 {statistiche.matchPerCliente.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <RePieChart>
+                    <PieChart>
                       <Pie
                         data={statistiche.matchPerCliente}
                         nameKey="cliente"
@@ -276,7 +208,7 @@ const Report = () => {
                         const item = statistiche.matchPerCliente[index];
                         return item ? item.clienteOriginal : value;
                       }} />
-                    </RePieChart>
+                    </PieChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-500">
@@ -324,7 +256,7 @@ const Report = () => {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-500" />
+                  <FileText className="h-5 w-5 text-blue-500" />
                   <CardTitle>Report Match Bandi-Clienti</CardTitle>
                 </div>
                 <CardDescription>
