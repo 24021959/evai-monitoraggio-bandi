@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpCircle, AlertCircle, Play, RefreshCw, StopCircle } from 'lucide-react';
@@ -12,6 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Progress } from "@/components/ui/progress";
+import { useQuery } from '@tanstack/react-query';
+import SupabaseFontiService from '@/utils/SupabaseFontiService';
 
 const Fonti = () => {
   const { toast } = useToast();
@@ -24,22 +25,33 @@ const Fonti = () => {
   const [autoScrape, setAutoScrape] = useState(false);
   const [progressInterval, setProgressInterval] = useState<NodeJS.Timeout | null>(null);
   
-  // Carica le fonti salvate quando il componente viene montato
+  const { data: supabaseFonti, isLoading } = useQuery({
+    queryKey: ['fonti'],
+    queryFn: async () => {
+      const sources = await SupabaseFontiService.getFonti();
+      console.log('Fonti caricate da Supabase:', sources);
+      return sources;
+    }
+  });
+  
   useEffect(() => {
-    const savedFonti = FirecrawlService.getSavedFonti();
-    if (savedFonti.length > 0) {
-      setFonti(savedFonti);
+    if (supabaseFonti && supabaseFonti.length > 0) {
+      setFonti(supabaseFonti);
+      FirecrawlService.saveFonti(supabaseFonti);
+    } else {
+      const savedFonti = FirecrawlService.getSavedFonti();
+      if (savedFonti.length > 0) {
+        setFonti(savedFonti);
+      }
     }
     
-    // Check if auto monitoring was started from sidebar
     const autoMonitoringEnabled = localStorage.getItem('auto_monitoring_enabled') === 'true';
     if (autoMonitoringEnabled && !autoScrape && !isScrapingInProgress) {
       setAutoScrape(true);
       localStorage.removeItem('auto_monitoring_enabled');
     }
-  }, []);
+  }, [supabaseFonti]);
   
-  // Listen for auto monitoring start event
   useEffect(() => {
     const handleAutoMonitoringStart = () => {
       if (!autoScrape && !isScrapingInProgress) {
@@ -55,10 +67,17 @@ const Fonti = () => {
     };
   }, [autoScrape, isScrapingInProgress]);
   
-  // Salva le fonti ogni volta che cambiano
   useEffect(() => {
     if (fonti.length > 0) {
       FirecrawlService.saveFonti(fonti);
+      const syncToSupabase = async () => {
+        try {
+          await SupabaseFontiService.saveFonti(fonti);
+        } catch (error) {
+          console.error('Errore durante il salvataggio delle fonti su Supabase:', error);
+        }
+      };
+      syncToSupabase();
     }
   }, [fonti]);
   
@@ -82,15 +101,34 @@ const Fonti = () => {
     }
   };
   
-  const handleSaveEdit = (updatedFonte: Fonte) => {
+  const handleSaveEdit = async (updatedFonte: Fonte) => {
     setFonti(fonti.map(f => f.id === updatedFonte.id ? updatedFonte : f));
+    try {
+      const success = await SupabaseFontiService.saveFonte(updatedFonte);
+      if (success) {
+        toast({
+          title: "Fonte aggiornata",
+          description: "La fonte è stata aggiornata con successo",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante l'aggiornamento della fonte",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
     setSelectedFonte(null);
     setActiveTab("fonti");
-    toast({
-      title: "Fonte aggiornata",
-      description: "La fonte è stata aggiornata con successo",
-      duration: 3000,
-    });
   };
   
   const handleCancelEdit = () => {
@@ -98,25 +136,63 @@ const Fonti = () => {
     setActiveTab("fonti");
   };
   
-  const handleDelete = (id: string) => {
-    setFonti(fonti.filter(fonte => fonte.id !== id));
-    toast({
-      title: "Fonte eliminata",
-      description: "La fonte è stata eliminata con successo",
-      duration: 3000,
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      const success = await SupabaseFontiService.deleteFonte(id);
+      if (success) {
+        setFonti(fonti.filter(fonte => fonte.id !== id));
+        toast({
+          title: "Fonte eliminata",
+          description: "La fonte è stata eliminata con successo",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante l'eliminazione della fonte",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
-  const handleAddSource = (newSource: Omit<Fonte, 'id'>) => {
-    const id = `fonte-${Date.now()}`;
-    const newFonti = [...fonti, { id, ...newSource }];
-    setFonti(newFonti);
-    setActiveTab("fonti");
-    toast({
-      title: "Fonte aggiunta",
-      description: "La fonte è stata aggiunta con successo",
-      duration: 3000,
-    });
+  const handleAddSource = async (newSource: Omit<Fonte, 'id'>) => {
+    try {
+      const newFonte: Fonte = { id: `temp-${Date.now()}`, ...newSource };
+      const success = await SupabaseFontiService.saveFonte(newFonte);
+      if (success) {
+        const updatedFonti = await SupabaseFontiService.getFonti();
+        setFonti(updatedFonti);
+        setActiveTab("fonti");
+        toast({
+          title: "Fonte aggiunta",
+          description: "La fonte è stata aggiunta con successo",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante l'aggiunta della fonte",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const handleStopScraping = () => {
@@ -314,6 +390,17 @@ const Fonti = () => {
         </div>
       </div>
       
+      {isLoading && (
+        <Card className="bg-gray-50 border-gray-100">
+          <CardContent className="pt-6">
+            <div className="flex justify-center">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            </div>
+            <p className="text-center mt-4 text-gray-500">Caricamento fonti in corso...</p>
+          </CardContent>
+        </Card>
+      )}
+      
       {currentScrapingFonte && (
         <Card className="bg-blue-50 border-blue-100">
           <CardContent className="pt-6">
@@ -355,7 +442,11 @@ const Fonti = () => {
               <CardDescription>Gestisci le fonti da cui estrarre i dati sui bandi</CardDescription>
             </CardHeader>
             <CardContent>
-              {fonti.length === 0 ? (
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                </div>
+              ) : fonti.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Nessuna fonte configurata</AlertTitle>

@@ -20,6 +20,7 @@ export class SupabaseFontiService {
         return [];
       }
 
+      console.log('Fonti recuperate da Supabase:', data.length);
       return data.map(this.mapDbRowToFonte);
     } catch (error) {
       console.error('Errore durante il recupero delle fonti:', error);
@@ -32,13 +33,21 @@ export class SupabaseFontiService {
    */
   static async saveFonte(fonte: Fonte): Promise<boolean> {
     try {
-      // Assicuriamoci che la fonte abbia un ID
-      if (!fonte.id) {
-        fonte.id = uuidv4();
+      // Assicuriamoci che la fonte abbia un ID valido (UUID)
+      let fonteId = fonte.id;
+      if (!fonteId || fonteId.startsWith('temp-')) {
+        fonteId = uuidv4();
+        console.log(`Generato nuovo UUID per fonte: ${fonteId}`);
       }
 
+      // Creiamo una copia della fonte con l'ID corretto
+      const fonteToSave = {
+        ...fonte,
+        id: fonteId
+      };
+
       // Convertiamo la fonte nel formato del database
-      const dbFonte = this.mapFonteToDbRow(fonte);
+      const dbFonte = this.mapFonteToDbRow(fonteToSave);
 
       const { error } = await supabase
         .from('fonti')
@@ -49,7 +58,7 @@ export class SupabaseFontiService {
         return false;
       }
 
-      console.log('Fonte salvata con successo:', fonte.id);
+      console.log('Fonte salvata con successo su Supabase:', fonteToSave.id);
       return true;
     } catch (error) {
       console.error('Errore durante il salvataggio della fonte:', error);
@@ -64,12 +73,17 @@ export class SupabaseFontiService {
     let contatore = 0;
     
     for (const fonte of fonti) {
-      const salvata = await this.saveFonte(fonte);
-      if (salvata) {
-        contatore++;
+      try {
+        const salvata = await this.saveFonte(fonte);
+        if (salvata) {
+          contatore++;
+        }
+      } catch (error) {
+        console.error(`Errore nel salvare la fonte ${fonte.id}:`, error);
       }
     }
     
+    console.log(`Salvate ${contatore}/${fonti.length} fonti su Supabase`);
     return contatore;
   }
 
@@ -88,7 +102,7 @@ export class SupabaseFontiService {
         return false;
       }
 
-      console.log('Fonte eliminata con successo:', id);
+      console.log('Fonte eliminata con successo da Supabase:', id);
       return true;
     } catch (error) {
       console.error('Errore durante l\'eliminazione della fonte:', error);
@@ -105,10 +119,15 @@ export class SupabaseFontiService {
         .from('fonti')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Errore nel recupero della fonte:', error);
+        return null;
+      }
+      
+      if (!data) {
+        console.log(`Fonte con ID ${id} non trovata`);
         return null;
       }
 
@@ -116,6 +135,34 @@ export class SupabaseFontiService {
     } catch (error) {
       console.error('Errore durante il recupero della fonte:', error);
       return null;
+    }
+  }
+
+  /**
+   * Sincronizza le fonti locali con quelle su Supabase
+   */
+  static async syncFontiWithSupabase(): Promise<boolean> {
+    try {
+      // 1. Ottieni le fonti locali e quelle da Supabase
+      const fontiLocali = FirecrawlService.getSavedFonti();
+      const fontiSupabase = await this.getFonti();
+      
+      if (fontiSupabase.length > 0) {
+        // Se ci sono fonti su Supabase, aggiorniamo quelle locali
+        console.log(`Sincronizzando ${fontiSupabase.length} fonti da Supabase a locale`);
+        FirecrawlService.saveFonti(fontiSupabase);
+        return true;
+      } else if (fontiLocali.length > 0) {
+        // Se non ci sono fonti su Supabase ma ce ne sono locali, carichiamole su Supabase
+        console.log(`Sincronizzando ${fontiLocali.length} fonti da locale a Supabase`);
+        const count = await this.saveFonti(fontiLocali);
+        return count > 0;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Errore durante la sincronizzazione delle fonti:', error);
+      return false;
     }
   }
 
