@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -94,16 +95,34 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-800 pb-2 border-b border-gray-200">Dashboard</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Bandi Attivi" value={stats.bandiAttivi} color="blue" icon={<FileText className="w-8 h-8 text-blue-500" />} />
-        <StatCard title="Clienti" value={mockStatistiche.numeroClienti} color="green" icon={<Users className="w-8 h-8 text-green-500" />} />
-        <StatCard title="Match Recenti" value={mockStatistiche.matchRecenti} color="yellow" icon={<GitCompare className="w-8 h-8 text-yellow-500" />} />
+        <StatCard 
+          title="Bandi Attivi" 
+          value={stats.bandiAttivi} 
+          color="blue" 
+          icon={<FileText className="w-8 h-8 text-blue-500" />}
+          bgColor="bg-blue-50" 
+        />
+        <StatCard 
+          title="Clienti" 
+          value={mockStatistiche.numeroClienti} 
+          color="green" 
+          icon={<Users className="w-8 h-8 text-green-500" />}
+          bgColor="bg-green-50"
+        />
+        <StatCard 
+          title="Match Recenti" 
+          value={mockStatistiche.matchRecenti} 
+          color="yellow" 
+          icon={<GitCompare className="w-8 h-8 text-yellow-500" />}
+          bgColor="bg-amber-50"
+        />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartContainer title="Distribuzione Bandi">
+        <ChartContainer title="Distribuzione Bandi" bgColor="bg-gradient-to-br from-blue-50 to-white">
           <div className="h-64">
             {distribuzioneBandiData.some(d => d.value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -133,17 +152,17 @@ const Dashboard = () => {
           </div>
         </ChartContainer>
         
-        <ChartContainer title="Ultimi Bandi">
+        <ChartContainer title="Ultimi Bandi" bgColor="bg-gradient-to-br from-amber-50 to-white">
           <div className="overflow-y-auto max-h-64">
             {ultimiBandi.length > 0 ? (
               <table className="min-w-full">
                 <thead>
-                  <tr>
-                    <th className="text-left py-2">Titolo</th>
-                    <th className="text-right py-2">Scadenza</th>
+                  <tr className="text-sm text-gray-600">
+                    <th className="text-left py-2 font-medium">Titolo</th>
+                    <th className="text-right py-2 font-medium">Scadenza</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="text-sm">
                   {ultimiBandi.map((bando) => (
                     <tr key={bando.id} className="border-t">
                       <td className="py-2 text-blue-500 hover:underline">
@@ -151,7 +170,7 @@ const Dashboard = () => {
                           {bando.titolo}
                         </a>
                       </td>
-                      <td className="py-2 text-right">
+                      <td className="py-2 text-right text-gray-600">
                         {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
                       </td>
                     </tr>
@@ -165,7 +184,8 @@ const Dashboard = () => {
             )}
           </div>
           <div className="mt-4 text-right">
-            <Button variant="outline" size="sm" onClick={() => navigate('/bandi')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/bandi')}
+                   className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
               Vedi tutti i bandi
             </Button>
           </div>
@@ -173,7 +193,7 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 gap-6">
-        <ChartContainer title="Match per Cliente">
+        <ChartContainer title="Match per Cliente" bgColor="bg-gradient-to-br from-green-50 to-white">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

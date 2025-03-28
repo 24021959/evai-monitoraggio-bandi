@@ -6,13 +6,15 @@ interface StatCardProps {
   value: string | number;
   color?: 'blue' | 'green' | 'yellow' | 'red' | 'gray';
   icon?: React.ReactNode;
+  bgColor?: string;
 }
 
 const StatCard: React.FC<StatCardProps> = ({ 
   title, 
   value, 
   color = 'blue',
-  icon 
+  icon,
+  bgColor = 'bg-white'
 }) => {
   const colorClasses = {
     blue: 'text-blue-500',
@@ -23,7 +25,7 @@ const StatCard: React.FC<StatCardProps> = ({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg border shadow-sm hover:shadow transition-shadow">
+    <div className={`${bgColor} p-6 rounded-lg border shadow-sm hover:shadow transition-shadow`}>
       <h3 className="text-lg font-normal text-gray-600 mb-4">{title}</h3>
       <div className="flex items-center justify-center">
         {icon && <div className="mr-4">{icon}</div>}
