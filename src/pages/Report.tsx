@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import { useToast } from "@/components/ui/use-toast";
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
 import SupabaseMatchService from '@/utils/SupabaseMatchService';
-import MatchService from '@/utils/MatchService';
 
 const Report = () => {
   const { toast } = useToast();
@@ -61,8 +59,6 @@ const Report = () => {
       statali: bandi.filter(b => b.tipo === 'statale').length,
       regionali: bandi.filter(b => b.tipo === 'regionale').length,
     };
-    
-    // Rimuovo la generazione dei dati per settore
     
     const clientiMatchMap = new Map();
     matches.forEach(match => {
@@ -246,6 +242,7 @@ const Report = () => {
                 <Button 
                   className="w-full flex items-center justify-center gap-2"
                   onClick={handleDownloadBandiCSV}
+                  style={{ backgroundColor: "#3b82f6" }}
                 >
                   <Download className="h-4 w-4" />
                   Scarica CSV
@@ -277,6 +274,7 @@ const Report = () => {
                 <Button 
                   className="w-full flex items-center justify-center gap-2"
                   onClick={handleDownloadMatchCSV}
+                  style={{ backgroundColor: "#3b82f6" }}
                 >
                   <Download className="h-4 w-4" />
                   Scarica CSV
