@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -22,52 +21,11 @@ const Dashboard = () => {
     const loadAllBandi = async () => {
       setIsLoading(true);
       try {
-        console.log('Dashboard: Loading bandi from Supabase...');
-        // Carica bandi da Supabase
-        const supaBandi = await SupabaseBandiService.getBandi();
-        console.log('Dashboard: Loaded from Supabase:', supaBandi.length);
-        
-        // Carica anche bandi dal localStorage come fallback
-        const localBandi = FirecrawlService.getSavedBandi();
-        console.log('Dashboard: Loaded from localStorage:', localBandi.length);
-        
-        // Carica bandi importati da sessionStorage
-        let importedBandi: Bando[] = [];
-        const importedBandiStr = sessionStorage.getItem('bandiImportati');
-        if (importedBandiStr) {
-          try {
-            importedBandi = JSON.parse(importedBandiStr);
-            console.log('Dashboard: Loaded imported bandi:', importedBandi.length);
-          } catch (error) {
-            console.error('Error parsing imported bandi:', error);
-          }
-        }
-        
-        // Combina tutti i bandi, rimuovendo duplicati basati su ID
-        const allBandiMap = new Map<string, Bando>();
-        
-        // Priorità a Supabase
-        supaBandi.forEach(bando => {
-          allBandiMap.set(bando.id, bando);
-        });
-        
-        // Poi localStorage
-        localBandi.forEach(bando => {
-          if (!allBandiMap.has(bando.id)) {
-            allBandiMap.set(bando.id, bando);
-          }
-        });
-        
-        // Infine importati
-        importedBandi.forEach(bando => {
-          if (!allBandiMap.has(bando.id)) {
-            allBandiMap.set(bando.id, bando);
-          }
-        });
-        
-        const combinedBandi = Array.from(allBandiMap.values());
+        console.log('Dashboard: Loading combined bandi...');
+        // Carica bandi combinati (da Supabase, localStorage e sessionStorage) senza duplicati
+        const combinedBandi = await SupabaseBandiService.getBandiCombinati();
         setAllBandi(combinedBandi);
-        console.log("Dashboard: Combined bandi count:", combinedBandi.length);
+        console.log("Dashboard: Unique bandi count:", combinedBandi.length);
         
         if (combinedBandi.length === 0) {
           console.log("Dashboard: No bandi found in any source");

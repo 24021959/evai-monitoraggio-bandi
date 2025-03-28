@@ -31,6 +31,77 @@ export class SupabaseBandiService {
   }
 
   /**
+   * Recupera tutti i bandi combinati (Supabase + localStorage + sessionStorage) senza duplicati
+   */
+  static async getBandiCombinati(): Promise<Bando[]> {
+    try {
+      // 1. Carica bandi da Supabase
+      const supaBandi = await this.getBandi();
+      console.log(`SupabaseBandiService: Retrieved ${supaBandi.length} bandi from Supabase for combined list`);
+      
+      // 2. Carica bandi dal localStorage
+      const localBandi = FirecrawlService.getSavedBandi();
+      console.log(`SupabaseBandiService: Retrieved ${localBandi.length} bandi from localStorage for combined list`);
+      
+      // 3. Carica bandi importati da sessionStorage
+      let importedBandi: Bando[] = [];
+      const importedBandiStr = sessionStorage.getItem('bandiImportati');
+      if (importedBandiStr) {
+        try {
+          importedBandi = JSON.parse(importedBandiStr);
+          console.log(`SupabaseBandiService: Retrieved ${importedBandi.length} bandi from sessionStorage for combined list`);
+        } catch (error) {
+          console.error('Error parsing imported bandi:', error);
+        }
+      }
+      
+      // 4. Combina tutti i bandi, rimuovendo duplicati basati su ID
+      const allBandiMap = new Map<string, Bando>();
+      
+      // Priorità a Supabase
+      supaBandi.forEach(bando => {
+        allBandiMap.set(bando.id, bando);
+      });
+      
+      // Poi localStorage (solo se non già presenti in Supabase)
+      for (const bando of localBandi) {
+        if (!allBandiMap.has(bando.id)) {
+          // Se il bando è nel localStorage ma non in Supabase, proviamo a salvarlo in Supabase
+          try {
+            await this.saveBando(bando);
+            console.log(`Bando dal localStorage salvato in Supabase: ${bando.id}`);
+          } catch (err) {
+            console.error(`Errore nel salvare il bando dal localStorage in Supabase: ${bando.id}`, err);
+          }
+          allBandiMap.set(bando.id, bando);
+        }
+      }
+      
+      // Infine importati (solo se non già presenti)
+      for (const bando of importedBandi) {
+        if (!allBandiMap.has(bando.id)) {
+          // Se il bando è in sessionStorage ma non in Supabase, proviamo a salvarlo in Supabase
+          try {
+            await this.saveBando(bando);
+            console.log(`Bando da sessionStorage salvato in Supabase: ${bando.id}`);
+          } catch (err) {
+            console.error(`Errore nel salvare il bando da sessionStorage in Supabase: ${bando.id}`, err);
+          }
+          allBandiMap.set(bando.id, bando);
+        }
+      }
+      
+      const combinedBandi = Array.from(allBandiMap.values());
+      console.log(`SupabaseBandiService: Combined unique bandi count: ${combinedBandi.length}`);
+      
+      return combinedBandi;
+    } catch (error) {
+      console.error('Errore durante il recupero dei bandi combinati:', error);
+      return [];
+    }
+  }
+
+  /**
    * Salva un bando nel database
    */
   static async saveBando(bando: Bando): Promise<boolean> {
@@ -51,6 +122,17 @@ export class SupabaseBandiService {
 
       // Convertiamo il bando nel formato del database
       const dbBando = this.mapBandoToDbRow(bandoToSave);
+
+      // Verifichiamo se il bando esiste già in Supabase
+      const { data: existingBando } = await supabase
+        .from('bandi')
+        .select('id')
+        .eq('id', bandoId)
+        .maybeSingle();
+
+      if (existingBando) {
+        console.log(`Bando con ID ${bandoId} già presente in Supabase, aggiornamento...`);
+      }
 
       const { error } = await supabase
         .from('bandi')
