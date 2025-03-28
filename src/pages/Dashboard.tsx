@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -16,13 +15,10 @@ const Dashboard = () => {
   const [importedBandi, setImportedBandi] = useState<Bando[]>([]);
   const [allBandi, setAllBandi] = useState<Bando[]>([]);
   
-  // Load saved and imported bandi
   useEffect(() => {
-    // Get saved bandi
     const loadedBandi = FirecrawlService.getSavedBandi();
     setBandi(loadedBandi);
     
-    // Get imported bandi from Google Sheets
     const importedBandiStr = sessionStorage.getItem('bandiImportati');
     if (importedBandiStr) {
       try {
@@ -34,21 +30,17 @@ const Dashboard = () => {
     }
   }, []);
   
-  // Combine all bandi sources when either changes
   useEffect(() => {
     const combined = [...bandi, ...importedBandi];
     setAllBandi(combined);
     console.log("Dashboard: Combined bandi count:", combined.length);
   }, [bandi, importedBandi]);
   
-  // Calcola le statistiche in base ai bandi caricati
   const calcStatistiche = () => {
-    // Conta i bandi per tipo
     const europei = allBandi.filter(b => b.tipo === 'europeo').length;
     const statali = allBandi.filter(b => b.tipo === 'statale').length;
     const regionali = allBandi.filter(b => b.tipo === 'regionale').length;
     
-    // Calcola la distribuzione percentuale per settore
     const settoriCount: Record<string, number> = {};
     allBandi.forEach(bando => {
       if (bando.settori && Array.isArray(bando.settori)) {
@@ -64,7 +56,7 @@ const Dashboard = () => {
         percentuale: allBandi.length > 0 ? Math.round((count / allBandi.length) * 100) : 0
       }))
       .sort((a, b) => b.percentuale - a.percentuale)
-      .slice(0, 5); // Prendi i primi 5 settori più frequenti
+      .slice(0, 5);
     
     return {
       bandiAttivi: allBandi.length,
@@ -75,7 +67,6 @@ const Dashboard = () => {
   
   const stats = calcStatistiche();
   
-  // Prepara dati per il grafico a torta
   const distribuzioneBandiData = [
     { name: 'Europei', value: stats.distribuzioneBandi.europei, color: '#3b82f6' },
     { name: 'Statali', value: stats.distribuzioneBandi.statali, color: '#22c55e' },
@@ -97,7 +88,6 @@ const Dashboard = () => {
     );
   };
 
-  // Filtra gli ultimi 5 bandi per scadenza
   const ultimiBandi = [...allBandi].sort((a, b) => 
     new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime()
   ).slice(0, 5);
@@ -106,14 +96,12 @@ const Dashboard = () => {
     <div className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">Dashboard</h1>
       
-      {/* Statistiche principali */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard title="Bandi Attivi" value={stats.bandiAttivi} color="blue" icon={<FileText className="w-8 h-8 text-blue-500" />} />
         <StatCard title="Clienti" value={mockStatistiche.numeroClienti} color="green" icon={<Users className="w-8 h-8 text-green-500" />} />
         <StatCard title="Match Recenti" value={mockStatistiche.matchRecenti} color="yellow" icon={<GitCompare className="w-8 h-8 text-yellow-500" />} />
       </div>
       
-      {/* Grafici */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartContainer title="Distribuzione Bandi">
           <div className="h-64">
@@ -184,36 +172,7 @@ const Dashboard = () => {
         </ChartContainer>
       </div>
       
-      {/* Altri grafici */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartContainer title="Distribuzione Bandi per Settore">
-          <div className="h-64">
-            {stats.bandoPerSettore.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={stats.bandoPerSettore}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
-                >
-                  <XAxis type="number" />
-                  <YAxis 
-                    dataKey="settore" 
-                    type="category" 
-                    width={120} 
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Percentuale']} />
-                  <Bar dataKey="percentuale" fill="#3b82f6" barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Nessun dato disponibile
-              </div>
-            )}
-          </div>
-        </ChartContainer>
-        
+      <div className="grid grid-cols-1 gap-6">
         <ChartContainer title="Match per Cliente">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
