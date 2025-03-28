@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Fonte } from '../types';
-import { Trash2, CheckCircle, AlertCircle, Clock, ArrowRight, StopCircle, Edit, ExternalLink, Save, X } from 'lucide-react';
+import { Trash2, CheckCircle, AlertCircle, Clock, ArrowRight, Edit, ExternalLink, Save, X } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -31,8 +32,7 @@ const FontiTable: React.FC<FontiTableProps> = ({
   onEdit, 
   onDelete, 
   currentScrapingId, 
-  scrapingProgress = 0,
-  onStopScraping
+  scrapingProgress = 0
 }) => {
   const { toast } = useToast();
   const [editingFonte, setEditingFonte] = useState<string | null>(null);
@@ -142,16 +142,6 @@ const FontiTable: React.FC<FontiTableProps> = ({
                         <Clock className="h-4 w-4 animate-pulse" />
                         <span className="text-xs">In corso ({scrapingProgress}%)</span>
                       </div>
-                      {onStopScraping && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={onStopScraping}
-                          className="text-red-500 hover:text-red-700 h-6 px-2"
-                        >
-                          <StopCircle className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                     <Progress value={scrapingProgress} className="h-2 bg-gray-200" indicatorClassName="bg-green-500" />
                   </div>
