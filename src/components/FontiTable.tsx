@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Fonte } from '../types';
-import { Trash2, CheckCircle, AlertCircle, Clock, ArrowRight, Edit, ExternalLink, Save, X } from 'lucide-react';
+import { Trash2, CheckCircle, Edit, ExternalLink, Save, X } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -11,8 +11,6 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { FirecrawlService } from '@/utils/FirecrawlService';
-import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
@@ -23,16 +21,13 @@ interface FontiTableProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   currentScrapingId?: string | null;
-  scrapingProgress?: number;
-  onStopScraping?: () => void;
 }
 
 const FontiTable: React.FC<FontiTableProps> = ({ 
   fonti, 
   onEdit, 
   onDelete, 
-  currentScrapingId, 
-  scrapingProgress = 0
+  currentScrapingId
 }) => {
   const { toast } = useToast();
   const [editingFonte, setEditingFonte] = useState<string | null>(null);
@@ -77,10 +72,6 @@ const FontiTable: React.FC<FontiTableProps> = ({
     const updatedFonte = { ...fonte, url: editUrl };
     
     try {
-      FirecrawlService.saveFonti(
-        fonti.map(f => f.id === fonteId ? updatedFonte : f)
-      );
-      
       const updated = await GoogleSheetsService.updateFonteInSheet(updatedFonte);
       
       if (updated) {
@@ -123,59 +114,15 @@ const FontiTable: React.FC<FontiTableProps> = ({
               <TableHead>URL</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Stato</TableHead>
-              <TableHead>Scraping</TableHead>
               <TableHead>Azioni</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {fonti.map((fonte) => {
-              const isScraped = FirecrawlService.isSourceScraped(fonte.id);
-              const isCurrentlyScraping = currentScrapingId === fonte.id;
               const isEditing = editingFonte === fonte.id;
               
-              let scrapingStatus;
-              if (isCurrentlyScraping) {
-                scrapingStatus = (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-blue-600">
-                        <Clock className="h-4 w-4 animate-pulse" />
-                        <span className="text-xs">In corso ({scrapingProgress}%)</span>
-                      </div>
-                    </div>
-                    <Progress value={scrapingProgress} className="h-2 bg-gray-200" indicatorClassName="bg-green-500" />
-                  </div>
-                );
-              } else if (isScraped) {
-                scrapingStatus = (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="text-xs">Completato</span>
-                  </div>
-                );
-              } else {
-                const nextUnscrapedSource = FirecrawlService.getNextUnscrapedSource(fonti);
-                const isNext = nextUnscrapedSource && nextUnscrapedSource.id === fonte.id;
-                
-                scrapingStatus = (
-                  <div className={`flex items-center gap-1 ${isNext ? 'text-orange-500' : 'text-gray-500'}`}>
-                    {isNext ? (
-                      <>
-                        <ArrowRight className="h-4 w-4 animate-bounce" />
-                        <span className="text-xs font-medium">Prossima</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="h-4 w-4" />
-                        <span className="text-xs">In attesa</span>
-                      </>
-                    )}
-                  </div>
-                );
-              }
-              
               return (
-                <TableRow key={fonte.id} className={isCurrentlyScraping ? 'bg-blue-50' : ''}>
+                <TableRow key={fonte.id}>
                   <TableCell className="font-medium">{fonte.nome}</TableCell>
                   <TableCell>
                     {isEditing ? (
@@ -207,9 +154,6 @@ const FontiTable: React.FC<FontiTableProps> = ({
                     <span className={`text-xs px-2 py-1 rounded-full ${fonte.stato === 'attivo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {fonte.stato}
                     </span>
-                  </TableCell>
-                  <TableCell>
-                    {scrapingStatus}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
