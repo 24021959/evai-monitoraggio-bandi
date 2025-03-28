@@ -130,8 +130,8 @@ const Clienti = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
+            <div className="flex items-center gap-3">
+              <div className="relative w-2/3">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Cerca cliente..."
@@ -142,7 +142,10 @@ const Clienti = () => {
               </div>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-2 border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-600 flex-shrink-0 w-32"
+                  >
                     <Filter className="h-4 w-4" />
                     Filtri
                   </Button>
