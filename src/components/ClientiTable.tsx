@@ -22,16 +22,16 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails, onD
   return (
     <div className="rounded-md border">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-blue-500">
           <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Settore</TableHead>
-            <TableHead>Fatturato (€)</TableHead>
-            <TableHead>Dipendenti</TableHead>
-            <TableHead>Regione</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Telefono</TableHead>
-            <TableHead>Azioni</TableHead>
+            <TableHead className="text-white font-semibold">Nome</TableHead>
+            <TableHead className="text-white font-semibold">Settore</TableHead>
+            <TableHead className="text-white font-semibold">Fatturato</TableHead>
+            <TableHead className="text-white font-semibold">Dipendenti</TableHead>
+            <TableHead className="text-white font-semibold">Regione</TableHead>
+            <TableHead className="text-white font-semibold">Email</TableHead>
+            <TableHead className="text-white font-semibold">Telefono</TableHead>
+            <TableHead className="text-white font-semibold">Azioni</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
