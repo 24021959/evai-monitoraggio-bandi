@@ -177,37 +177,99 @@ export class GoogleSheetsService {
         }
       });
       
-      const response = await fetch(updateAppUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sheetId,
-          action: 'updateFonte',
-          fonte: {
-            url: fonte.url,
-            nome: fonte.nome, 
-            tipo: fonte.tipo,
-            stato: fonte.stato || 'attivo'
-          }
-        }),
-      });
-      
-      if (!response.ok) {
-        console.error(`Errore nell'aggiornamento: ${response.status} ${response.statusText}`);
-        const text = await response.text();
-        console.error('Dettagli errore:', text);
-        return false;
-      }
+      // Imposta un timeout più lungo per la richiesta (20 secondi)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
       
       try {
-        const result = await response.json();
-        console.log('Risultato aggiornamento:', result);
-        return result.success;
-      } catch (e) {
-        console.error('Errore nel parsing della risposta JSON:', e);
-        return false;
+        const response = await fetch(updateAppUrl, {
+          method: 'POST',
+          mode: 'cors', // Aggiungi esplicitamente CORS
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sheetId,
+            action: 'updateFonte',
+            fonte: {
+              url: fonte.url,
+              nome: fonte.nome, 
+              tipo: fonte.tipo,
+              stato: fonte.stato || 'attivo'
+            }
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          console.error(`Errore nell'aggiornamento: ${response.status} ${response.statusText}`);
+          const text = await response.text();
+          console.error('Dettagli errore:', text);
+          return false;
+        }
+        
+        try {
+          const result = await response.json();
+          console.log('Risultato aggiornamento:', result);
+          return result.success;
+        } catch (e) {
+          console.error('Errore nel parsing della risposta JSON:', e);
+          return false;
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        // Utilizza Google Apps Script JSONP come fallback (compatibile con CORS)
+        console.log('Errore nella chiamata fetch, tentativo con JSONP:', fetchError);
+        
+        // Riprova con uno script tag (tecnica JSONP)
+        return new Promise((resolve) => {
+          const callbackName = 'googleSheetCallback_' + Date.now();
+          
+          // Imposta una funzione di callback globale
+          (window as any)[callbackName] = (result: any) => {
+            console.log('Risultato callback JSONP:', result);
+            document.body.removeChild(script);
+            delete (window as any)[callbackName];
+            resolve(result?.success || false);
+          };
+          
+          // Crea un timeout per gestire le chiamate che non ricevono risposta
+          const jsonpTimeout = setTimeout(() => {
+            console.error('Timeout nella chiamata JSONP');
+            if (document.body.contains(script)) {
+              document.body.removeChild(script);
+            }
+            delete (window as any)[callbackName];
+            resolve(false);
+          }, 10000);
+          
+          // Prepara i dati da inviare come query string
+          const jsonpData = encodeURIComponent(JSON.stringify({
+            sheetId,
+            action: 'updateFonte',
+            fonte: {
+              url: fonte.url,
+              nome: fonte.nome, 
+              tipo: fonte.tipo,
+              stato: fonte.stato || 'attivo'
+            }
+          }));
+          
+          // Crea uno script tag per la chiamata JSONP
+          const script = document.createElement('script');
+          script.src = `${updateAppUrl}?callback=${callbackName}&data=${jsonpData}`;
+          script.onerror = () => {
+            console.error('Errore nello script JSONP');
+            clearTimeout(jsonpTimeout);
+            document.body.removeChild(script);
+            delete (window as any)[callbackName];
+            resolve(false);
+          };
+          
+          document.body.appendChild(script);
+        });
       }
     } catch (error) {
       console.error('Errore durante l\'aggiornamento della fonte:', error);

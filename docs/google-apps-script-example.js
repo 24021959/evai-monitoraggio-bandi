@@ -7,9 +7,22 @@
 // 4. Modifica l'ID del foglio e il nome della scheda secondo le tue esigenze
 // 5. Pubblica lo script come Web App (con accesso "Anyone, even anonymous")
 // 6. Usa l'URL generato per configurare l'app
+// 7. IMPORTANTE: Aggiungi le seguenti intestazioni al foglio "Lista Fonti": 
+//    row_number, url, stato_elaborazione, data_ultimo_aggiornamento, nome, tipo
 
 function doGet(e) {
-  return HtmlService.createHtmlOutput("Google Apps Script per l'aggiornamento delle fonti è attivo!");
+  return HtmlService.createHtmlOutput("Google Apps Script per l'aggiornamento delle fonti è attivo!")
+    .addMetaTag('Content-Type', 'application/json')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// Per abilitare CORS nella risposta
+function setCorsHeaders(response) {
+  return ContentService.createTextOutput(response)
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 function doPost(e) {
@@ -22,21 +35,22 @@ function doPost(e) {
     
     // Controlla che azione eseguire
     if (data.action === "updateFonte") {
-      return ContentService.createTextOutput(
-        JSON.stringify(addFonteToSheet(data.fonte, data.sheetId))
-      ).setMimeType(ContentService.MimeType.JSON);
+      const result = addFonteToSheet(data.fonte, data.sheetId);
+      return setCorsHeaders(JSON.stringify(result));
     }
     
     // Azione non riconosciuta
-    return ContentService.createTextOutput(
-      JSON.stringify({ success: false, error: "Azione non riconosciuta" })
-    ).setMimeType(ContentService.MimeType.JSON);
+    return setCorsHeaders(JSON.stringify({ 
+      success: false, 
+      error: "Azione non riconosciuta" 
+    }));
     
   } catch (error) {
     Logger.log("Errore: " + error.toString());
-    return ContentService.createTextOutput(
-      JSON.stringify({ success: false, error: error.toString() })
-    ).setMimeType(ContentService.MimeType.JSON);
+    return setCorsHeaders(JSON.stringify({ 
+      success: false, 
+      error: error.toString() 
+    }));
   }
 }
 
@@ -68,36 +82,53 @@ function addFonteToSheet(fonte, sheetId) {
     // Verifica le colonne disponibili e mappa i dati di conseguenza
     var rowData = [];
     
-    // Per compatibilità sia con il vecchio che con il nuovo formato
-    if (headers.includes("row_number") || headers.includes("id_number")) {
-      rowData.push(nextRowNumber); // row_number o id_number
+    // Crea una mappa delle posizioni delle intestazioni
+    var headerMap = {};
+    for (var i = 0; i < headers.length; i++) {
+      headerMap[headers[i].toLowerCase()] = i;
     }
     
-    // Aggiungi sempre l'URL (essenziale)
-    rowData.push(fonte.url);
-    
-    // Se esiste la colonna stato_elaborazione
-    if (headers.includes("stato_elaborazione")) {
-      rowData.push(fonte.stato || "da elaborare");
+    // Inizializza l'array con valori vuoti per tutte le colonne
+    for (var i = 0; i < headers.length; i++) {
+      rowData.push("");
     }
     
-    // Se esiste la colonna data_ultimo_aggiornamento
-    if (headers.includes("data_ultimo_aggiornamento")) {
-      rowData.push(new Date().toISOString().split('T')[0]);
+    // Riempi i dati in base alle intestazioni
+    if ("row_number" in headerMap) {
+      rowData[headerMap["row_number"]] = nextRowNumber;
     }
     
-    // Se esiste la colonna nome
-    if (headers.includes("nome")) {
-      rowData.push(fonte.nome || "");
+    if ("url" in headerMap) {
+      rowData[headerMap["url"]] = fonte.url;
     }
     
-    // Se esiste la colonna tipo
-    if (headers.includes("tipo")) {
-      rowData.push(fonte.tipo || "altro");
+    if ("stato_elaborazione" in headerMap) {
+      rowData[headerMap["stato_elaborazione"]] = fonte.stato || "da elaborare";
     }
     
-    // Se non ci sono intestazioni, usa un formato di base
-    if (headers.length === 0 || rowData.length === 0) {
+    if ("data_ultimo_aggiornamento" in headerMap) {
+      rowData[headerMap["data_ultimo_aggiornamento"]] = new Date().toISOString().split('T')[0];
+    }
+    
+    if ("nome" in headerMap) {
+      rowData[headerMap["nome"]] = fonte.nome || "";
+    }
+    
+    if ("tipo" in headerMap) {
+      rowData[headerMap["tipo"]] = fonte.tipo || "altro";
+    }
+    
+    // Se non ci sono intestazioni, usa un formato di base con almeno url e row_number
+    if (headers.length === 0 || headerMap["url"] === undefined) {
+      // Se il foglio è completamente vuoto, aggiungi le intestazioni
+      if (lastRow === 0) {
+        var defaultHeaders = ["row_number", "url", "stato_elaborazione", "data_ultimo_aggiornamento", "nome", "tipo"];
+        sheet.getRange(1, 1, 1, defaultHeaders.length).setValues([defaultHeaders]);
+        lastRow = 1;
+        nextRowNumber = 2;
+      }
+      
+      // Usa un formato base (assumendo che le colonne siano in questo ordine)
       rowData = [
         nextRowNumber,
         fonte.url,
@@ -109,6 +140,7 @@ function addFonteToSheet(fonte, sheetId) {
     }
     
     // Scrivi la nuova riga nel foglio
+    Logger.log("Sto per scrivere i dati: " + rowData.join(", ") + " alla riga " + nextRowNumber);
     sheet.getRange(nextRowNumber, 1, 1, rowData.length).setValues([rowData]);
     
     Logger.log("Fonte aggiunta con successo alla riga " + nextRowNumber + ". Dati: " + rowData.join(", "));

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
-import { CloudIcon, FileSpreadsheet, HelpCircle } from 'lucide-react';
+import { CloudIcon, FileSpreadsheet, HelpCircle, Link } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface GoogleSheetsConfigDialogProps {
@@ -68,6 +68,10 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
     }
   };
   
+  const openGoogleAppsScriptExample = () => {
+    window.open('/docs/google-apps-script-example.js', '_blank');
+  };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -75,7 +79,7 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
           <DialogTitle>Configura Google Sheets</DialogTitle>
           <DialogDescription>
             Inserisci l'URL del foglio Google Sheets per importare e sincronizzare le fonti.
-            Il foglio deve contenere una scheda chiamata "Lista Fonti".
+            Il foglio deve contenere una scheda chiamata "Lista Fonti" con almeno le colonne "row_number" e "url".
           </DialogDescription>
         </DialogHeader>
         
@@ -117,14 +121,23 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
               <HelpCircle className="h-4 w-4 mr-1" />
               Come configurare
             </AlertTitle>
-            <AlertDescription className="text-xs">
+            <AlertDescription className="text-xs space-y-2">
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Assicurati che il tuo foglio Google abbia una scheda chiamata "Lista Fonti"</li>
-                <li>Nella prima riga inserisci intestazioni come: row_number, url, stato_elaborazione, data_ultimo_aggiornamento, nome, tipo</li>
-                <li>Crea uno script Google Apps Script usando il codice di esempio in docs/google-apps-script-example.js</li>
+                <li>Nella prima riga inserisci queste intestazioni: <strong>row_number, url, stato_elaborazione, data_ultimo_aggiornamento, nome, tipo</strong></li>
+                <li>Crea uno script Google Apps Script usando il codice di esempio</li>
                 <li>Pubblica lo script come Web App (accesso "Anyone, even anonymous")</li>
                 <li>Copia l'URL generato nel campo "URL per l'aggiornamento"</li>
               </ol>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 text-xs flex items-center"
+                onClick={openGoogleAppsScriptExample}
+              >
+                <Link className="h-3 w-3 mr-1" />
+                Visualizza esempio Google Apps Script
+              </Button>
             </AlertDescription>
           </Alert>
         </div>
