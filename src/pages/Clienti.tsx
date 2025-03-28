@@ -45,7 +45,7 @@ const Clienti = () => {
         <h1 className="text-2xl font-bold">Gestione Clienti</h1>
         <Button 
           onClick={() => navigate('/clienti/nuovo')}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white"
         >
           <PlusCircle className="h-4 w-4" />
           Nuovo Cliente

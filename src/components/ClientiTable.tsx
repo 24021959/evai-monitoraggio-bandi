@@ -34,8 +34,11 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails }) =
           </TableRow>
         </TableHeader>
         <TableBody>
-          {clienti.map((cliente) => (
-            <TableRow key={cliente.id}>
+          {clienti.map((cliente, index) => (
+            <TableRow 
+              key={cliente.id} 
+              className={index % 2 === 0 ? "bg-white" : "bg-amber-50"}
+            >
               <TableCell className="font-medium">{cliente.nome}</TableCell>
               <TableCell>{cliente.settore}</TableCell>
               <TableCell>{cliente.fatturato.toLocaleString('it-IT')}</TableCell>
