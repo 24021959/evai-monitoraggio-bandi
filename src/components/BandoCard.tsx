@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Bando } from '../types';
 import { Info, Link2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,17 @@ import {
 } from "@/components/ui/hover-card";
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface BandoCardProps {
   bando: Bando;
@@ -30,6 +40,8 @@ const BandoCard: React.FC<BandoCardProps> = ({
   onDelete,
   showFullDetails = false
 }) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const formatImporto = (min?: number, max?: number, budgetDisponibile?: string) => {
     if (budgetDisponibile) {
       return budgetDisponibile;
@@ -64,11 +76,17 @@ const BandoCard: React.FC<BandoCardProps> = ({
     }
   };
 
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(bando.id);
+    }
+    setIsDeleteDialogOpen(false);
+  };
+
   return (
     <div className="border rounded-lg p-4 bg-white shadow-sm hover:shadow transition-shadow h-full flex flex-col">
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-medium text-lg">
-          {/* Making title fully readable - removing truncation and tooltip */}
           <div className="break-words">{bando.titolo}</div>
         </h3>
         <span className={`text-xs text-white px-2 py-1 rounded-full ${getTipoClass(bando.tipo)}`}>
@@ -195,7 +213,7 @@ const BandoCard: React.FC<BandoCardProps> = ({
           <Button 
             variant="default" 
             size="sm"
-            className="w-full flex items-center justify-center gap-2" 
+            className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600" 
             onClick={() => onViewDetails(bando.id)}
           >
             <Info className="h-4 w-4" />
@@ -204,14 +222,29 @@ const BandoCard: React.FC<BandoCardProps> = ({
         )}
         
         {onDelete && (
-          <Button 
-            variant="destructive" 
-            size="sm"
-            className="w-full"
-            onClick={() => onDelete(bando.id)}
-          >
-            Elimina
-          </Button>
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                className="w-full"
+              >
+                Elimina
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Sei sicuro di voler eliminare il bando "{bando.titolo}"? Questa azione non può essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Elimina</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
     </div>
