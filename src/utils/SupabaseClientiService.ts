@@ -113,13 +113,13 @@ export class SupabaseClientiService {
       regione: row.regione,
       provincia: row.provincia,
       fatturato: row.fatturato,
-      interessiSettoriali: row.interessiSettoriali || [],
+      interessiSettoriali: row.interessisettoriali || [],
       dipendenti: row.dipendenti,
       email: row.email,
       telefono: row.telefono,
-      annoFondazione: row.annoFondazione,
-      formaGiuridica: row.formaGiuridica,
-      codiceATECO: row.codiceATECO
+      annoFondazione: row.annofondazione,
+      formaGiuridica: row.formagiuridica,
+      codiceATECO: row.codiceateco
     };
   }
 
@@ -134,13 +134,13 @@ export class SupabaseClientiService {
       regione: cliente.regione,
       provincia: cliente.provincia,
       fatturato: cliente.fatturato,
-      interessiSettoriali: cliente.interessiSettoriali || [],
+      interessisettoriali: cliente.interessiSettoriali || [],
       dipendenti: cliente.dipendenti,
       email: cliente.email,
       telefono: cliente.telefono,
-      annoFondazione: cliente.annoFondazione,
-      formaGiuridica: cliente.formaGiuridica,
-      codiceATECO: cliente.codiceATECO
+      annofondazione: cliente.annoFondazione,
+      formagiuridica: cliente.formaGiuridica,
+      codiceateco: cliente.codiceATECO
     };
   }
 }
