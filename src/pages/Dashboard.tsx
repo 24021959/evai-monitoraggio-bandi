@@ -93,7 +93,7 @@ const Dashboard = () => {
     { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#5A6474' },
   ].filter(item => item.value > 0); // Show only non-zero values
 
-  // Updated label renderer with better text contrast
+  // Updated label renderer with red text color
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: any) => {
     if (percent === 0) return null;
     
@@ -106,11 +106,11 @@ const Dashboard = () => {
       <text 
         x={x} 
         y={y} 
-        fill="#ffffff" 
+        fill="#ea384c" 
         textAnchor={x > cx ? 'start' : 'end'} 
         dominantBaseline="central"
         fontWeight="bold"
-        stroke="#000000"
+        stroke="#ffffff"
         strokeWidth="0.5"
         fontSize="12"
       >
