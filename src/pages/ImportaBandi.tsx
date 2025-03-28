@@ -146,8 +146,8 @@ const ImportaBandi = () => {
             <Button 
               onClick={handleImportBandi} 
               disabled={isLoading || !googleSheetUrl} 
-              className="w-full"
-              variant="default"
+              className="w-full md:w-auto md:px-8 bg-blue-500 hover:bg-blue-600"
+              variant="secondary"
             >
               {isLoading ? 'Importazione bandi in corso...' : 'Importa Bandi'}
               {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
