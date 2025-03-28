@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
-import { mockClienti } from '@/data/mockData';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import ClientiTable from '@/components/ClientiTable';
 import { useNavigate } from 'react-router-dom';
+import { Cliente } from '@/types';
+import { SupabaseClientiService } from '@/utils/SupabaseClientiService';
 import { 
   Pagination, 
   PaginationContent, 
@@ -38,6 +39,8 @@ const Clienti = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const clientiPerPagina = 10;
+  const [isLoading, setIsLoading] = useState(true);
+  const [clienti, setClienti] = useState<Cliente[]>([]);
   
   // Filtri
   const [filtroNome, setFiltroNome] = useState('');
@@ -51,19 +54,62 @@ const Clienti = () => {
   
   // Stato per il dialogo di conferma eliminazione
   const [clienteDaEliminare, setClienteDaEliminare] = useState<string | null>(null);
+
+  // Carica clienti da Supabase
+  useEffect(() => {
+    const fetchClienti = async () => {
+      setIsLoading(true);
+      try {
+        const clientiData = await SupabaseClientiService.getClienti();
+        setClienti(clientiData);
+      } catch (error) {
+        console.error('Errore nel caricamento dei clienti:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare i clienti",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClienti();
+  }, [toast]);
   
   // Funzione per eliminare un cliente
-  const eliminaCliente = (id: string) => {
-    // Qui andrà la logica per eliminare effettivamente il cliente dal database
-    // Per ora mostriamo solo un toast di conferma
+  const eliminaCliente = async (id: string) => {
+    try {
+      const success = await SupabaseClientiService.deleteCliente(id);
+      
+      if (success) {
+        // Aggiorna la lista dei clienti rimuovendo il cliente eliminato
+        setClienti(clienti.filter(cliente => cliente.id !== id));
+        
+        toast({
+          title: "Cliente eliminato",
+          description: "Il cliente è stato eliminato con successo",
+        });
+      } else {
+        toast({
+          title: "Errore",
+          description: "Impossibile eliminare il cliente",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Errore durante l\'eliminazione del cliente:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un problema durante l'eliminazione",
+        variant: "destructive",
+      });
+    }
+    
     setClienteDaEliminare(null);
-    toast({
-      title: "Cliente eliminato",
-      description: "Il cliente è stato eliminato con successo",
-    });
   };
   
-  const clientiFiltrati = mockClienti.filter(cliente => {
+  const clientiFiltrati = clienti.filter(cliente => {
     // Filtro per ricerca generale
     const matchRicercaGenerale = 
       cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -233,11 +279,22 @@ const Clienti = () => {
             </div>
           </div>
           
-          <ClientiTable 
-            clienti={clientiCorrente} 
-            onViewDetails={(id) => navigate(`/clienti/${id}`)} 
-            onDeleteClient={(id) => setClienteDaEliminare(id)}
-          />
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-2 text-gray-500">Caricamento clienti in corso...</p>
+            </div>
+          ) : clientiCorrente.length > 0 ? (
+            <ClientiTable 
+              clienti={clientiCorrente} 
+              onViewDetails={(id) => navigate(`/clienti/${id}`)} 
+              onDeleteClient={(id) => setClienteDaEliminare(id)}
+            />
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              Nessun cliente trovato. {clienti.length > 0 ? 'Prova a modificare i filtri.' : 'Aggiungi il tuo primo cliente.'}
+            </div>
+          )}
           
           {totalePagine > 1 && (
             <div className="mt-4">
