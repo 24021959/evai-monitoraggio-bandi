@@ -38,9 +38,15 @@ export class SupabaseMatchService {
    */
   static async saveMatch(match: Partial<Match>): Promise<boolean> {
     try {
-      // Assicuriamoci che il match abbia un ID
+      // Assicuriamoci che il match abbia un ID valido (UUID)
+      let matchId = match.id;
+      if (!matchId || typeof matchId !== 'string' || !matchId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        matchId = uuidv4();
+        console.log(`Generato nuovo UUID per match: ${matchId}`);
+      }
+
       const matchToSave = {
-        id: match.id || uuidv4(),
+        id: matchId,
         clienteid: match.clienteId,
         bandoid: match.bandoId,
         compatibilita: match.compatibilita,

@@ -33,13 +33,22 @@ export class SupabaseBandiService {
    */
   static async saveBando(bando: Bando): Promise<boolean> {
     try {
-      // Assicuriamoci che il bando abbia un ID
-      if (!bando.id) {
-        bando.id = uuidv4();
+      // Assicuriamoci che il bando abbia un ID valido (UUID)
+      // Se l'ID non è un UUID valido, ne generiamo uno nuovo
+      let bandonId = bando.id;
+      if (!bandonId || bandonId.includes('imported-')) {
+        bandonId = uuidv4();
+        console.log(`Generato nuovo UUID per bando importato: ${bandonId}`);
       }
 
+      // Creiamo una copia del bando con l'ID corretto
+      const bandoToSave = {
+        ...bando,
+        id: bandonId
+      };
+
       // Convertiamo il bando nel formato del database
-      const dbBando = this.mapBandoToDbRow(bando);
+      const dbBando = this.mapBandoToDbRow(bandoToSave);
 
       const { error } = await supabase
         .from('bandi')
@@ -50,7 +59,7 @@ export class SupabaseBandiService {
         return false;
       }
 
-      console.log('Bando salvato con successo:', bando.id);
+      console.log('Bando salvato con successo:', bandoToSave.id);
       return true;
     } catch (error) {
       console.error('Errore durante il salvataggio del bando:', error);
@@ -142,9 +151,24 @@ export class SupabaseBandiService {
       let contatore = 0;
       
       for (const bando of bandiImportati) {
-        const salvato = await this.saveBando(bando);
-        if (salvato) {
-          contatore++;
+        try {
+          // Assicuriamo che ogni bando abbia tutti i campi necessari
+          const bandoCompleto = {
+            ...bando,
+            settori: bando.settori || [],
+            fonte: bando.fonte || 'Importato',
+            tipo: bando.tipo || 'altro'
+          };
+          
+          const salvato = await this.saveBando(bandoCompleto);
+          if (salvato) {
+            contatore++;
+            console.log(`Bando importato con successo: ${bando.titolo}`);
+          } else {
+            console.error(`Errore nel salvataggio del bando in Supabase: ${bando.titolo}`);
+          }
+        } catch (err) {
+          console.error(`Errore nell'elaborazione del bando: ${bando.titolo}`, err);
         }
       }
       
