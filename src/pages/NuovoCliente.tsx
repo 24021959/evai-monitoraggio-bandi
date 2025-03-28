@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, 
@@ -22,6 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { SupabaseClientiService } from '@/utils/SupabaseClientiService';
+import { useToast } from "@/hooks/use-toast";
+import { provincePerRegione } from '@/utils/provinceItaliane';
 
 const formSchema = z.object({
   nome: z.string().min(1, { message: "Il nome è obbligatorio" }),
@@ -29,11 +33,12 @@ const formSchema = z.object({
   fatturato: z.string().min(1, { message: "Il fatturato è obbligatorio" }),
   dipendenti: z.string().min(1, { message: "Il numero di dipendenti è obbligatorio" }),
   regione: z.string().min(1, { message: "La regione è obbligatoria" }),
+  provincia: z.string().min(1, { message: "La provincia è obbligatoria" }),
   annoFondazione: z.string().optional(),
-  provincia: z.string().optional(),
   formaGiuridica: z.string().optional(),
   codiceATECO: z.string().optional(),
-  email: z.string().email({ message: "Inserisci un indirizzo email valido" }).optional(),
+  email: z.string().email({ message: "Inserisci un indirizzo email valido" }).optional().or(z.literal('')),
+  telefono: z.string().optional(),
 });
 
 interface CampoAggiuntivo {
@@ -44,7 +49,9 @@ interface CampoAggiuntivo {
 
 const NuovoCliente = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [campiAggiuntivi, setCampiAggiuntivi] = useState<CampoAggiuntivo[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,13 +61,27 @@ const NuovoCliente = () => {
       fatturato: "",
       dipendenti: "",
       regione: "",
-      annoFondazione: "",
       provincia: "",
+      annoFondazione: "",
       formaGiuridica: "",
       codiceATECO: "",
       email: "",
+      telefono: "",
     },
   });
+
+  const regioneSelezionata = form.watch('regione');
+  const [provinceDisponibili, setProvinceDisponibili] = useState<string[]>([]);
+
+  // Aggiorna le province quando cambia la regione
+  useEffect(() => {
+    if (regioneSelezionata) {
+      const province = provincePerRegione[regioneSelezionata] || [];
+      setProvinceDisponibili(province);
+      // Reset provincia se la regione cambia
+      form.setValue('provincia', '');
+    }
+  }, [regioneSelezionata, form]);
 
   const aggiungiCampo = () => {
     setCampiAggiuntivi([...campiAggiuntivi, {
@@ -80,12 +101,57 @@ const NuovoCliente = () => {
     ));
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log({
-      ...values,
-      campiAggiuntivi
-    });
-    navigate('/clienti');
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    
+    try {
+      // Creazione di un oggetto cliente compatibile con il tipo Cliente
+      const nuovoCliente = {
+        id: '', // Generato da Supabase
+        nome: values.nome,
+        settore: values.settore,
+        regione: values.regione,
+        provincia: values.provincia,
+        fatturato: parseInt(values.fatturato, 10),
+        interessiSettoriali: [], // Campo vuoto iniziale
+        dipendenti: parseInt(values.dipendenti, 10),
+        email: values.email || '', // Assicuriamoci che non sia undefined
+        telefono: values.telefono || '',
+        annoFondazione: values.annoFondazione ? parseInt(values.annoFondazione, 10) : undefined,
+        formaGiuridica: values.formaGiuridica || undefined,
+        codiceATECO: values.codiceATECO || undefined,
+      };
+      
+      // Aggiungi i campi personalizzati
+      const campiExtra: Record<string, string> = {};
+      campiAggiuntivi.forEach(campo => {
+        if (campo.nome && campo.valore) {
+          campiExtra[campo.nome] = campo.valore;
+        }
+      });
+      
+      // Salva il cliente in Supabase
+      const success = await SupabaseClientiService.saveCliente(nuovoCliente);
+      
+      if (success) {
+        toast({
+          title: "Cliente aggiunto",
+          description: "Il cliente è stato salvato con successo",
+        });
+        navigate('/clienti');
+      } else {
+        throw new Error("Errore nel salvataggio del cliente");
+      }
+    } catch (error) {
+      console.error("Errore durante il salvataggio:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio del cliente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -207,14 +273,26 @@ const NuovoCliente = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Lombardia">Lombardia</SelectItem>
-                          <SelectItem value="Piemonte">Piemonte</SelectItem>
-                          <SelectItem value="Veneto">Veneto</SelectItem>
-                          <SelectItem value="Emilia-Romagna">Emilia-Romagna</SelectItem>
-                          <SelectItem value="Toscana">Toscana</SelectItem>
-                          <SelectItem value="Lazio">Lazio</SelectItem>
+                          <SelectItem value="Abruzzo">Abruzzo</SelectItem>
+                          <SelectItem value="Basilicata">Basilicata</SelectItem>
+                          <SelectItem value="Calabria">Calabria</SelectItem>
                           <SelectItem value="Campania">Campania</SelectItem>
+                          <SelectItem value="Emilia-Romagna">Emilia-Romagna</SelectItem>
+                          <SelectItem value="Friuli-Venezia Giulia">Friuli-Venezia Giulia</SelectItem>
+                          <SelectItem value="Lazio">Lazio</SelectItem>
+                          <SelectItem value="Liguria">Liguria</SelectItem>
+                          <SelectItem value="Lombardia">Lombardia</SelectItem>
+                          <SelectItem value="Marche">Marche</SelectItem>
+                          <SelectItem value="Molise">Molise</SelectItem>
+                          <SelectItem value="Piemonte">Piemonte</SelectItem>
+                          <SelectItem value="Puglia">Puglia</SelectItem>
+                          <SelectItem value="Sardegna">Sardegna</SelectItem>
                           <SelectItem value="Sicilia">Sicilia</SelectItem>
+                          <SelectItem value="Toscana">Toscana</SelectItem>
+                          <SelectItem value="Trentino-Alto Adige">Trentino-Alto Adige</SelectItem>
+                          <SelectItem value="Umbria">Umbria</SelectItem>
+                          <SelectItem value="Valle d'Aosta">Valle d'Aosta</SelectItem>
+                          <SelectItem value="Veneto">Veneto</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -227,10 +305,21 @@ const NuovoCliente = () => {
                   name="provincia"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Provincia</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Inserisci provincia" {...field} />
-                      </FormControl>
+                      <FormLabel>Provincia *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={provinceDisponibili.length === 0}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={regioneSelezionata ? "Seleziona provincia" : "Prima seleziona una regione"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {provinceDisponibili.map((provincia) => (
+                            <SelectItem key={provincia} value={provincia}>
+                              {provincia}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -279,19 +368,35 @@ const NuovoCliente = () => {
                 />
               </div>
               
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Inserisci email aziendale" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Inserisci email aziendale" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="telefono"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefono</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="Inserisci numero di telefono" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -348,12 +453,12 @@ const NuovoCliente = () => {
               </div>
               
               <div className="flex justify-end gap-4">
-                <Button variant="outline" onClick={() => navigate('/clienti')}>
+                <Button variant="outline" onClick={() => navigate('/clienti')} type="button">
                   Annulla
                 </Button>
-                <Button type="submit" className="flex items-center gap-2">
+                <Button type="submit" className="flex items-center gap-2" disabled={isSubmitting}>
                   <Save className="h-4 w-4" />
-                  Salva
+                  {isSubmitting ? "Salvataggio..." : "Salva"}
                 </Button>
               </div>
             </form>

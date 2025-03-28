@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockClienti } from '@/data/mockData';
 import { Cliente } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,36 +8,63 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { SupabaseClientiService } from '@/utils/SupabaseClientiService';
 
 const DettaglioCliente = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Cliente>>({});
   const [campiAggiuntivi, setCampiAggiuntivi] = useState<{nome: string, valore: string}[]>([]);
   const [nuovoCampo, setNuovoCampo] = useState({nome: '', valore: ''});
 
   useEffect(() => {
-    // In un'applicazione reale, qui faremmo una chiamata API
-    const clienteTrovato = mockClienti.find(c => c.id === id);
-    if (clienteTrovato) {
-      setCliente(clienteTrovato);
-      setFormData(clienteTrovato);
+    const fetchCliente = async () => {
+      if (!id) return;
       
-      // Estrai i campi aggiuntivi (tutto ciò che non è un campo standard)
-      const campiStandard = ['id', 'nome', 'settore', 'regione', 'provincia', 'fatturato', 'dipendenti', 'email', 'interessiSettoriali', 'telefono', 'codiceATECO', 'annoFondazione', 'formaGiuridica'];
-      const campiExtra = Object.entries(clienteTrovato)
-        .filter(([key]) => !campiStandard.includes(key))
-        .map(([nome, valore]) => ({
-          nome,
-          valore: typeof valore === 'string' ? valore : String(valore)
-        }));
-        
-      setCampiAggiuntivi(campiExtra);
-    }
-  }, [id]);
+      setIsLoading(true);
+      try {
+        const clienteTrovato = await SupabaseClientiService.getCliente(id);
+        if (clienteTrovato) {
+          setCliente(clienteTrovato);
+          setFormData(clienteTrovato);
+          
+          // Estrai i campi aggiuntivi (tutto ciò che non è un campo standard)
+          const campiStandard = ['id', 'nome', 'settore', 'regione', 'provincia', 'fatturato', 'dipendenti', 'email', 'interessiSettoriali', 'telefono', 'codiceATECO', 'annoFondazione', 'formaGiuridica'];
+          const campiExtra = Object.entries(clienteTrovato)
+            .filter(([key]) => !campiStandard.includes(key))
+            .map(([nome, valore]) => ({
+              nome,
+              valore: typeof valore === 'string' ? valore : String(valore)
+            }));
+            
+          setCampiAggiuntivi(campiExtra);
+        } else {
+          toast({
+            title: "Errore",
+            description: "Cliente non trovato",
+            variant: "destructive",
+          });
+          navigate('/clienti');
+        }
+      } catch (error) {
+        console.error('Errore nel caricamento del cliente:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare i dati del cliente",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCliente();
+  }, [id, navigate, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,35 +93,58 @@ const DettaglioCliente = () => {
     setCampiAggiuntivi(nuoviCampi);
   };
 
-  const handleSalva = () => {
+  const handleSalva = async () => {
     if (!cliente || !id) return;
+    
+    setIsSaving(true);
+    try {
+      // Creiamo un nuovo oggetto cliente con i dati aggiornati
+      const clienteAggiornato: Cliente = {
+        ...cliente,
+        ...formData,
+      };
 
-    // Creiamo un nuovo oggetto cliente con i dati aggiornati
-    const clienteAggiornato: Cliente = {
-      ...cliente,
-      ...formData,
-    };
+      // Aggiungiamo i campi personalizzati
+      campiAggiuntivi.forEach(campo => {
+        (clienteAggiornato as any)[campo.nome] = campo.valore;
+      });
 
-    // Aggiungiamo i campi personalizzati
-    campiAggiuntivi.forEach(campo => {
-      (clienteAggiornato as any)[campo.nome] = campo.valore;
-    });
-
-    // Aggiorniamo il cliente nell'array mockClienti
-    const index = mockClienti.findIndex(c => c.id === id);
-    if (index !== -1) {
-      mockClienti[index] = clienteAggiornato;
+      // Salviamo il cliente in Supabase
+      const success = await SupabaseClientiService.saveCliente(clienteAggiornato);
       
-      // Aggiorniamo lo stato locale
-      setCliente(clienteAggiornato);
+      if (success) {
+        // Aggiorniamo lo stato locale
+        setCliente(clienteAggiornato);
+        
+        toast({
+          title: "Cliente aggiornato",
+          description: "Le modifiche sono state salvate con successo",
+        });
+        
+        setIsEditing(false);
+      } else {
+        throw new Error("Errore nell'aggiornamento del cliente");
+      }
+    } catch (error) {
+      console.error('Errore durante il salvataggio delle modifiche:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile salvare le modifiche",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    toast({
-      title: "Cliente aggiornato",
-      description: "Le modifiche sono state salvate con successo",
-    });
-    setIsEditing(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <p className="ml-2">Caricamento cliente...</p>
+      </div>
+    );
+  }
 
   if (!cliente) {
     return (
@@ -117,9 +166,9 @@ const DettaglioCliente = () => {
         {!isEditing ? (
           <Button onClick={() => setIsEditing(true)}>Modifica</Button>
         ) : (
-          <Button onClick={handleSalva} className="flex items-center gap-2">
+          <Button onClick={handleSalva} className="flex items-center gap-2" disabled={isSaving}>
             <Save className="h-4 w-4" />
-            Salva Modifiche
+            {isSaving ? "Salvataggio..." : "Salva Modifiche"}
           </Button>
         )}
       </div>
