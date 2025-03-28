@@ -48,44 +48,59 @@ const ImportaBandi = () => {
           variant: "destructive",
         });
       } else {
-        // Salva in sessionStorage
-        sessionStorage.setItem('bandiImportati', JSON.stringify(bandi));
-        console.log('Bandi salvati in sessionStorage:', bandi.length);
+        // Prima recuperiamo i bandi esistenti da Supabase
+        const bandiEsistenti = await SupabaseBandiService.getBandi();
+        console.log('Bandi già esistenti in Supabase:', bandiEsistenti.length);
         
-        // Salva in Supabase
-        let contatoreSalvati = 0;
-        for (const bando of bandi) {
-          // Verifichiamo che i campi obbligatori siano presenti
-          if (!bando.titolo || !bando.fonte) {
-            console.warn('Bando senza titolo o fonte, saltato:', bando);
-            continue;
-          }
-          
-          // Verifichiamo che il bando abbia un ID valido
-          if (!bando.id) {
-            console.log('Bando senza ID, generando uno nuovo');
-          }
-          
-          const success = await SupabaseBandiService.saveBando(bando);
-          if (success) {
-            contatoreSalvati++;
-          } else {
-            console.error('Errore nel salvataggio del bando in Supabase:', bando.titolo);
-          }
-        }
+        // Filtriamo i bandi per escludere duplicati (basati su titolo e fonte)
+        const titoliFonteEsistenti = new Set(
+          bandiEsistenti.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+        );
         
-        console.log(`Bandi salvati in Supabase: ${contatoreSalvati}/${bandi.length}`);
-        
-        setBandiAnteprima(bandi.slice(0, 5));
-        
-        toast({
-          title: "Importazione completata",
-          description: `Importati ${bandi.length} bandi dal foglio Google Sheets (${contatoreSalvati} salvati in Supabase)`,
+        const bandiUnici = bandi.filter(bando => {
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          return !titoliFonteEsistenti.has(chiave);
         });
         
-        setTimeout(() => {
-          navigate('/match');
-        }, 1500);
+        console.log(`Filtrati ${bandi.length - bandiUnici.length} bandi duplicati`);
+        console.log(`Bandi unici da importare: ${bandiUnici.length}`);
+        
+        // Salva in sessionStorage solo i bandi unici
+        if (bandiUnici.length > 0) {
+          sessionStorage.setItem('bandiImportati', JSON.stringify(bandiUnici));
+          console.log('Bandi salvati in sessionStorage:', bandiUnici.length);
+          
+          // Salva in Supabase
+          let contatoreSalvati = 0;
+          for (const bando of bandiUnici) {
+            // Verifichiamo che i campi obbligatori siano presenti
+            if (!bando.titolo || !bando.fonte) {
+              console.warn('Bando senza titolo o fonte, saltato:', bando);
+              continue;
+            }
+            
+            const success = await SupabaseBandiService.saveBando(bando);
+            if (success) {
+              contatoreSalvati++;
+            } else {
+              console.error('Errore nel salvataggio del bando in Supabase:', bando.titolo);
+            }
+          }
+          
+          console.log(`Bandi salvati in Supabase: ${contatoreSalvati}/${bandiUnici.length}`);
+          
+          setBandiAnteprima(bandiUnici.slice(0, 5));
+          
+          toast({
+            title: "Importazione completata",
+            description: `Importati ${bandiUnici.length} bandi dal foglio Google Sheets (${contatoreSalvati} salvati in Supabase)`,
+          });
+        } else {
+          toast({
+            title: "Nessun nuovo bando da importare",
+            description: "Tutti i bandi dal foglio sono già presenti nel database.",
+          });
+        }
       }
     } catch (error: any) {
       console.error('Errore dettagliato durante l\'importazione:', error);
@@ -110,13 +125,13 @@ const ImportaBandi = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-blue-500" />
-            <CardTitle>Importa Bandi da Google Sheets</CardTitle>
+            <CardTitle>Importa Bandi</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="googleSheetUrl">URL del foglio Google Sheets</Label>
+              <Label htmlFor="googleSheetUrl">Inserisci URL</Label>
               <Input
                 id="googleSheetUrl"
                 placeholder="Es. https://docs.google.com/spreadsheets/d/..."
@@ -129,8 +144,9 @@ const ImportaBandi = () => {
               onClick={handleImportBandi} 
               disabled={isLoading || !googleSheetUrl} 
               className="w-full"
+              variant="default"
             >
-              {isLoading ? 'Importazione bandi in corso...' : 'Importa Bandi e vai al Match'}
+              {isLoading ? 'Importazione bandi in corso...' : 'Importa Bandi'}
               {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
             
