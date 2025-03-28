@@ -163,40 +163,36 @@ export class GoogleSheetsService {
         sheetId = this.extractSheetId(sheetUrl);
       }
       
-      // Approccio principale: utilizzo dell'App Script
+      // Prepara i dati da inviare
+      const fonteData = {
+        url: fonte.url,
+        nome: fonte.nome, 
+        tipo: fonte.tipo,
+        stato: fonte.stato || 'attivo'
+      };
+      
       console.log('Invio dati a Google Apps Script:', updateAppUrl);
       console.log('Dati da inviare:', {
         sheetId,
         action: 'updateFonte',
-        fonte: {
-          id: fonte.id,
-          url: fonte.url,
-          nome: fonte.nome, 
-          tipo: fonte.tipo,
-          stato: fonte.stato || 'attivo'
-        }
+        fonte: fonteData
       });
       
-      // Imposta un timeout più lungo per la richiesta (20 secondi)
+      // Imposta un timeout più lungo per la richiesta (30 secondi)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       
       try {
         const response = await fetch(updateAppUrl, {
           method: 'POST',
-          mode: 'cors', // Aggiungi esplicitamente CORS
+          mode: 'cors',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             sheetId,
             action: 'updateFonte',
-            fonte: {
-              url: fonte.url,
-              nome: fonte.nome, 
-              tipo: fonte.tipo,
-              stato: fonte.stato || 'attivo'
-            }
+            fonte: fonteData
           }),
           signal: controller.signal
         });
@@ -216,14 +212,15 @@ export class GoogleSheetsService {
           return result.success;
         } catch (e) {
           console.error('Errore nel parsing della risposta JSON:', e);
-          return false;
+          const responseText = await response.text();
+          console.log('Risposta ricevuta (testo):', responseText);
+          return responseText.includes('success') && !responseText.includes('false');
         }
       } catch (fetchError) {
         clearTimeout(timeoutId);
-        // Utilizza Google Apps Script JSONP come fallback (compatibile con CORS)
-        console.log('Errore nella chiamata fetch, tentativo con JSONP:', fetchError);
+        console.error('Errore nella chiamata fetch:', fetchError);
         
-        // Riprova con uno script tag (tecnica JSONP)
+        // In alternativa, prova un approccio JSONP
         return new Promise((resolve) => {
           const callbackName = 'googleSheetCallback_' + Date.now();
           
@@ -243,18 +240,13 @@ export class GoogleSheetsService {
             }
             delete (window as any)[callbackName];
             resolve(false);
-          }, 10000);
+          }, 15000);
           
           // Prepara i dati da inviare come query string
           const jsonpData = encodeURIComponent(JSON.stringify({
             sheetId,
             action: 'updateFonte',
-            fonte: {
-              url: fonte.url,
-              nome: fonte.nome, 
-              tipo: fonte.tipo,
-              stato: fonte.stato || 'attivo'
-            }
+            fonte: fonteData
           }));
           
           // Crea uno script tag per la chiamata JSONP
@@ -480,56 +472,32 @@ export class GoogleSheetsService {
         stato: 'attivo' // Default stato
       };
       
-      // Mapping based on the screenshot: id_number, url, stato_elaborazione, data_ultimo_aggiornamento
-      headers.forEach((header, index) => {
-        if (index < values.length) {
-          const value = values[index];
-          
-          switch(header.toLowerCase()) {
-            case 'id_number':
-              // Do not use any custom ID format, we'll generate proper UUIDs later
-              // fonte.id will be handled by SupabaseFontiService
-              break;
-            case 'url':
-              fonte.url = value;
-              break;
-            case 'stato_elaborazione':
-              fonte.stato = value.toLowerCase().includes('elaborat') ? 'attivo' : 'inattivo';
-              // Use the same value for nome if not provided elsewhere
-              if (!fonte.nome) {
-                // Extract domain from URL for the name
-                try {
-                  const domain = new URL(value).hostname.replace('www.', '');
-                  fonte.nome = domain.charAt(0).toUpperCase() + domain.slice(1);
-                } catch {
-                  fonte.nome = `Fonte ${i}`;
-                }
-              }
-              break;
-            case 'data_ultimo_aggiornamento':
-              fonte.ultimoAggiornamento = value;
-              break;
-            // Map additional columns based on the screenshot
-            case 'nome':
-              fonte.nome = value;
-              break;
-            case 'tipo':
-              fonte.tipo = this.mapTipoFonte(value);
-              break;
-            case 'frequenza_aggiornamento':
-              fonte.frequenzaAggiornamento = value;
-              break;
-            case 'note':
-              fonte.note = value;
-              break;
-            default:
-              // Store any additional columns
-              fonte[header] = value;
-          }
+      // Crea una mappa delle posizioni delle intestazioni (insensibile alle maiuscole)
+      const headerMap: {[key: string]: number} = {};
+      for (let j = 0; j < headers.length; j++) {
+        if (headers[j] !== "") {
+          headerMap[headers[j].toLowerCase()] = j;
         }
-      });
+      }
       
-      // Use URL for name if name is still not set
+      // Mappatura migliorata con controllo insensibile alle maiuscole
+      if ("url" in headerMap && values[headerMap["url"]]) {
+        fonte.url = values[headerMap["url"]];
+      }
+      
+      if ("nome" in headerMap && values[headerMap["nome"]]) {
+        fonte.nome = values[headerMap["nome"]];
+      }
+      
+      if ("tipo" in headerMap && values[headerMap["tipo"]]) {
+        fonte.tipo = this.mapTipoFonte(values[headerMap["tipo"]]);
+      }
+      
+      if ("stato_elaborazione" in headerMap && values[headerMap["stato_elaborazione"]]) {
+        fonte.stato = values[headerMap["stato_elaborazione"]].toLowerCase().includes('elaborat') ? 'attivo' : 'inattivo';
+      }
+      
+      // Se il nome non è stato impostato, derivalo dall'URL
       if (!fonte.nome && fonte.url) {
         try {
           const domain = new URL(fonte.url).hostname.replace('www.', '');
@@ -539,7 +507,7 @@ export class GoogleSheetsService {
         }
       }
 
-      // Derive tipo from URL if not set
+      // Deriva tipo dall'URL se non impostato
       if (!fonte.tipo && fonte.url) {
         if (fonte.url.includes('europa.eu') || fonte.url.includes('ec.europa')) {
           fonte.tipo = 'europeo';
@@ -554,7 +522,6 @@ export class GoogleSheetsService {
       
       // Assicurati che i campi obbligatori abbiano valori
       if (fonte.url) {
-        // Do not set ID here, we'll handle it in SupabaseFontiService
         if (!fonte.tipo) {
           fonte.tipo = 'altro';
         }

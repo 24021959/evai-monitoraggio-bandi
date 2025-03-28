@@ -8,7 +8,7 @@
 // 5. Pubblica lo script come Web App (con accesso "Anyone, even anonymous")
 // 6. Usa l'URL generato per configurare l'app
 // 7. IMPORTANTE: Aggiungi le seguenti intestazioni al foglio "Lista Fonti": 
-//    row_number, url, stato_elaborazione, data_ultimo_aggiornamento, nome, tipo
+//    row_number, url, nome, tipo (e opzionalmente stato_elaborazione, data_ultimo_aggiornamento)
 
 function doGet(e) {
   return HtmlService.createHtmlOutput("Google Apps Script per l'aggiornamento delle fonti è attivo!")
@@ -70,44 +70,57 @@ function addFonteToSheet(fonte, sheetId) {
       };
     }
     
+    Logger.log("Foglio trovato: " + sheet.getName());
+    
     // Ottieni le intestazioni delle colonne dalla prima riga
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var headerRange = sheet.getRange(1, 1, 1, sheet.getLastColumn());
+    var headers = headerRange.getValues()[0];
     Logger.log("Intestazioni foglio: " + headers.join(", "));
+    
+    // Verifica che ci siano intestazioni
+    if (headers.length === 0 || headers.every(function(h) { return h === ""; })) {
+      Logger.log("Nessuna intestazione trovata!");
+      return { 
+        success: false, 
+        error: "Nessuna intestazione trovata nel foglio" 
+      };
+    }
     
     // Trova l'ultima riga con dati
     var lastRow = sheet.getLastRow();
     var nextRowNumber = lastRow + 1;
     
-    // Prepara i dati da inserire
-    // Verifica le colonne disponibili e mappa i dati di conseguenza
-    var rowData = [];
+    Logger.log("Ultima riga: " + lastRow + ", prossima riga: " + nextRowNumber);
     
-    // Crea una mappa delle posizioni delle intestazioni
+    // Crea una mappa delle posizioni delle intestazioni (insensibile alle maiuscole)
     var headerMap = {};
     for (var i = 0; i < headers.length; i++) {
-      headerMap[headers[i].toLowerCase()] = i;
+      if (headers[i] !== "") {
+        headerMap[headers[i].toLowerCase()] = i;
+      }
+    }
+    
+    Logger.log("Mappa intestazioni: " + JSON.stringify(headerMap));
+    
+    // Verifica che ci siano almeno "url" e "row_number" tra le intestazioni
+    if (headerMap["url"] === undefined) {
+      Logger.log("Intestazione 'url' non trovata!");
+      return { 
+        success: false, 
+        error: "Intestazione 'url' non trovata nel foglio" 
+      };
     }
     
     // Inizializza l'array con valori vuoti per tutte le colonne
-    for (var i = 0; i < headers.length; i++) {
-      rowData.push("");
-    }
+    var rowData = new Array(headers.length).fill("");
     
     // Riempi i dati in base alle intestazioni
     if ("row_number" in headerMap) {
-      rowData[headerMap["row_number"]] = nextRowNumber;
+      rowData[headerMap["row_number"]] = nextRowNumber - 1; // Usa l'indice 0-based per row_number
     }
     
     if ("url" in headerMap) {
-      rowData[headerMap["url"]] = fonte.url;
-    }
-    
-    if ("stato_elaborazione" in headerMap) {
-      rowData[headerMap["stato_elaborazione"]] = fonte.stato || "da elaborare";
-    }
-    
-    if ("data_ultimo_aggiornamento" in headerMap) {
-      rowData[headerMap["data_ultimo_aggiornamento"]] = new Date().toISOString().split('T')[0];
+      rowData[headerMap["url"]] = fonte.url || "";
     }
     
     if ("nome" in headerMap) {
@@ -118,32 +131,20 @@ function addFonteToSheet(fonte, sheetId) {
       rowData[headerMap["tipo"]] = fonte.tipo || "altro";
     }
     
-    // Se non ci sono intestazioni, usa un formato di base con almeno url e row_number
-    if (headers.length === 0 || headerMap["url"] === undefined) {
-      // Se il foglio è completamente vuoto, aggiungi le intestazioni
-      if (lastRow === 0) {
-        var defaultHeaders = ["row_number", "url", "stato_elaborazione", "data_ultimo_aggiornamento", "nome", "tipo"];
-        sheet.getRange(1, 1, 1, defaultHeaders.length).setValues([defaultHeaders]);
-        lastRow = 1;
-        nextRowNumber = 2;
-      }
-      
-      // Usa un formato base (assumendo che le colonne siano in questo ordine)
-      rowData = [
-        nextRowNumber,
-        fonte.url,
-        fonte.stato || "da elaborare",
-        new Date().toISOString().split('T')[0],
-        fonte.nome || "",
-        fonte.tipo || "altro"
-      ];
+    if ("stato_elaborazione" in headerMap) {
+      rowData[headerMap["stato_elaborazione"]] = fonte.stato || "attivo";
     }
     
+    if ("data_ultimo_aggiornamento" in headerMap) {
+      rowData[headerMap["data_ultimo_aggiornamento"]] = new Date().toISOString().split('T')[0];
+    }
+    
+    Logger.log("Sto per scrivere i dati alla riga " + nextRowNumber + ": " + rowData.join(", "));
+    
     // Scrivi la nuova riga nel foglio
-    Logger.log("Sto per scrivere i dati: " + rowData.join(", ") + " alla riga " + nextRowNumber);
     sheet.getRange(nextRowNumber, 1, 1, rowData.length).setValues([rowData]);
     
-    Logger.log("Fonte aggiunta con successo alla riga " + nextRowNumber + ". Dati: " + rowData.join(", "));
+    Logger.log("Fonte aggiunta con successo alla riga " + nextRowNumber);
     
     return { 
       success: true, 

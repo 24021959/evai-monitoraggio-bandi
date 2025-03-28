@@ -79,7 +79,7 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
           <DialogTitle>Configura Google Sheets</DialogTitle>
           <DialogDescription>
             Inserisci l'URL del foglio Google Sheets per importare e sincronizzare le fonti.
-            Il foglio deve contenere una scheda chiamata "Lista Fonti" con almeno le colonne "row_number" e "url".
+            Il foglio deve contenere una scheda chiamata "Lista Fonti" con almeno le colonne "row_number", "url", "nome" e "tipo".
           </DialogDescription>
         </DialogHeader>
         
@@ -124,7 +124,7 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
             <AlertDescription className="text-xs space-y-2">
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Assicurati che il tuo foglio Google abbia una scheda chiamata "Lista Fonti"</li>
-                <li>Nella prima riga inserisci queste intestazioni: <strong>row_number, url, stato_elaborazione, data_ultimo_aggiornamento, nome, tipo</strong></li>
+                <li>Nella prima riga inserisci queste intestazioni: <strong>row_number, url, nome, tipo</strong> (opzionalmente: stato_elaborazione, data_ultimo_aggiornamento)</li>
                 <li>Crea uno script Google Apps Script usando il codice di esempio</li>
                 <li>Pubblica lo script come Web App (accesso "Anyone, even anonymous")</li>
                 <li>Copia l'URL generato nel campo "URL per l'aggiornamento"</li>
