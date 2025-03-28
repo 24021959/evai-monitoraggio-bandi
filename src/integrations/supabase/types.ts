@@ -9,7 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bandi: {
+        Row: {
+          budget_disponibile: string | null
+          created_at: string
+          data_estrazione: string | null
+          descrizione: string | null
+          descrizione_completa: string | null
+          fonte: string
+          id: string
+          importo_max: number | null
+          importo_min: number | null
+          modalita_presentazione: string | null
+          requisiti: string | null
+          scadenza: string
+          scadenza_dettagliata: string | null
+          settori: string[] | null
+          tipo: string
+          titolo: string
+          ultimi_aggiornamenti: string | null
+          url: string | null
+        }
+        Insert: {
+          budget_disponibile?: string | null
+          created_at?: string
+          data_estrazione?: string | null
+          descrizione?: string | null
+          descrizione_completa?: string | null
+          fonte: string
+          id?: string
+          importo_max?: number | null
+          importo_min?: number | null
+          modalita_presentazione?: string | null
+          requisiti?: string | null
+          scadenza: string
+          scadenza_dettagliata?: string | null
+          settori?: string[] | null
+          tipo: string
+          titolo: string
+          ultimi_aggiornamenti?: string | null
+          url?: string | null
+        }
+        Update: {
+          budget_disponibile?: string | null
+          created_at?: string
+          data_estrazione?: string | null
+          descrizione?: string | null
+          descrizione_completa?: string | null
+          fonte?: string
+          id?: string
+          importo_max?: number | null
+          importo_min?: number | null
+          modalita_presentazione?: string | null
+          requisiti?: string | null
+          scadenza?: string
+          scadenza_dettagliata?: string | null
+          settori?: string[] | null
+          tipo?: string
+          titolo?: string
+          ultimi_aggiornamenti?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

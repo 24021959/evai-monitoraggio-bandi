@@ -8,11 +8,13 @@ import { Bando } from "@/types";
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
+import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import { 
   FileText, 
   Search, 
   Filter,
   Calendar,
+  Database,
 } from 'lucide-react';
 import {
   Select,
@@ -33,36 +35,35 @@ const Bandi = () => {
   const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
   const [fontiDisponibili, setFontiDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
-  const [showGoogleSheetsBandi, setShowGoogleSheetsBandi] = useState<boolean>(false);
-  const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    FirecrawlService.clearScrapedBandi();
-    const loadedBandi = FirecrawlService.getSavedBandi();
-    setBandi(loadedBandi);
-    console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
-    
-    const importedBandi = sessionStorage.getItem('bandiImportati');
-    if (importedBandi) {
+    const fetchBandi = async () => {
+      setLoading(true);
       try {
-        const parsedBandi = JSON.parse(importedBandi);
-        setBandiImportati(parsedBandi);
-        console.log('Bandi importati recuperati:', parsedBandi.length);
-        if (parsedBandi.length > 0) {
-          setShowGoogleSheetsBandi(true);
-        }
+        const bandiDB = await SupabaseBandiService.getBandi();
+        setBandi(bandiDB);
+        console.log("Bandi page: Caricati bandi dal database:", bandiDB.length);
       } catch (error) {
-        console.error('Errore nel parsing dei bandi importati:', error);
+        console.error("Errore nel recupero dei bandi:", error);
+        toast({
+          title: "Errore",
+          description: "Impossibile recuperare i bandi dal database",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    }
-  }, []);
+    };
+
+    fetchBandi();
+  }, [toast]);
 
   useEffect(() => {
     const settori = new Set<string>();
     const fonti = new Set<string>();
-    const bandiToAnalyze = showGoogleSheetsBandi ? bandiImportati : bandi;
     
-    bandiToAnalyze.forEach(bando => {
+    bandi.forEach(bando => {
       // Raccogliamo i settori
       if (bando.settori && Array.isArray(bando.settori)) {
         bando.settori.forEach(settore => {
@@ -78,12 +79,60 @@ const Bandi = () => {
     
     setSettoriDisponibili(Array.from(settori).sort());
     setFontiDisponibili(Array.from(fonti).sort());
-  }, [bandi, bandiImportati, showGoogleSheetsBandi]);
+  }, [bandi]);
+
+  const importaBandiLocali = async () => {
+    try {
+      setLoading(true);
+      // Importa i bandi da FirecrawlService
+      const importati = await SupabaseBandiService.importFromFirecrawl();
+      // Recupera tutti i bandi dopo l'importazione
+      const bandiAggiornati = await SupabaseBandiService.getBandi();
+      setBandi(bandiAggiornati);
+      
+      toast({
+        title: "Importazione completata",
+        description: `Importati ${importati} bandi da FirecrawlService`,
+      });
+    } catch (error) {
+      console.error("Errore nell'importazione dei bandi:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile importare i bandi",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const importaBandiSessionStorage = async () => {
+    try {
+      setLoading(true);
+      // Importa i bandi dalla sessionStorage
+      const importati = await SupabaseBandiService.importFromSessionStorage();
+      // Recupera tutti i bandi dopo l'importazione
+      const bandiAggiornati = await SupabaseBandiService.getBandi();
+      setBandi(bandiAggiornati);
+      
+      toast({
+        title: "Importazione completata",
+        description: `Importati ${importati} bandi da Google Sheets`,
+      });
+    } catch (error) {
+      console.error("Errore nell'importazione dei bandi da Session Storage:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile importare i bandi da Google Sheets",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getBandiFiltrati = () => {
-    const bandiToFilter = showGoogleSheetsBandi ? bandiImportati : bandi;
-    
-    return bandiToFilter.filter(bando => {
+    return bandi.filter(bando => {
       const matchTestoRicerca = !filtro || 
         bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
@@ -108,23 +157,24 @@ const Bandi = () => {
     navigate(`/bandi/${id}`);
   };
 
-  const handleDeleteBando = (id: string) => {
-    if (showGoogleSheetsBandi) {
-      setBandiImportati(prevBandi => {
-        const updatedBandi = prevBandi.filter(bando => bando.id !== id);
-        sessionStorage.setItem('bandiImportati', JSON.stringify(updatedBandi));
-        return updatedBandi;
+  const handleDeleteBando = async (id: string) => {
+    const success = await SupabaseBandiService.deleteBando(id);
+    if (success) {
+      setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
+      
+      toast({
+        title: "Bando eliminato",
+        description: "Il bando è stato rimosso con successo",
+        duration: 3000,
       });
     } else {
-      FirecrawlService.deleteBando(id);
-      setBandi(prevBandi => prevBandi.filter(bando => bando.id !== id));
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare il bando",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
-    
-    toast({
-      title: "Bando eliminato",
-      description: "Il bando è stato rimosso con successo",
-      duration: 3000,
-    });
   };
 
   const handleResetFiltri = () => {
@@ -138,6 +188,26 @@ const Bandi = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Elenco Bandi</h1>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={importaBandiLocali}
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Importa bandi locali
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={importaBandiSessionStorage}
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Importa da Google Sheets
+          </Button>
+        </div>
       </div>
       
       <Card className="bg-green-50">
@@ -223,7 +293,11 @@ const Bandi = () => {
       </Card>
       
       <div>
-        {bandiFiltrati.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center p-12">
+            <div className="animate-spin h-12 w-12 border-4 border-green-500 rounded-full border-t-transparent"></div>
+          </div>
+        ) : bandiFiltrati.length === 0 ? (
           <Card className="bg-gray-50">
             <CardContent className="py-8">
               <div className="text-center text-gray-500">
@@ -238,7 +312,7 @@ const Bandi = () => {
         ) : (
           <>
             <div className="text-sm text-gray-500 mb-2">
-              Mostra tutti i {bandiFiltrati.length} bandi
+              Mostra {bandiFiltrati.length} bandi
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -248,7 +322,7 @@ const Bandi = () => {
                     bando={bando} 
                     onViewDetails={handleViewDetail}
                     onDelete={handleDeleteBando}
-                    showFullDetails={showGoogleSheetsBandi}
+                    showFullDetails={true}
                   />
                 </div>
               ))}
