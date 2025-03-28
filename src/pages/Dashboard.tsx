@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -7,8 +8,9 @@ import ChartContainer from '@/components/ChartContainer';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { FirecrawlService } from '@/utils/FirecrawlService';
-import { Bando } from '@/types';
+import { Bando, Cliente } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import SupabaseClientiService from '@/utils/SupabaseClientiService';
 import { useToast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
@@ -16,9 +18,10 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [allBandi, setAllBandi] = useState<Bando[]>([]);
+  const [clientiCount, setClientiCount] = useState<number>(0);
   
   useEffect(() => {
-    const loadAllBandi = async () => {
+    const loadAllData = async () => {
       setIsLoading(true);
       try {
         console.log('Dashboard: Loading combined bandi...');
@@ -30,11 +33,16 @@ const Dashboard = () => {
         if (combinedBandi.length === 0) {
           console.log("Dashboard: No bandi found in any source");
         }
+        
+        // Carica il numero di clienti
+        const clienti = await SupabaseClientiService.getClienti();
+        setClientiCount(clienti.length);
+        console.log("Dashboard: Clienti count:", clienti.length);
       } catch (error) {
-        console.error('Error loading bandi:', error);
+        console.error('Error loading data:', error);
         toast({
           title: "Errore",
-          description: "Impossibile caricare i dati dei bandi",
+          description: "Impossibile caricare i dati",
           variant: "destructive",
         });
       } finally {
@@ -42,7 +50,7 @@ const Dashboard = () => {
       }
     };
     
-    loadAllBandi();
+    loadAllData();
   }, [toast]);
   
   const calcStatistiche = () => {
@@ -117,7 +125,7 @@ const Dashboard = () => {
         />
         <StatCard 
           title="Clienti" 
-          value={mockStatistiche.numeroClienti} 
+          value={isLoading ? '...' : clientiCount} 
           color="green" 
           icon={<Users className="w-8 h-8 text-green-500" />}
           bgColor="bg-green-50"
@@ -241,3 +249,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
