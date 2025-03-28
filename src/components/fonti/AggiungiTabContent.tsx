@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { HelpCircle } from 'lucide-react';
-import AddSourceForm from '@/components/AddSourceForm';
+import AddSourceForm from '@/components/add-source/AddSourceForm';
 import { Fonte } from '@/types';
 
 interface AggiungiTabContentProps {

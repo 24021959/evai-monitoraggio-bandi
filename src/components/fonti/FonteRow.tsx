@@ -1,160 +1,153 @@
 
 import React, { useState } from 'react';
 import { Fonte } from '@/types';
-import { Trash2, Edit, ExternalLink, Save, X } from 'lucide-react';
-import { TableRow, TableCell } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from "@/components/ui/button";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Trash2, Link } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { FonteUrlEditor } from './FonteUrlEditor';
 
 interface FonteRowProps {
   fonte: Fonte;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
-  onEditUrl: (fonte: Fonte) => void;
-  onSaveUrl: (fonteId: string, newUrl: string) => Promise<void>;
+  onEditUrl: (id: string) => void;
+  onSaveUrl: (fonte: Fonte, newUrl: string) => Promise<boolean>;
 }
 
-export const FonteRow: React.FC<FonteRowProps> = ({
-  fonte,
-  onEdit,
+export const FonteRow: React.FC<FonteRowProps> = ({ 
+  fonte, 
+  onEdit, 
   onDelete,
   onEditUrl,
   onSaveUrl
 }) => {
-  const [editingUrl, setEditingUrl] = useState(false);
-  const [editUrl, setEditUrl] = useState(fonte.url);
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  const getTipoClass = (tipo: string) => {
-    switch (tipo) {
-      case 'statale':
-        return 'bg-green-500';
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showUrlEditor, setShowUrlEditor] = useState(false);
+  
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(fonte.id);
+    }
+    setShowDeleteDialog(false);
+  };
+  
+  const getTipoBadge = (tipo: string) => {
+    switch(tipo) {
       case 'europeo':
-        return 'bg-blue-500';
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Europeo</Badge>;
+      case 'statale':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Statale</Badge>;
       case 'regionale':
-        return 'bg-teal-500';
+        return <Badge className="bg-teal-100 text-teal-800 hover:bg-teal-100">Regionale</Badge>;
       default:
-        return 'bg-gray-500';
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Altro</Badge>;
     }
   };
-
-  const handleEditUrl = () => {
-    setEditingUrl(true);
-    setEditUrl(fonte.url);
+  
+  const getStatoBadge = (stato: string) => {
+    return stato === 'attivo' 
+      ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Attivo</Badge>
+      : <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Inattivo</Badge>;
   };
 
-  const handleSaveUrl = async () => {
-    setIsUpdating(true);
-    await onSaveUrl(fonte.id, editUrl);
-    setIsUpdating(false);
-    setEditingUrl(false);
+  const handleSaveUrl = async (newUrl: string) => {
+    const success = await onSaveUrl(fonte, newUrl);
+    if (success) {
+      setShowUrlEditor(false);
+    }
   };
-
-  const handleCancelEdit = () => {
-    setEditingUrl(false);
-  };
-
+  
   return (
-    <TableRow>
-      <TableCell className="font-medium">{fonte.nome}</TableCell>
-      <TableCell>
-        {editingUrl ? (
+    <>
+      <TableRow key={fonte.id}>
+        <TableCell className="font-medium">{fonte.nome}</TableCell>
+        <TableCell>
           <div className="flex items-center gap-2">
-            <Input
-              value={editUrl}
-              onChange={(e) => setEditUrl(e.target.value)}
-              className="text-sm"
-            />
+            <a 
+              href={fonte.url} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="text-blue-600 hover:underline truncate max-w-[250px]"
+            >
+              {fonte.url}
+            </a>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7" 
+              onClick={() => setShowUrlEditor(true)}
+            >
+              <Link className="h-4 w-4" />
+              <span className="sr-only">Modifica URL</span>
+            </Button>
           </div>
-        ) : (
-          <a 
-            href={fonte.url} 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:underline flex items-center gap-1"
-          >
-            {fonte.url}
-            <ExternalLink className="h-3 w-3 inline" />
-          </a>
-        )}
-      </TableCell>
-      <TableCell>
-        <span className={`text-xs text-white px-2 py-1 rounded-full ${getTipoClass(fonte.tipo)}`}>
-          {fonte.tipo}
-        </span>
-      </TableCell>
-      <TableCell>
-        <span className={`text-xs px-2 py-1 rounded-full ${fonte.stato === 'attivo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-          {fonte.stato}
-        </span>
-      </TableCell>
-      <TableCell>
-        <div className="flex gap-2">
-          {editingUrl ? (
-            <>
+        </TableCell>
+        <TableCell>{getTipoBadge(fonte.tipo)}</TableCell>
+        <TableCell>{getStatoBadge(fonte.stato)}</TableCell>
+        <TableCell>
+          <div className="flex space-x-1">
+            {onEdit && (
               <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleSaveUrl}
-                className="text-green-500 hover:text-green-700"
-                disabled={isUpdating}
-              >
-                {isUpdating ? (
-                  <span className="flex items-center">
-                    <span className="animate-spin h-4 w-4 mr-1 border-2 border-t-transparent border-green-500 rounded-full"></span>
-                    Salvataggio...
-                  </span>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-1" />
-                    Salva
-                  </>
-                )}
-              </Button>
-              <Button 
-                size="sm" 
                 variant="ghost" 
-                onClick={handleCancelEdit}
-                className="text-gray-500 hover:text-gray-700"
+                size="icon" 
+                onClick={() => onEdit(fonte.id)}
               >
-                <X className="h-4 w-4" />
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Modifica</span>
               </Button>
-            </>
-          ) : (
-            <>
+            )}
+            
+            {onDelete && (
               <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleEditUrl}
-                className="text-blue-500 hover:text-blue-700"
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowDeleteDialog(true)}
               >
-                <Edit className="h-4 w-4 mr-1" />
-                URL
+                <Trash2 className="h-4 w-4 text-red-500" />
+                <span className="sr-only">Elimina</span>
               </Button>
-              {onEdit && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => onEdit(fonte.id)}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  Dettagli
-                </Button>
-              )}
-              {onDelete && (
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={() => onDelete(fonte.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </TableCell>
-    </TableRow>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare la fonte "{fonte.nome}"? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <FonteUrlEditor
+        open={showUrlEditor}
+        onOpenChange={setShowUrlEditor}
+        currentUrl={fonte.url}
+        onSave={handleSaveUrl}
+      />
+    </>
   );
 };

@@ -9,7 +9,6 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { FonteRow } from './fonti/FonteRow';
 import { GoogleSheetsConfigDialog } from './fonti/GoogleSheetsConfigDialog';
 import { UpdateSheetDialog } from './fonti/UpdateSheetDialog';
@@ -38,6 +37,11 @@ const FontiTable: React.FC<FontiTableProps> = ({
     setShowImportDialog(true);
   };
 
+  const handleEditUrl = (id: string) => {
+    // This is a placeholder function as the actual URL editing
+    // is now handled in the FonteRow component
+  };
+
   return (
     <>
       <FontiTableHeader onConfigureGoogleSheets={handleConfigureGoogleSheets} />
@@ -60,7 +64,7 @@ const FontiTable: React.FC<FontiTableProps> = ({
                 fonte={fonte}
                 onEdit={onEdit}
                 onDelete={onDelete}
-                onEditUrl={() => {}}
+                onEditUrl={handleEditUrl}
                 onSaveUrl={handleSaveUrl}
               />
             ))}
