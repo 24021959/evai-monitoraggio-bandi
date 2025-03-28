@@ -46,7 +46,6 @@ const Bandi = () => {
     setBandi(loadedBandi);
     console.log("Bandi page: Caricati bandi salvati:", loadedBandi.length);
     
-    // Controllo se ci sono bandi importati da Google Sheets
     const importedBandi = sessionStorage.getItem('bandiImportati');
     if (importedBandi) {
       try {
@@ -209,12 +208,6 @@ const Bandi = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Elenco Bandi</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/importa-bandi')}>
-            <FileText className="w-4 h-4 mr-2" />
-            Importa Nuovi Bandi
-          </Button>
-        </div>
       </div>
       
       <Card className="bg-green-50">
