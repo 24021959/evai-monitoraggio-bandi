@@ -29,7 +29,11 @@ export class SupabaseReportService {
         return [];
       }
 
-      return data;
+      // Assicuriamoci che i tipi siano corretti
+      return data.map(row => ({
+        ...row,
+        tipo: this.validateReportType(row.tipo)
+      })) as Report[];
     } catch (error) {
       console.error('Errore durante il recupero dei report:', error);
       return [];
@@ -105,7 +109,11 @@ export class SupabaseReportService {
         return null;
       }
 
-      return data;
+      // Assicuriamoci che il tipo sia corretto
+      return {
+        ...data,
+        tipo: this.validateReportType(data.tipo)
+      } as Report;
     } catch (error) {
       console.error('Errore durante il recupero del report:', error);
       return null;
@@ -130,11 +138,23 @@ export class SupabaseReportService {
         return null;
       }
 
-      return data;
+      // Assicuriamoci che il tipo sia corretto
+      return {
+        ...data,
+        tipo: this.validateReportType(data.tipo)
+      } as Report;
     } catch (error) {
       console.error(`Errore durante il recupero dell'ultimo report di tipo ${tipo}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Funzione di supporto per validare i tipi di report
+   */
+  private static validateReportType(tipo: string): 'cliente' | 'bando' | 'match' | 'generale' {
+    const validTypes = ['cliente', 'bando', 'match', 'generale'];
+    return validTypes.includes(tipo) ? tipo as 'cliente' | 'bando' | 'match' | 'generale' : 'generale';
   }
 }
 

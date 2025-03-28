@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileSpreadsheet, ArrowRight, AlertCircle } from 'lucide-react';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { Bando } from '@/types';
+import SupabaseBandiService from '@/utils/SupabaseBandiService';
 
 const ImportaBandi = () => {
   const navigate = useNavigate();
@@ -33,11 +34,13 @@ const ImportaBandi = () => {
     setError(null);
     
     try {
+      console.log('Iniziando importazione da:', googleSheetUrl);
       GoogleSheetsService.setSheetUrl(googleSheetUrl);
       
       const bandi = await GoogleSheetsService.fetchBandiFromSheet(googleSheetUrl);
+      console.log('Bandi ottenuti dal foglio:', bandi?.length);
       
-      if (bandi.length === 0) {
+      if (!bandi || bandi.length === 0) {
         setError("Nessun bando trovato nel foglio Google Sheets. Verifica che il formato sia corretto.");
         toast({
           title: "Nessun dato trovato",
@@ -45,21 +48,47 @@ const ImportaBandi = () => {
           variant: "destructive",
         });
       } else {
+        // Salva in sessionStorage
+        sessionStorage.setItem('bandiImportati', JSON.stringify(bandi));
+        console.log('Bandi salvati in sessionStorage:', bandi.length);
+        
+        // Salva in Supabase
+        let contatoreSalvati = 0;
+        for (const bando of bandi) {
+          // Verifichiamo che i campi obbligatori siano presenti
+          if (!bando.titolo || !bando.fonte) {
+            console.warn('Bando senza titolo o fonte, saltato:', bando);
+            continue;
+          }
+          
+          // Verifichiamo che il bando abbia un ID valido
+          if (!bando.id) {
+            console.log('Bando senza ID, generando uno nuovo');
+          }
+          
+          const success = await SupabaseBandiService.saveBando(bando);
+          if (success) {
+            contatoreSalvati++;
+          } else {
+            console.error('Errore nel salvataggio del bando in Supabase:', bando.titolo);
+          }
+        }
+        
+        console.log(`Bandi salvati in Supabase: ${contatoreSalvati}/${bandi.length}`);
+        
         setBandiAnteprima(bandi.slice(0, 5));
         
         toast({
           title: "Importazione completata",
-          description: `Importati ${bandi.length} bandi dal foglio Google Sheets`,
+          description: `Importati ${bandi.length} bandi dal foglio Google Sheets (${contatoreSalvati} salvati in Supabase)`,
         });
-        
-        sessionStorage.setItem('bandiImportati', JSON.stringify(bandi));
         
         setTimeout(() => {
           navigate('/match');
         }, 1500);
       }
     } catch (error: any) {
-      console.error('Errore durante l\'importazione:', error);
+      console.error('Errore dettagliato durante l\'importazione:', error);
       setError(error.message || "Errore durante l'importazione");
       toast({
         title: "Errore di importazione",
