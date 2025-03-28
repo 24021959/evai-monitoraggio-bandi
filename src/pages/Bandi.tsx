@@ -216,7 +216,7 @@ const Bandi = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Catalogo Bandi</h1>
+        <h1 className="text-2xl font-bold">Elenco Bandi</h1>
         <div className="flex gap-2">
           {bandiImportati.length > 0 && (
             <Button 
@@ -225,7 +225,7 @@ const Bandi = () => {
               className="flex items-center gap-2"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              Bandi da Google Sheets
+              Bandi Salvati
             </Button>
           )}
           <Button variant="outline" onClick={() => navigate('/importa-scraping')}>
