@@ -22,9 +22,10 @@ export interface MatchTableProps {
     punteggio: number;
     dataMatch: string;
   }>;
+  onExportCSV?: () => void;
 }
 
-const MatchTable: React.FC<MatchTableProps> = ({ matches = [] }) => {
+const MatchTable: React.FC<MatchTableProps> = ({ matches = [], onExportCSV }) => {
   // Dati di esempio se non ci sono match
   const exampleMatches = [
     {
@@ -131,9 +132,9 @@ const MatchTable: React.FC<MatchTableProps> = ({ matches = [] }) => {
       )}
       
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" className="flex items-center gap-2">
+        <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={onExportCSV}>
           <FileText className="h-4 w-4" />
-          Visualizza tutti i match
+          Esporta CSV
         </Button>
       </div>
     </div>
