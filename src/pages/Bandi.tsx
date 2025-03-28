@@ -20,14 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 
 const Bandi = () => {
   const { toast } = useToast();
@@ -36,10 +28,8 @@ const Bandi = () => {
   const [settoreFiltro, setSettoreFiltro] = useState<string>('tutti');
   const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
-  const [paginaCorrente, setPaginaCorrente] = useState<number>(1);
   const [showGoogleSheetsBandi, setShowGoogleSheetsBandi] = useState<boolean>(false);
   const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
-  const [risultatiPerPagina, setRisultatiPerPagina] = useState<number>(10);
 
   useEffect(() => {
     FirecrawlService.clearScrapedBandi();
@@ -93,10 +83,6 @@ const Bandi = () => {
   };
 
   const bandiFiltrati = getBandiFiltrati();
-  const indicePrimoRisultato = (paginaCorrente - 1) * risultatiPerPagina;
-  const indiceUltimoRisultato = indicePrimoRisultato + risultatiPerPagina;
-  const bandiPaginati = bandiFiltrati.slice(indicePrimoRisultato, indiceUltimoRisultato);
-  const totalePagine = Math.ceil(bandiFiltrati.length / risultatiPerPagina);
 
   const handleViewDetail = (id: string) => {
     navigate(`/bandi/${id}`);
@@ -119,90 +105,6 @@ const Bandi = () => {
       description: "Il bando è stato rimosso con successo",
       duration: 3000,
     });
-  };
-
-  const renderPagination = () => {
-    if (totalePagine <= 1) return null;
-
-    const pageItems = [];
-    const maxVisiblePages = 5;
-    const halfVisible = Math.floor(maxVisiblePages / 2);
-    
-    let startPage = Math.max(1, paginaCorrente - halfVisible);
-    let endPage = Math.min(totalePagine, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    if (startPage > 1) {
-      pageItems.push(
-        <PaginationItem key="first">
-          <PaginationLink onClick={() => setPaginaCorrente(1)}>1</PaginationLink>
-        </PaginationItem>
-      );
-      
-      if (startPage > 2) {
-        pageItems.push(
-          <PaginationItem key="ellipsis-start">
-            <span className="flex h-9 w-9 items-center justify-center">...</span>
-          </PaginationItem>
-        );
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageItems.push(
-        <PaginationItem key={i}>
-          <PaginationLink 
-            isActive={paginaCorrente === i} 
-            onClick={() => setPaginaCorrente(i)}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    if (endPage < totalePagine) {
-      if (endPage < totalePagine - 1) {
-        pageItems.push(
-          <PaginationItem key="ellipsis-end">
-            <span className="flex h-9 w-9 items-center justify-center">...</span>
-          </PaginationItem>
-        );
-      }
-      
-      pageItems.push(
-        <PaginationItem key="last">
-          <PaginationLink onClick={() => setPaginaCorrente(totalePagine)}>
-            {totalePagine}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    return (
-      <Pagination className="my-4">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious 
-              onClick={() => setPaginaCorrente(prev => Math.max(prev - 1, 1))}
-              className={paginaCorrente === 1 ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-          
-          {pageItems}
-          
-          <PaginationItem>
-            <PaginationNext 
-              onClick={() => setPaginaCorrente(prev => Math.min(prev + 1, totalePagine))}
-              className={paginaCorrente === totalePagine ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    );
   };
 
   return (
@@ -249,26 +151,6 @@ const Bandi = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="flex items-center gap-3">
-                <Select 
-                  value={risultatiPerPagina.toString()} 
-                  onValueChange={(value) => {
-                    setRisultatiPerPagina(Number(value));
-                    setPaginaCorrente(1);
-                  }}
-                >
-                  <SelectTrigger className="w-[130px]">
-                    <span>{risultatiPerPagina} per pagina</span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5 per pagina</SelectItem>
-                    <SelectItem value="10">10 per pagina</SelectItem>
-                    <SelectItem value="20">20 per pagina</SelectItem>
-                    <SelectItem value="50">50 per pagina</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -290,11 +172,11 @@ const Bandi = () => {
         ) : (
           <>
             <div className="text-sm text-gray-500 mb-2">
-              Mostra {indicePrimoRisultato + 1}-{Math.min(indiceUltimoRisultato, bandiFiltrati.length)} di {bandiFiltrati.length} bandi
+              Mostra tutti i {bandiFiltrati.length} bandi
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bandiPaginati.map((bando, index) => (
+              {bandiFiltrati.map((bando, index) => (
                 <div key={bando.id} className={index % 2 === 0 ? "" : "bg-[#FEF7CD] rounded-lg"}>
                   <BandoCard 
                     bando={bando} 
@@ -305,8 +187,6 @@ const Bandi = () => {
                 </div>
               ))}
             </div>
-            
-            {renderPagination()}
           </>
         )}
       </div>
@@ -315,3 +195,4 @@ const Bandi = () => {
 };
 
 export default Bandi;
+
