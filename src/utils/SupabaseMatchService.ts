@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Match, Bando, Cliente } from '@/types';
 import MatchService, { MatchResult } from './MatchService';
@@ -153,7 +152,7 @@ export class SupabaseMatchService {
       return false;
     }
   }
-  
+
   /**
    * Genera e salva match tra clienti e bandi utilizzando l'algoritmo di matching
    */
@@ -180,7 +179,7 @@ export class SupabaseMatchService {
       return [];
     }
   }
-  
+
   /**
    * Converte i match da Supabase in MatchResult
    */
@@ -222,6 +221,126 @@ export class SupabaseMatchService {
     
     // Ordina per punteggio decrescente
     return results.sort((a, b) => b.punteggio - a.punteggio);
+  }
+
+  /**
+   * Recupera i match in un intervallo di date
+   */
+  static async getMatchesByDateRange(startDate: string, endDate: string, clienteId?: string): Promise<Match[]> {
+    try {
+      // Utilizziamo un intervallo di date per filtrare i match
+      const { data, error } = await supabase
+        .from('match')
+        .select('*, bandi(*), clienti(*)')
+        .gte('created_at', `${startDate}T00:00:00.000Z`)
+        .lte('created_at', `${endDate}T23:59:59.999Z`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Errore nel recupero dei match per intervallo di date:', error);
+        return [];
+      }
+
+      // Se è specificato un cliente, filtriamo per cliente
+      let filteredData = data;
+      if (clienteId) {
+        filteredData = data.filter(match => match.clienteid === clienteId);
+      }
+
+      // Mappiamo i dati nella struttura richiesta
+      return filteredData.map(row => ({
+        id: row.id,
+        clienteId: row.clienteid,
+        bandoId: row.bandoid,
+        compatibilita: row.compatibilita,
+        notificato: row.notificato || false,
+        // Aggiungiamo i campi per la visualizzazione nella tabella
+        bando_titolo: row.bandi?.titolo || 'Bando non disponibile',
+        cliente_nome: row.clienti?.nome || 'Cliente non disponibile',
+        data_creazione: row.created_at
+      }));
+    } catch (error) {
+      console.error('Errore durante il recupero dei match per intervallo di date:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Genera un file CSV per i bandi
+   */
+  static generateBandiCSV(bandi: Bando[]): string {
+    if (bandi.length === 0) return '';
+
+    // Definiamo le intestazioni per il CSV
+    const headers = [
+      'ID', 
+      'Titolo', 
+      'Fonte', 
+      'Tipo', 
+      'Scadenza', 
+      'Settori',
+      'Importo Minimo',
+      'Importo Massimo',
+      'URL'
+    ].join(',');
+
+    // Creiamo le righe del CSV
+    const rows = bandi.map(bando => {
+      const settori = Array.isArray(bando.settori) 
+        ? `"${bando.settori.join('; ')}"` 
+        : '';
+      
+      return [
+        bando.id,
+        `"${bando.titolo.replace(/"/g, '""')}"`,
+        `"${bando.fonte.replace(/"/g, '""')}"`,
+        bando.tipo,
+        bando.scadenza,
+        settori,
+        bando.importoMin || '',
+        bando.importoMax || '',
+        bando.url ? `"${bando.url}"` : ''
+      ].join(',');
+    });
+
+    // Uniamo headers e rows
+    return [headers, ...rows].join('\n');
+  }
+
+  /**
+   * Genera un file CSV per i match
+   */
+  static generateMatchesCSV(matches: Match[]): string {
+    if (matches.length === 0) return '';
+
+    // Definiamo le intestazioni per il CSV
+    const headers = [
+      'ID Match', 
+      'ID Bando', 
+      'Titolo Bando', 
+      'ID Cliente', 
+      'Nome Cliente',
+      'Compatibilità',
+      'Data Creazione',
+      'Notificato'
+    ].join(',');
+
+    // Creiamo le righe del CSV
+    const rows = matches.map(match => {
+      return [
+        match.id,
+        match.bandoId,
+        match.bando_titolo ? `"${match.bando_titolo.replace(/"/g, '""')}"` : '',
+        match.clienteId,
+        match.cliente_nome ? `"${match.cliente_nome.replace(/"/g, '""')}"` : '',
+        match.compatibilita,
+        match.data_creazione ? new Date(match.data_creazione).toISOString() : '',
+        match.notificato ? 'Sì' : 'No'
+      ].join(',');
+    });
+
+    // Uniamo headers e rows
+    return [headers, ...rows].join('\n');
   }
 }
 

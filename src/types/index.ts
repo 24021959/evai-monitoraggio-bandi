@@ -1,3 +1,4 @@
+
 export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro';
 
 export interface Bando {
@@ -51,6 +52,10 @@ export interface Match {
   bandoId: string;
   compatibilita: number;
   notificato: boolean;
+  // Campi aggiunti per la visualizzazione, opzionali perché non tutti i contesti li utilizzano
+  bando_titolo?: string;
+  cliente_nome?: string;
+  data_creazione?: string;
 }
 
 export interface Statistica {

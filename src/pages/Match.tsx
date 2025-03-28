@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,14 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle, XCircle, Search } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Bando, Cliente, Match } from "@/types";
-import SupabaseService from '@/utils/SupabaseService';
+import SupabaseMatchService from '@/utils/SupabaseMatchService';
+import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import SupabaseClientiService from '@/utils/SupabaseClientiService';
 import { v4 as uuidv4 } from 'uuid';
+
+// Estendi il tipo Match per includere i campi per la visualizzazione
+interface ExtendedMatch extends Match {
+  bando_titolo?: string;
+  cliente_nome?: string;
+  data_creazione?: string;
+}
 
 const MatchPage = () => {
   const { toast } = useToast();
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [clienti, setClienti] = useState<Cliente[]>([]);
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<ExtendedMatch[]>([]);
   const [selectedBando, setSelectedBando] = useState<string>('');
   const [selectedCliente, setSelectedCliente] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -29,12 +39,28 @@ const MatchPage = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const bandiData = await SupabaseService.getBandi();
+      const bandiData = await SupabaseBandiService.getBandi();
       setBandi(bandiData);
-      const clientiData = await SupabaseService.getClienti();
+      const clientiData = await SupabaseClientiService.getClienti();
       setClienti(clientiData);
-      const matchesData = await SupabaseService.getMatches();
-      setMatches(matchesData);
+      const matchesData = await SupabaseMatchService.getMatches();
+      
+      // Recupera le informazioni aggiuntive per ogni match
+      const extendedMatches: ExtendedMatch[] = [];
+      
+      for (const match of matchesData) {
+        const bando = bandiData.find(b => b.id === match.bandoId);
+        const cliente = clientiData.find(c => c.id === match.clienteId);
+        
+        extendedMatches.push({
+          ...match,
+          bando_titolo: bando?.titolo || 'Bando non disponibile',
+          cliente_nome: cliente?.nome || 'Cliente non disponibile',
+          data_creazione: new Date().toISOString() // come placeholder
+        });
+      }
+      
+      setMatches(extendedMatches);
     } catch (error) {
       toast({
         title: "Errore",
@@ -84,20 +110,29 @@ const MatchPage = () => {
 
     const newMatch: Match = {
       id: uuidv4(),
-      bando_id: selectedBando,
-      cliente_id: selectedCliente,
+      bandoId: selectedBando,
+      clienteId: selectedCliente,
+      compatibilita: 100, // Valore default
+      notificato: false
+    };
+
+    // Aggiungiamo i campi per la visualizzazione
+    const extendedMatch: ExtendedMatch = {
+      ...newMatch,
       bando_titolo: bando.titolo,
       cliente_nome: cliente.nome,
-      data_creazione: new Date().toISOString(),
+      data_creazione: new Date().toISOString()
     };
 
     try {
-      const results = await SupabaseService.saveMatch(newMatch);
-      setMatches(results as Match[]); // Properly cast results to Match[] type
-      toast({
-        title: "Successo",
-        description: "Match creato con successo",
-      });
+      const success = await SupabaseMatchService.saveMatch(newMatch);
+      if (success) {
+        setMatches([extendedMatch, ...matches]);
+        toast({
+          title: "Successo",
+          description: "Match creato con successo",
+        });
+      }
     } catch (error) {
       toast({
         title: "Errore",
@@ -109,12 +144,14 @@ const MatchPage = () => {
 
   const handleDeleteMatch = async (matchId: string) => {
     try {
-      await SupabaseService.deleteMatch(matchId);
-      setMatches(matches.filter(match => match.id !== matchId));
-      toast({
-        title: "Successo",
-        description: "Match eliminato con successo",
-      });
+      const success = await SupabaseMatchService.deleteMatch(matchId);
+      if (success) {
+        setMatches(matches.filter(match => match.id !== matchId));
+        toast({
+          title: "Successo",
+          description: "Match eliminato con successo",
+        });
+      }
     } catch (error) {
       toast({
         title: "Errore",
@@ -211,7 +248,7 @@ const MatchPage = () => {
                 <TableRow key={match.id}>
                   <TableCell>{match.bando_titolo}</TableCell>
                   <TableCell>{match.cliente_nome}</TableCell>
-                  <TableCell>{new Date(match.data_creazione).toLocaleDateString()}</TableCell>
+                  <TableCell>{match.data_creazione ? new Date(match.data_creazione).toLocaleDateString() : '-'}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"

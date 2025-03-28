@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
-import { DatePicker } from "@/components/ui/date-picker";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,7 @@ const Report = () => {
 
       let matchesData = await SupabaseMatchService.getMatchesByDateRange(formattedStartDate, formattedEndDate, clienteId);
       if (clienteId) {
-        matchesData = matchesData.filter(match => match.cliente_id === clienteId);
+        matchesData = matchesData.filter(match => match.clienteId === clienteId);
       }
       setMatches(matchesData);
       
@@ -137,21 +137,27 @@ const Report = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="startDate">Data Inizio</Label>
-              <DatePicker
-                id="startDate"
-                value={startDate}
-                onValueChange={setStartDate}
-                locale={ptBR}
-              />
+              <div className="w-full relative">
+                <input
+                  type="date"
+                  id="startDate"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
+                  onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : undefined)}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="endDate">Data Fine</Label>
-              <DatePicker
-                id="endDate"
-                value={endDate}
-                onValueChange={setEndDate}
-                locale={ptBR}
-              />
+              <div className="w-full relative">
+                <input
+                  type="date"
+                  id="endDate"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={endDate ? format(endDate, 'yyyy-MM-dd') : ''}
+                  onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : undefined)}
+                />
+              </div>
             </div>
           </div>
           <div>
@@ -163,7 +169,7 @@ const Report = () => {
               <SelectContent>
                 <SelectItem value="">Tutti i clienti</SelectItem>
                 {clienti.map((cliente) => (
-                  <SelectItem key={cliente.id} value={cliente.id}>{cliente.ragioneSociale}</SelectItem>
+                  <SelectItem key={cliente.id} value={cliente.id}>{cliente.nome}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -178,7 +184,12 @@ const Report = () => {
                 "Genera Report"
               )}
             </Button>
-            <Button variant="secondary" onClick={downloadReport} disabled={loading || (bandi.length === 0 && matches.length === 0)}>
+            <Button 
+              variant="secondary" 
+              onClick={downloadReport} 
+              disabled={loading || (bandi.length === 0 && matches.length === 0)}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
               <Download className="mr-2 h-4 w-4" />
               Scarica CSV
             </Button>
