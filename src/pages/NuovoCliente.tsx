@@ -26,6 +26,7 @@ import * as z from "zod";
 import { SupabaseClientiService } from '@/utils/SupabaseClientiService';
 import { useToast } from "@/hooks/use-toast";
 import { provincePerRegione } from '@/utils/provinceItaliane';
+import { codiciAtecoPerSettore } from '@/utils/codiciAteco';
 
 const formSchema = z.object({
   nome: z.string().min(1, { message: "Il nome è obbligatorio" }),
@@ -52,6 +53,7 @@ const NuovoCliente = () => {
   const { toast } = useToast();
   const [campiAggiuntivi, setCampiAggiuntivi] = useState<CampoAggiuntivo[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [codiciAtecoDisponibili, setCodiciAtecoDisponibili] = useState<{ codice: string; descrizione: string }[]>([]);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,6 +73,7 @@ const NuovoCliente = () => {
   });
 
   const regioneSelezionata = form.watch('regione');
+  const settoreSelezionato = form.watch('settore');
   const [provinceDisponibili, setProvinceDisponibili] = useState<string[]>([]);
 
   // Aggiorna le province quando cambia la regione
@@ -82,6 +85,18 @@ const NuovoCliente = () => {
       form.setValue('provincia', '');
     }
   }, [regioneSelezionata, form]);
+
+  // Aggiorna i codici ATECO quando cambia il settore
+  useEffect(() => {
+    if (settoreSelezionato) {
+      const codici = codiciAtecoPerSettore[settoreSelezionato] || [];
+      setCodiciAtecoDisponibili(codici);
+      // Reset codice ATECO se il settore cambia
+      form.setValue('codiceATECO', '');
+    } else {
+      setCodiciAtecoDisponibili([]);
+    }
+  }, [settoreSelezionato, form]);
 
   const aggiungiCampo = () => {
     setCampiAggiuntivi([...campiAggiuntivi, {
@@ -359,9 +374,20 @@ const NuovoCliente = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Codice ATECO</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Inserisci codice ATECO" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!settoreSelezionato || codiciAtecoDisponibili.length === 0}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={settoreSelezionato ? "Seleziona codice ATECO" : "Prima seleziona un settore"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {codiciAtecoDisponibili.map((codice) => (
+                            <SelectItem key={codice.codice} value={codice.codice}>
+                              {codice.codice} - {codice.descrizione}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
