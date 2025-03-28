@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Pagination,
   PaginationContent,
@@ -235,17 +233,7 @@ const Bandi = () => {
         </div>
       </div>
       
-      {bandiImportati.length > 0 && showGoogleSheetsBandi && (
-        <Alert className="bg-green-50 border-green-200">
-          <FileSpreadsheet className="h-4 w-4 text-green-600" />
-          <AlertTitle>Visualizzazione bandi importati da Google Sheets</AlertTitle>
-          <AlertDescription>
-            Stai visualizzando {bandiImportati.length} bandi importati dal tuo foglio Google Sheets.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <Card>
+      <Card className="bg-green-50">
         <CardHeader className="pb-4">
           <CardTitle>Filtra Bandi</CardTitle>
           <CardDescription>Ricerca e filtra i bandi in base ai tuoi criteri</CardDescription>
