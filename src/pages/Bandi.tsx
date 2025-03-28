@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import BandoCard from '@/components/BandoCard';
 import { Bando } from "@/types";
+import { FirecrawlService } from '@/utils/FirecrawlService';
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
@@ -13,6 +14,7 @@ import {
   Search, 
   Filter,
   Calendar,
+  Database,
 } from 'lucide-react';
 import {
   Select,
@@ -39,10 +41,9 @@ const Bandi = () => {
     const fetchBandi = async () => {
       setLoading(true);
       try {
-        // Ora utilizziamo getBandiCombinati per avere tutti i bandi senza duplicati
-        const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
-        setBandi(bandiCombinati);
-        console.log("Bandi page: Caricati bandi combinati:", bandiCombinati.length);
+        const bandiDB = await SupabaseBandiService.getBandi();
+        setBandi(bandiDB);
+        console.log("Bandi page: Caricati bandi dal database:", bandiDB.length);
       } catch (error) {
         console.error("Errore nel recupero dei bandi:", error);
         toast({
@@ -79,6 +80,56 @@ const Bandi = () => {
     setSettoriDisponibili(Array.from(settori).sort());
     setFontiDisponibili(Array.from(fonti).sort());
   }, [bandi]);
+
+  const importaBandiLocali = async () => {
+    try {
+      setLoading(true);
+      // Importa i bandi da FirecrawlService
+      const importati = await SupabaseBandiService.importFromFirecrawl();
+      // Recupera tutti i bandi dopo l'importazione
+      const bandiAggiornati = await SupabaseBandiService.getBandi();
+      setBandi(bandiAggiornati);
+      
+      toast({
+        title: "Importazione completata",
+        description: `Importati ${importati} bandi da FirecrawlService`,
+      });
+    } catch (error) {
+      console.error("Errore nell'importazione dei bandi:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile importare i bandi",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const importaBandiSessionStorage = async () => {
+    try {
+      setLoading(true);
+      // Importa i bandi dalla sessionStorage
+      const importati = await SupabaseBandiService.importFromSessionStorage();
+      // Recupera tutti i bandi dopo l'importazione
+      const bandiAggiornati = await SupabaseBandiService.getBandi();
+      setBandi(bandiAggiornati);
+      
+      toast({
+        title: "Importazione completata",
+        description: `Importati ${importati} bandi da Google Sheets`,
+      });
+    } catch (error) {
+      console.error("Errore nell'importazione dei bandi da Session Storage:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile importare i bandi da Google Sheets",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getBandiFiltrati = () => {
     return bandi.filter(bando => {
@@ -137,6 +188,26 @@ const Bandi = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Elenco Bandi</h1>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={importaBandiLocali}
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Importa bandi locali
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={importaBandiSessionStorage}
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Importa da Google Sheets
+          </Button>
+        </div>
       </div>
       
       <Card className="bg-green-50">
