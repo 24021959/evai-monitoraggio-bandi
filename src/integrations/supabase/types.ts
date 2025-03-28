@@ -72,6 +72,156 @@ export type Database = {
         }
         Relationships: []
       }
+      clienti: {
+        Row: {
+          annofondazione: number | null
+          codiceateco: string | null
+          created_at: string
+          dipendenti: number
+          email: string
+          fatturato: number
+          formagiuridica: string | null
+          id: string
+          interessisettoriali: string[] | null
+          nome: string
+          provincia: string
+          regione: string
+          settore: string
+          telefono: string | null
+        }
+        Insert: {
+          annofondazione?: number | null
+          codiceateco?: string | null
+          created_at?: string
+          dipendenti: number
+          email: string
+          fatturato: number
+          formagiuridica?: string | null
+          id?: string
+          interessisettoriali?: string[] | null
+          nome: string
+          provincia: string
+          regione: string
+          settore: string
+          telefono?: string | null
+        }
+        Update: {
+          annofondazione?: number | null
+          codiceateco?: string | null
+          created_at?: string
+          dipendenti?: number
+          email?: string
+          fatturato?: number
+          formagiuridica?: string | null
+          id?: string
+          interessisettoriali?: string[] | null
+          nome?: string
+          provincia?: string
+          regione?: string
+          settore?: string
+          telefono?: string | null
+        }
+        Relationships: []
+      }
+      fonti: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          stato: string
+          tipo: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          stato?: string
+          tipo: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          stato?: string
+          tipo?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      match: {
+        Row: {
+          bandoid: string
+          clienteid: string
+          compatibilita: number
+          created_at: string
+          id: string
+          notificato: boolean | null
+        }
+        Insert: {
+          bandoid: string
+          clienteid: string
+          compatibilita: number
+          created_at?: string
+          id?: string
+          notificato?: boolean | null
+        }
+        Update: {
+          bandoid?: string
+          clienteid?: string
+          compatibilita?: number
+          created_at?: string
+          id?: string
+          notificato?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_bandoid_fkey"
+            columns: ["bandoid"]
+            isOneToOne: false
+            referencedRelation: "bandi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_clienteid_fkey"
+            columns: ["clienteid"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string
+          dati: Json
+          descrizione: string | null
+          id: string
+          tipo: string
+          titolo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dati?: Json
+          descrizione?: string | null
+          id?: string
+          tipo: string
+          titolo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dati?: Json
+          descrizione?: string | null
+          id?: string
+          tipo?: string
+          titolo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
