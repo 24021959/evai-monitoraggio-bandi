@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,24 +26,19 @@ const Report = () => {
     matchPerCliente: []
   });
   
-  // Fetch data from Supabase
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch bandi
         const bandi = await SupabaseBandiService.getBandi();
         setBandiData(bandi);
         
-        // Fetch clienti
         const clienti = await SupabaseClientiService.getClienti();
         setClientiData(clienti);
         
-        // Fetch matches
         const matches = await SupabaseMatchService.getMatches();
         setMatchesData(matches);
         
-        // Generate statistics
         generateStatistics(bandi, clienti, matches);
       } catch (error) {
         console.error('Errore nel caricamento dei dati:', error);
@@ -61,16 +55,13 @@ const Report = () => {
     fetchData();
   }, [toast]);
   
-  // Generate statistics from real data
   const generateStatistics = (bandi, clienti, matches) => {
-    // Distribuzione bandi per tipo
     const distribuzioneBandi = {
       europei: bandi.filter(b => b.tipo === 'europeo').length,
       statali: bandi.filter(b => b.tipo === 'statale').length,
       regionali: bandi.filter(b => b.tipo === 'regionale').length,
     };
     
-    // Count bandi per settore
     const settoriMap = new Map();
     bandi.forEach(bando => {
       if (bando.settori && Array.isArray(bando.settori)) {
@@ -81,18 +72,16 @@ const Report = () => {
       }
     });
     
-    // Convert to array and calculate percentages
     const bandoPerSettore = Array.from(settoriMap.entries())
       .map(([settore, count]) => ({
-        settore: settore.length > 15 ? settore.substring(0, 15) + '...' : settore,
+        settore: settore.length > 20 ? settore.substring(0, 20) + '...' : settore,
         settoreOriginal: settore,
         conteggio: count,
         percentuale: Math.round((count / bandi.length) * 100)
       }))
       .sort((a, b) => b.conteggio - a.conteggio)
-      .slice(0, 8); // Take top 8 sectors
+      .slice(0, 8);
     
-    // Match per cliente
     const clientiMatchMap = new Map();
     matches.forEach(match => {
       const clienteId = match.cliente?.id;
@@ -102,7 +91,6 @@ const Report = () => {
       }
     });
     
-    // Convert to array and calculate percentages
     const matchPerCliente = Array.from(clientiMatchMap.entries())
       .map(([clienteId, count]) => {
         const cliente = clienti.find(c => c.id === clienteId) || { nome: 'N/D' };
@@ -114,7 +102,7 @@ const Report = () => {
         };
       })
       .sort((a, b) => b.conteggio - a.conteggio)
-      .slice(0, 5); // Take top 5 clients
+      .slice(0, 5);
     
     setStatistiche({
       distribuzioneBandi,
@@ -123,7 +111,6 @@ const Report = () => {
     });
   };
   
-  // Funzione per scaricare CSV dei bandi attivi
   const handleDownloadBandiCSV = () => {
     if (bandiData.length === 0) {
       toast({
@@ -136,10 +123,8 @@ const Report = () => {
     
     const headers = ['ID', 'Titolo', 'Fonte', 'Tipo', 'Settori', 'Importo Minimo', 'Importo Massimo', 'Scadenza', 'Descrizione'];
     
-    // Preparazione dati
     const csvRows = [
-      headers.join(','), // Intestazioni
-      // Righe con i dati
+      headers.join(','),
       ...bandiData.map(bando => [
         bando.id,
         `"${bando.titolo ? bando.titolo.replace(/"/g, '""') : ''}"`,
@@ -153,12 +138,10 @@ const Report = () => {
       ].join(','))
     ];
     
-    // Creazione del file CSV
     const csvContent = csvRows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     
-    // Crea elemento a per il download
     const link = document.createElement('a');
     link.setAttribute('href', url);
     link.setAttribute('download', `bandi_attivi_${new Date().toISOString().slice(0, 10)}.csv`);
@@ -173,7 +156,6 @@ const Report = () => {
     });
   };
   
-  // Funzione per scaricare CSV dei match bandi-clienti
   const handleDownloadMatchCSV = () => {
     if (matchesData.length === 0) {
       toast({
@@ -184,11 +166,9 @@ const Report = () => {
       return;
     }
     
-    // Utilizziamo il metodo exportMatchesToCSV del MatchService
     const csvContent = MatchService.exportMatchesToCSV(matchesData);
     const filename = `match_bandi_clienti_${new Date().toISOString().slice(0, 10)}.csv`;
     
-    // Utilizziamo il metodo downloadCSV del MatchService per avviare il download
     MatchService.downloadCSV(csvContent, filename);
     
     toast({
@@ -197,13 +177,11 @@ const Report = () => {
     });
   };
 
-  // Custom tooltip formatter per il grafico a barre
   const customBarTooltipFormatter = (value, name, props) => {
     const item = props.payload;
     return [`${item.conteggio} bandi (${value}%)`, 'Percentuale'];
   };
   
-  // Custom tooltip formatter per il grafico a torta
   const customPieTooltipFormatter = (value, name, props) => {
     const item = props.payload;
     if (item.clienteOriginal) {
@@ -212,7 +190,6 @@ const Report = () => {
     return [`${value}%`, name];
   };
 
-  // Preparazione dati per grafico a torta distribuzione bandi
   const distribuzioneBandiData = [
     { name: 'Europei', value: statistiche.distribuzioneBandi.europei, color: '#3b82f6' },
     { name: 'Statali', value: statistiche.distribuzioneBandi.statali, color: '#22c55e' },
@@ -237,13 +214,13 @@ const Report = () => {
                     <BarChart
                       data={statistiche.bandoPerSettore}
                       layout="vertical"
-                      margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                      margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
                     >
                       <XAxis type="number" />
                       <YAxis 
                         dataKey="settore" 
                         type="category" 
-                        width={120} 
+                        width={150} 
                         tick={{ fontSize: 12 }}
                       />
                       <Tooltip 

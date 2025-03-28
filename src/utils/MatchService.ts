@@ -1,5 +1,23 @@
 
 import { Bando, Cliente, Match } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
+
+export interface MatchResult {
+  id: string;
+  cliente: {
+    id: string;
+    nome: string;
+    settore: string;
+  };
+  bando: {
+    id: string;
+    titolo: string;
+    fonte: string;
+    scadenza: string;
+  };
+  punteggio: number;
+  dataMatch: string;
+}
 
 class MatchService {
   /**
@@ -10,15 +28,15 @@ class MatchService {
    */
   static calculateMatch(bando: Bando, cliente: Cliente): number {
     // Se il bando non ha settori o il cliente non ha interessi settoriali, il match è zero
-    if (!bando.settori || !cliente.interessisettoriali || 
-        !Array.isArray(bando.settori) || !Array.isArray(cliente.interessisettoriali) ||
-        bando.settori.length === 0 || cliente.interessisettoriali.length === 0) {
+    if (!bando.settori || !cliente.interessiSettoriali || 
+        !Array.isArray(bando.settori) || !Array.isArray(cliente.interessiSettoriali) ||
+        bando.settori.length === 0 || cliente.interessiSettoriali.length === 0) {
       return 0;
     }
     
     // Calcoliamo l'overlap tra i settori del bando e gli interessi del cliente
     const settoriInComune = bando.settori.filter(settore => 
-      cliente.interessisettoriali.some(interesse => 
+      cliente.interessiSettoriali.some(interesse => 
         interesse.toLowerCase() === settore.toLowerCase()
       )
     );
@@ -32,10 +50,50 @@ class MatchService {
     // rispetto agli interessi del cliente (max 100 punti)
     const punteggio = Math.min(
       100,
-      Math.round((settoriInComune.length / cliente.interessisettoriali.length) * 100)
+      Math.round((settoriInComune.length / cliente.interessiSettoriali.length) * 100)
     );
     
     return punteggio;
+  }
+  
+  /**
+   * Genera match tra clienti e bandi
+   * @param clienti Array di clienti
+   * @param bandi Array di bandi
+   * @returns Array di MatchResult
+   */
+  static generateMatches(clienti: Cliente[], bandi: Bando[]): MatchResult[] {
+    const results: MatchResult[] = [];
+    const today = new Date().toISOString().split('T')[0];
+    
+    clienti.forEach(cliente => {
+      bandi.forEach(bando => {
+        const punteggio = this.calculateMatch(bando, cliente);
+        
+        // Aggiungiamo solo i match con punteggio > 0
+        if (punteggio > 0) {
+          results.push({
+            id: uuidv4(),
+            cliente: {
+              id: cliente.id,
+              nome: cliente.nome,
+              settore: cliente.settore
+            },
+            bando: {
+              id: bando.id,
+              titolo: bando.titolo,
+              fonte: bando.fonte,
+              scadenza: bando.scadenza
+            },
+            punteggio,
+            dataMatch: today
+          });
+        }
+      });
+    });
+    
+    // Ordina per punteggio decrescente
+    return results.sort((a, b) => b.punteggio - a.punteggio);
   }
   
   /**
@@ -45,9 +103,8 @@ class MatchService {
    */
   static formatMatchesForDisplay(matches: Match[]): any[] {
     return matches.map(match => {
-      // Se match.bando o match.cliente sono undefined, usiamo valori di default
-      const bando = match.bando || { titolo: 'N/D', scadenza: null, settori: [] };
-      const cliente = match.cliente || { nome: 'N/D', interessisettoriali: [] };
+      const bando = match.bandoId ? { titolo: 'N/D', scadenza: null, settori: [] } : { titolo: 'N/D', scadenza: null, settori: [] };
+      const cliente = match.clienteId ? { nome: 'N/D', interessiSettoriali: [] } : { nome: 'N/D', interessiSettoriali: [] };
       
       return {
         id: match.id,
@@ -84,14 +141,14 @@ class MatchService {
     
     // Formattazione delle righe
     const rows = matches.map(match => {
-      const bando = match.bando || { titolo: 'N/D', scadenza: null, settori: [] };
-      const cliente = match.cliente || { nome: 'N/D', interessisettoriali: [] };
+      const bando = match.bandoId ? { titolo: 'N/D', scadenza: null, settori: [] } : { titolo: 'N/D', scadenza: null, settori: [] };
+      const cliente = match.clienteId ? { nome: 'N/D', interessiSettoriali: [] } : { nome: 'N/D', interessiSettoriali: [] };
       
       // Trovare settori in comune
       let settoriInComune: string[] = [];
-      if (Array.isArray(bando.settori) && Array.isArray(cliente.interessisettoriali)) {
+      if (Array.isArray(bando.settori) && Array.isArray(cliente.interessiSettoriali)) {
         settoriInComune = bando.settori.filter(settore => 
-          cliente.interessisettoriali.some(interesse => 
+          cliente.interessiSettoriali.some(interesse => 
             interesse.toLowerCase() === settore.toLowerCase()
           )
         );

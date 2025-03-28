@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Match, Bando, Cliente } from '@/types';
-import { MatchService, MatchResult } from './MatchService';
+import MatchService, { MatchResult } from './MatchService';
 import { v4 as uuidv4 } from 'uuid';
 
 export class SupabaseMatchService {

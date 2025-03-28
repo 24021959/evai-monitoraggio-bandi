@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -9,9 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeftRight, InfoIcon, AlertCircle, ChevronRight } from 'lucide-react';
 import MatchTable from '@/components/MatchTable';
 import { Bando, Cliente } from '@/types';
-import { SupabaseBandiService } from '@/utils/SupabaseBandiService';
-import { SupabaseClientiService } from '@/utils/SupabaseClientiService';
-import { MatchService, MatchResult } from '@/utils/MatchService';
+import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import SupabaseClientiService from '@/utils/SupabaseClientiService';
+import MatchService, { MatchResult } from '@/utils/MatchService';
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Match() {
