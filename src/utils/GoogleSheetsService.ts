@@ -124,7 +124,7 @@ export class GoogleSheetsService {
         throw new Error('ID del foglio non valido');
       }
 
-      // Specifichiamo un foglio specifico per le fonti (assumendo che sia nella seconda scheda)
+      // Specifichiamo un foglio specifico per le fonti
       const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Lista%20Fonti`;
       
       console.log('Recupero fonti da Google Sheets:', apiUrl);
@@ -149,27 +149,66 @@ export class GoogleSheetsService {
       const url = this.getSheetUrl();
       
       if (!url) {
-        throw new Error('URL del foglio Google non configurato');
+        console.error('URL del foglio Google non configurato');
+        return false;
       }
 
       // Extract the sheet ID from the URL
       const sheetId = this.extractSheetId(url);
       if (!sheetId) {
-        throw new Error('ID del foglio non valido');
+        console.error('ID del foglio non valido');
+        return false;
       }
 
-      // In a real implementation, we would use Google Sheets API with proper auth
-      // For now, we'll use a more direct approach with Google Apps Script Web App
+      console.log('Tentativo di aggiungere fonte al foglio Google:', fonte);
       
-      // Create a URL for a Google Apps Script web app that can update the sheet
-      // This assumes the user has set up a web app with the appropriate permissions
+      // Metodo diretto: utilizziamo Google Apps Script Web App
       const updateAppUrl = localStorage.getItem('googleSheetUpdateUrl');
       
       if (!updateAppUrl) {
         console.log('URL per aggiornamento Google Sheet non configurato');
-        return false;
+        
+        // Tentativo fallback: proviamo ad aggiungere direttamente tramite fetch con CORS proxy
+        try {
+          // Utilizziamo un approccio alternativo: inserimento diretto in CSV
+          const newRow = [
+            fonte.id,
+            fonte.url,
+            fonte.stato || 'attivo',
+            new Date().toISOString(),
+            fonte.nome,
+            fonte.tipo
+          ];
+          
+          const formattedRow = newRow.map(val => 
+            typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+          ).join(',');
+          
+          // Utilizziamo un servizio CORS proxy per evitare problemi di CORS
+          const corsProxyUrl = 'https://corsproxy.io/?';
+          const appendUrl = `${corsProxyUrl}${encodeURIComponent(
+            `https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse?entry.ID1=${encodeURIComponent(fonte.url)}&entry.ID2=${encodeURIComponent(fonte.nome)}&entry.ID3=${encodeURIComponent(fonte.tipo)}&submit=Submit`
+          )}`;
+          
+          console.log('Tentativo di inviare i dati tramite proxy CORS:', appendUrl);
+          
+          // Nota: questo metodo richiede un Google Form collegato al foglio
+          // Questo è solo un esempio e necessita di configurazione
+          const response = await fetch(appendUrl, {
+            method: 'GET',
+            mode: 'cors',
+          });
+          
+          console.log('Risposta dal tentativo di aggiunta:', response.status);
+          return response.ok;
+        } catch (fallbackError) {
+          console.error('Fallback per aggiunta fonte fallito:', fallbackError);
+          return false;
+        }
       }
       
+      // Approccio principale: utilizzo dell'App Script
+      console.log('Invio dati a Google Apps Script:', updateAppUrl);
       const response = await fetch(updateAppUrl, {
         method: 'POST',
         headers: {
@@ -178,30 +217,42 @@ export class GoogleSheetsService {
         body: JSON.stringify({
           sheetId,
           action: 'updateFonte',
-          fonte
+          fonte: {
+            id: fonte.id,
+            url: fonte.url,
+            nome: fonte.nome, 
+            tipo: fonte.tipo,
+            stato: fonte.stato || 'attivo',
+            stato_elaborazione: fonte.stato || 'attivo',
+            data_ultimo_aggiornamento: new Date().toISOString().split('T')[0]
+          }
         }),
       });
       
       if (!response.ok) {
-        throw new Error(`Errore nell'aggiornamento: ${response.statusText}`);
+        console.error(`Errore nell'aggiornamento: ${response.status} ${response.statusText}`);
+        const text = await response.text();
+        console.error('Dettagli errore:', text);
+        return false;
       }
       
-      const result = await response.json();
-      return result.success;
+      try {
+        const result = await response.json();
+        console.log('Risultato aggiornamento:', result);
+        return result.success;
+      } catch (e) {
+        console.error('Errore nel parsing della risposta JSON:', e);
+        return false;
+      }
     } catch (error) {
       console.error('Errore durante l\'aggiornamento della fonte:', error);
-      // Returning false instead of throwing to handle the error in the UI
       return false;
     }
   }
 
   public async addFonteToSheet(fonte: Fonte): Promise<boolean> {
-    try {
-      return this.updateFonteInSheet(fonte);
-    } catch (error) {
-      console.error('Errore durante l\'aggiunta della fonte al foglio:', error);
-      return false;
-    }
+    console.log('Aggiunta fonte al foglio Google:', fonte);
+    return this.updateFonteInSheet(fonte);
   }
 
   private extractSheetId(url: string): string | null {

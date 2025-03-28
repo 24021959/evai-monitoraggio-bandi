@@ -7,6 +7,8 @@ import { GoogleSheetsToggle } from './GoogleSheetsToggle';
 import { SubmitButton } from './SubmitButton';
 import { useToast } from '@/components/ui/use-toast';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
+import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface AddSourceFormProps {
   onAddSource: (fonte: Omit<Fonte, 'id'>) => void;
@@ -19,6 +21,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [tipo, setTipo] = useState<string>('');
   const [addToGoogleSheet, setAddToGoogleSheet] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [googleSheetsStatus, setGoogleSheetsStatus] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +66,9 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       
       // Add to Google Sheet if enabled
       if (addToGoogleSheet) {
-        await handleAddToGoogleSheet(newFonte);
+        setGoogleSheetsStatus('adding');
+        const sheetSuccess = await handleAddToGoogleSheet(newFonte);
+        setGoogleSheetsStatus(sheetSuccess ? 'success' : 'error');
       }
       
       // Reset form
@@ -85,12 +90,19 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         variant: "destructive",
         duration: 3000,
       });
+      if (addToGoogleSheet) {
+        setGoogleSheetsStatus('error');
+      }
     } finally {
       setIsAdding(false);
+      // Reset dello stato Google Sheets dopo 5 secondi
+      if (googleSheetsStatus !== 'idle') {
+        setTimeout(() => setGoogleSheetsStatus('idle'), 5000);
+      }
     }
   };
 
-  const handleAddToGoogleSheet = async (newFonte: Omit<Fonte, 'id'>) => {
+  const handleAddToGoogleSheet = async (newFonte: Omit<Fonte, 'id'>): Promise<boolean> => {
     const sheetUrl = localStorage.getItem('googleSheetUrl');
     if (!sheetUrl) {
       toast({
@@ -110,7 +122,10 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         ...newFonte
       };
       
+      console.log("Chiamata a GoogleSheetsService.updateFonteInSheet con:", fonte);
       const result = await GoogleSheetsService.updateFonteInSheet(fonte);
+      
+      console.log("Risultato dell'aggiunta al foglio Google:", result);
       
       if (result) {
         toast({
@@ -157,6 +172,32 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
             checked={addToGoogleSheet}
             onCheckedChange={setAddToGoogleSheet}
           />
+          
+          {googleSheetsStatus === 'adding' && (
+            <div className="flex items-center space-x-2 text-yellow-600">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Aggiunta al foglio Google in corso...</span>
+            </div>
+          )}
+          
+          {googleSheetsStatus === 'success' && (
+            <Alert variant="default" className="bg-green-50 border-green-200">
+              <AlertTitle>Successo</AlertTitle>
+              <AlertDescription>
+                La fonte è stata aggiunta con successo al foglio Google Sheets.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {googleSheetsStatus === 'error' && (
+            <Alert variant="destructive">
+              <AlertTitle>Errore</AlertTitle>
+              <AlertDescription>
+                Si è verificato un errore durante l'aggiunta della fonte al foglio Google Sheets.
+                Verifica di aver configurato correttamente l'URL di aggiornamento del foglio Google.
+              </AlertDescription>
+            </Alert>
+          )}
           
           <SubmitButton isAdding={isAdding} />
         </form>
