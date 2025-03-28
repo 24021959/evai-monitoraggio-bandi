@@ -5,42 +5,93 @@ import { FileText, Users, GitCompare } from 'lucide-react';
 import { mockStatistiche } from '@/data/mockData';
 import StatCard from '@/components/StatCard';
 import ChartContainer from '@/components/ChartContainer';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Bando } from '@/types';
+import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import { useToast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [bandi, setBandi] = useState<Bando[]>([]);
-  const [importedBandi, setImportedBandi] = useState<Bando[]>([]);
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   const [allBandi, setAllBandi] = useState<Bando[]>([]);
   
   useEffect(() => {
-    const loadedBandi = FirecrawlService.getSavedBandi();
-    setBandi(loadedBandi);
-    
-    const importedBandiStr = sessionStorage.getItem('bandiImportati');
-    if (importedBandiStr) {
+    const loadAllBandi = async () => {
+      setIsLoading(true);
       try {
-        const parsedBandi = JSON.parse(importedBandiStr);
-        setImportedBandi(parsedBandi);
+        console.log('Dashboard: Loading bandi from Supabase...');
+        // Carica bandi da Supabase
+        const supaBandi = await SupabaseBandiService.getBandi();
+        console.log('Dashboard: Loaded from Supabase:', supaBandi.length);
+        
+        // Carica anche bandi dal localStorage come fallback
+        const localBandi = FirecrawlService.getSavedBandi();
+        console.log('Dashboard: Loaded from localStorage:', localBandi.length);
+        
+        // Carica bandi importati da sessionStorage
+        let importedBandi: Bando[] = [];
+        const importedBandiStr = sessionStorage.getItem('bandiImportati');
+        if (importedBandiStr) {
+          try {
+            importedBandi = JSON.parse(importedBandiStr);
+            console.log('Dashboard: Loaded imported bandi:', importedBandi.length);
+          } catch (error) {
+            console.error('Error parsing imported bandi:', error);
+          }
+        }
+        
+        // Combina tutti i bandi, rimuovendo duplicati basati su ID
+        const allBandiMap = new Map<string, Bando>();
+        
+        // Priorità a Supabase
+        supaBandi.forEach(bando => {
+          allBandiMap.set(bando.id, bando);
+        });
+        
+        // Poi localStorage
+        localBandi.forEach(bando => {
+          if (!allBandiMap.has(bando.id)) {
+            allBandiMap.set(bando.id, bando);
+          }
+        });
+        
+        // Infine importati
+        importedBandi.forEach(bando => {
+          if (!allBandiMap.has(bando.id)) {
+            allBandiMap.set(bando.id, bando);
+          }
+        });
+        
+        const combinedBandi = Array.from(allBandiMap.values());
+        setAllBandi(combinedBandi);
+        console.log("Dashboard: Combined bandi count:", combinedBandi.length);
+        
+        if (combinedBandi.length === 0) {
+          console.log("Dashboard: No bandi found in any source");
+        }
       } catch (error) {
-        console.error('Error parsing imported bandi:', error);
+        console.error('Error loading bandi:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare i dati dei bandi",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, []);
-  
-  useEffect(() => {
-    const combined = [...bandi, ...importedBandi];
-    setAllBandi(combined);
-    console.log("Dashboard: Combined bandi count:", combined.length);
-  }, [bandi, importedBandi]);
+    };
+    
+    loadAllBandi();
+  }, [toast]);
   
   const calcStatistiche = () => {
     const europei = allBandi.filter(b => b.tipo === 'europeo').length;
     const statali = allBandi.filter(b => b.tipo === 'statale').length;
     const regionali = allBandi.filter(b => b.tipo === 'regionale').length;
+    const altri = allBandi.filter(b => b.tipo !== 'europeo' && b.tipo !== 'statale' && b.tipo !== 'regionale').length;
     
     const settoriCount: Record<string, number> = {};
     allBandi.forEach(bando => {
@@ -61,7 +112,7 @@ const Dashboard = () => {
     
     return {
       bandiAttivi: allBandi.length,
-      distribuzioneBandi: { europei, statali, regionali },
+      distribuzioneBandi: { europei, statali, regionali, altri },
       bandoPerSettore
     };
   };
@@ -72,9 +123,10 @@ const Dashboard = () => {
     { name: 'Europei', value: stats.distribuzioneBandi.europei, color: '#3b82f6' },
     { name: 'Statali', value: stats.distribuzioneBandi.statali, color: '#22c55e' },
     { name: 'Regionali', value: stats.distribuzioneBandi.regionali, color: '#f59e0b' },
-  ];
+    { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#94a3b8' },
+  ].filter(item => item.value > 0); // Show only non-zero values
 
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: any) => {
     if (percent === 0) return null;
     
     const RADIAN = Math.PI / 180;
@@ -84,14 +136,14 @@ const Dashboard = () => {
 
     return (
       <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
-        {`${(percent * 100).toFixed(0)}%`}
+        {`${value} (${(percent * 100).toFixed(0)}%)`}
       </text>
     );
   };
 
-  const ultimiBandi = [...allBandi].sort((a, b) => 
-    new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime()
-  ).slice(0, 5);
+  const ultimiBandi = [...allBandi]
+    .sort((a, b) => new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime())
+    .slice(0, 5);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -124,7 +176,11 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartContainer title="Distribuzione Bandi" bgColor="bg-gradient-to-br from-blue-50 to-white">
           <div className="h-64">
-            {distribuzioneBandiData.some(d => d.value > 0) ? (
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Caricamento in corso...
+              </div>
+            ) : distribuzioneBandiData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -142,6 +198,7 @@ const Dashboard = () => {
                     ))}
                   </Pie>
                   <Legend />
+                  <Tooltip formatter={(value) => [value, 'Quantità']} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -154,7 +211,11 @@ const Dashboard = () => {
         
         <ChartContainer title="Ultimi Bandi" bgColor="bg-gradient-to-br from-amber-50 to-white">
           <div className="overflow-y-auto max-h-64">
-            {ultimiBandi.length > 0 ? (
+            {isLoading ? (
+              <div className="h-32 flex items-center justify-center text-gray-400">
+                Caricamento in corso...
+              </div>
+            ) : ultimiBandi.length > 0 ? (
               <table className="min-w-full">
                 <thead>
                   <tr className="text-sm text-gray-600">
