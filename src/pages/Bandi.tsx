@@ -12,6 +12,7 @@ import {
   FileText, 
   Search, 
   Filter,
+  Calendar,
 } from 'lucide-react';
 import {
   Select,
@@ -20,13 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const Bandi = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [filtro, setFiltro] = useState<string>('');
   const [settoreFiltro, setSettoreFiltro] = useState<string>('tutti');
+  const [fonteFiltro, setFonteFiltro] = useState<string>('tutte');
+  const [scadenzaFiltro, setScadenzaFiltro] = useState<Date | undefined>(undefined);
   const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
+  const [fontiDisponibili, setFontiDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [showGoogleSheetsBandi, setShowGoogleSheetsBandi] = useState<boolean>(false);
   const [bandiImportati, setBandiImportati] = useState<Bando[]>([]);
@@ -54,16 +59,25 @@ const Bandi = () => {
 
   useEffect(() => {
     const settori = new Set<string>();
+    const fonti = new Set<string>();
     const bandiToAnalyze = showGoogleSheetsBandi ? bandiImportati : bandi;
     
     bandiToAnalyze.forEach(bando => {
+      // Raccogliamo i settori
       if (bando.settori && Array.isArray(bando.settori)) {
         bando.settori.forEach(settore => {
           settori.add(settore);
         });
       }
+      
+      // Raccogliamo le fonti
+      if (bando.fonte) {
+        fonti.add(bando.fonte);
+      }
     });
+    
     setSettoriDisponibili(Array.from(settori).sort());
+    setFontiDisponibili(Array.from(fonti).sort());
   }, [bandi, bandiImportati, showGoogleSheetsBandi]);
 
   const getBandiFiltrati = () => {
@@ -78,7 +92,13 @@ const Bandi = () => {
       const matchSettore = settoreFiltro === 'tutti' || 
         (bando.settori && bando.settori.includes(settoreFiltro));
       
-      return matchTestoRicerca && matchSettore;
+      const matchFonte = fonteFiltro === 'tutte' || 
+        bando.fonte === fonteFiltro;
+      
+      const matchScadenza = !scadenzaFiltro || 
+        new Date(bando.scadenza).setHours(0, 0, 0, 0) === new Date(scadenzaFiltro).setHours(0, 0, 0, 0);
+      
+      return matchTestoRicerca && matchSettore && matchFonte && matchScadenza;
     });
   };
 
@@ -105,6 +125,13 @@ const Bandi = () => {
       description: "Il bando è stato rimosso con successo",
       duration: 3000,
     });
+  };
+
+  const handleResetFiltri = () => {
+    setFiltro('');
+    setSettoreFiltro('tutti');
+    setFonteFiltro('tutte');
+    setScadenzaFiltro(undefined);
   };
 
   return (
@@ -151,7 +178,46 @@ const Bandi = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              <div className="w-48">
+                <Select value={fonteFiltro} onValueChange={setFonteFiltro}>
+                  <SelectTrigger>
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      <span className="truncate">
+                        {fonteFiltro === 'tutte' ? "Tutte le fonti" : fonteFiltro}
+                      </span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tutte">Tutte le fonti</SelectItem>
+                    {fontiDisponibili.map(fonte => (
+                      <SelectItem key={fonte} value={fonte}>
+                        {fonte}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="w-48">
+                <DatePicker
+                  placeholder="Seleziona scadenza"
+                  date={scadenzaFiltro}
+                  onDateChange={setScadenzaFiltro}
+                  className="w-full"
+                  buttonClassName="w-full justify-start text-left font-normal"
+                  classNames={{
+                    trigger: "flex items-center gap-2 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  }}
+                  triggerIcon={<Calendar className="h-4 w-4 opacity-50" />}
+                />
+              </div>
             </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={handleResetFiltri}>Azzera filtri</Button>
           </div>
         </CardContent>
       </Card>
@@ -195,4 +261,3 @@ const Bandi = () => {
 };
 
 export default Bandi;
-
