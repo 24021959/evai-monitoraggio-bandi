@@ -10,6 +10,19 @@ export const useFontiUrlHandler = () => {
     const updatedFonte = { ...fonte, url: newUrl };
     
     try {
+      // Verifica se la configurazione è completa
+      const sheetUrl = localStorage.getItem('googleSheetUrl');
+      const updateUrl = localStorage.getItem('googleSheetUpdateUrl');
+      
+      if (!sheetUrl || !updateUrl) {
+        toast({
+          title: "Configurazione incompleta",
+          description: "Configura gli URL del foglio Google e dell'aggiornamento nelle impostazioni",
+          variant: "warning",
+        });
+        return false;
+      }
+      
       const updated = await GoogleSheetsService.updateFonteInSheet(updatedFonte);
       
       if (updated) {
@@ -21,7 +34,7 @@ export const useFontiUrlHandler = () => {
       } else {
         toast({
           title: "URL aggiornato parzialmente",
-          description: "L'URL è stato aggiornato localmente. Per aggiornare il foglio Google, configurare l'URL di aggiornamento.",
+          description: "L'URL è stato aggiornato localmente ma c'è stato un problema con l'aggiornamento del foglio Google.",
           variant: "default"
         });
         return false;
@@ -29,7 +42,8 @@ export const useFontiUrlHandler = () => {
     } catch (error) {
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'aggiornamento dell'URL",
+        description: "Si è verificato un errore durante l'aggiornamento dell'URL: " + 
+          (error instanceof Error ? error.message : "Errore di comunicazione"),
         variant: "destructive"
       });
       console.error("Errore durante l'aggiornamento:", error);

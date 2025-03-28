@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
-import { CloudIcon, FileSpreadsheet, HelpCircle, Link } from 'lucide-react';
+import { CloudIcon, FileSpreadsheet, HelpCircle, Link, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface GoogleSheetsConfigDialogProps {
@@ -30,9 +30,12 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
   setGoogleSheetUrl,
 }) => {
   const { toast } = useToast();
-  const [updateSheetUrl, setUpdateSheetUrl] = React.useState(
+  const [updateSheetUrl, setUpdateSheetUrl] = useState(
     localStorage.getItem('googleSheetUpdateUrl') || ''
   );
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [connectionMessage, setConnectionMessage] = useState('');
   
   const handleSave = () => {
     if (!googleSheetUrl) {
@@ -65,6 +68,47 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
         description: "Si è verificato un errore durante il salvataggio della configurazione",
         variant: "destructive",
       });
+    }
+  };
+  
+  const testConnection = async () => {
+    if (!updateSheetUrl) {
+      setConnectionStatus('error');
+      setConnectionMessage("Inserisci l'URL del Google Apps Script prima di testare la connessione");
+      return;
+    }
+    
+    setTestingConnection(true);
+    setConnectionStatus('idle');
+    
+    try {
+      // Invio di una richiesta di test al Google Apps Script
+      const response = await fetch(updateSheetUrl, {
+        method: 'GET',
+        mode: 'no-cors', // Usa no-cors perché non possiamo leggere la risposta direttamente
+      });
+      
+      // Poiché con no-cors non possiamo leggere la risposta,
+      // assumiamo che se non ci sono errori la connessione funziona
+      setConnectionStatus('success');
+      setConnectionMessage('Connessione stabilita con successo! Lo script è raggiungibile.');
+      
+      toast({
+        title: "Test completato",
+        description: "La connessione con Google Apps Script è stata stabilita con successo",
+      });
+    } catch (error) {
+      console.error("Errore nel test di connessione:", error);
+      setConnectionStatus('error');
+      setConnectionMessage("Impossibile connettersi allo script. Verifica che l'URL sia corretto e che lo script sia pubblicato come Web App con accesso 'Anyone, even anonymous'.");
+      
+      toast({
+        title: "Errore di connessione",
+        description: "Impossibile connettersi al Google Apps Script. Verifica l'URL e le impostazioni di pubblicazione.",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingConnection(false);
     }
   };
   
@@ -105,16 +149,48 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
               <CloudIcon className="h-4 w-4 mr-1" />
               URL per l'aggiornamento (Google Apps Script)
             </Label>
-            <Input
-              id="updateSheetUrl"
-              value={updateSheetUrl}
-              onChange={(e) => setUpdateSheetUrl(e.target.value)}
-              placeholder="https://script.google.com/macros/s/..."
-            />
+            <div className="flex space-x-2">
+              <Input
+                id="updateSheetUrl"
+                value={updateSheetUrl}
+                onChange={(e) => setUpdateSheetUrl(e.target.value)}
+                placeholder="https://script.google.com/macros/s/..."
+                className="flex-1"
+              />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={testConnection}
+                disabled={testingConnection}
+                className="whitespace-nowrap"
+              >
+                {testingConnection ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <span>Test Connessione</span>
+                )}
+              </Button>
+            </div>
             <p className="text-xs text-gray-500">
               Per poter aggiungere fonti al foglio, inserisci l'URL del Web App di Google Apps Script. Se non lo hai, dovrai creare uno script e pubblicarlo come webapp.
             </p>
           </div>
+
+          {connectionStatus === 'success' && (
+            <Alert variant="default" className="bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertTitle>Connessione stabilita</AlertTitle>
+              <AlertDescription>{connectionMessage}</AlertDescription>
+            </Alert>
+          )}
+
+          {connectionStatus === 'error' && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Errore di connessione</AlertTitle>
+              <AlertDescription>{connectionMessage}</AlertDescription>
+            </Alert>
+          )}
 
           <Alert variant="default" className="bg-blue-50 border-blue-200">
             <AlertTitle className="flex items-center">

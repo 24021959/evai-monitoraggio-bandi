@@ -11,7 +11,7 @@
 //    row_number, url, nome, tipo (e opzionalmente stato_elaborazione, data_ultimo_aggiornamento)
 
 function doGet(e) {
-  return HtmlService.createHtmlOutput("Google Apps Script per l'aggiornamento delle fonti è attivo!")
+  return HtmlService.createHtmlOutput("Google Apps Script per l'aggiornamento delle fonti è attivo! Versione 2.0")
     .addMetaTag('Content-Type', 'application/json')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -27,11 +27,25 @@ function setCorsHeaders(response) {
 
 function doPost(e) {
   try {
-    // Analizza i dati inviati
-    var data = JSON.parse(e.postData.contents);
+    // Gestisce le richieste OPTIONS (preflight CORS)
+    if (e.parameter && e.parameter.callback) {
+      // Questo è un JSONP callback
+      var callback = e.parameter.callback;
+      var data = JSON.parse(e.parameter.data || '{}');
+      
+      Logger.log("Richiesta JSONP ricevuta con callback: " + callback);
+      Logger.log("Dati JSONP: " + JSON.stringify(data));
+      
+      const result = addFonteToSheet(data.fonte, data.sheetId);
+      return HtmlService.createHtmlOutput(callback + "(" + JSON.stringify(result) + ");")
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    
+    // Richiesta POST standard
+    var data = e.postData ? JSON.parse(e.postData.contents) : {};
     
     // Registra i dati ricevuti per debug
-    Logger.log("Dati ricevuti: " + e.postData.contents);
+    Logger.log("Dati ricevuti (POST): " + JSON.stringify(data));
     
     // Controlla che azione eseguire
     if (data.action === "updateFonte") {
@@ -56,14 +70,19 @@ function doPost(e) {
 
 function addFonteToSheet(fonte, sheetId) {
   try {
+    Logger.log("addFonteToSheet chiamato con fonte: " + JSON.stringify(fonte) + ", sheetId: " + sheetId);
+    
     // Se non è specificato uno sheetId, usa quello del foglio corrente
     var ss = sheetId 
       ? SpreadsheetApp.openById(sheetId)
       : SpreadsheetApp.getActiveSpreadsheet();
     
+    Logger.log("Foglio Google aperto: " + ss.getName());
+    
     // Apri la scheda "Lista Fonti"
     var sheet = ss.getSheetByName("Lista Fonti");
     if (!sheet) {
+      Logger.log("Scheda 'Lista Fonti' non trovata!");
       return { 
         success: false, 
         error: "Scheda 'Lista Fonti' non trovata nel foglio specificato" 
@@ -75,6 +94,7 @@ function addFonteToSheet(fonte, sheetId) {
     // Ottieni le intestazioni delle colonne dalla prima riga
     var headerRange = sheet.getRange(1, 1, 1, sheet.getLastColumn());
     var headers = headerRange.getValues()[0];
+    
     Logger.log("Intestazioni foglio: " + headers.join(", "));
     
     // Verifica che ci siano intestazioni
@@ -87,7 +107,7 @@ function addFonteToSheet(fonte, sheetId) {
     }
     
     // Trova l'ultima riga con dati
-    var lastRow = sheet.getLastRow();
+    var lastRow = Math.max(sheet.getLastRow(), 1);
     var nextRowNumber = lastRow + 1;
     
     Logger.log("Ultima riga: " + lastRow + ", prossima riga: " + nextRowNumber);
@@ -102,12 +122,22 @@ function addFonteToSheet(fonte, sheetId) {
     
     Logger.log("Mappa intestazioni: " + JSON.stringify(headerMap));
     
-    // Verifica che ci siano almeno "url" e "row_number" tra le intestazioni
-    if (headerMap["url"] === undefined) {
-      Logger.log("Intestazione 'url' non trovata!");
+    // Verifica le intestazioni minime necessarie
+    const requiredHeaders = ["url"];
+    let missingHeaders = [];
+    
+    for (let i = 0; i < requiredHeaders.length; i++) {
+      if (headerMap[requiredHeaders[i].toLowerCase()] === undefined) {
+        missingHeaders.push(requiredHeaders[i]);
+      }
+    }
+    
+    if (missingHeaders.length > 0) {
+      const errorMsg = "Intestazioni mancanti: " + missingHeaders.join(", ");
+      Logger.log(errorMsg);
       return { 
         success: false, 
-        error: "Intestazione 'url' non trovata nel foglio" 
+        error: errorMsg
       };
     }
     

@@ -7,7 +7,7 @@ import { GoogleSheetsToggle } from './GoogleSheetsToggle';
 import { SubmitButton } from './SubmitButton';
 import { useToast } from '@/components/ui/use-toast';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface AddSourceFormProps {
@@ -22,6 +22,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [addToGoogleSheet, setAddToGoogleSheet] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [googleSheetsStatus, setGoogleSheetsStatus] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
+  const [errorDetails, setErrorDetails] = useState<string>('');
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +50,22 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       return;
     }
 
+    // Controlla se la configurazione di Google Sheets è valida
+    if (addToGoogleSheet) {
+      const sheetUrl = localStorage.getItem('googleSheetUrl');
+      const updateUrl = localStorage.getItem('googleSheetUpdateUrl');
+      
+      if (!sheetUrl || !updateUrl) {
+        toast({
+          title: "Configurazione incompleta",
+          description: "Configura prima l'URL del foglio Google Sheets e l'URL per l'aggiornamento",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+    }
+
     const newFonte: Omit<Fonte, 'id'> = {
       nome,
       url,
@@ -57,6 +74,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     };
     
     setIsAdding(true);
+    setErrorDetails('');
     
     try {
       console.log("Aggiunta fonte a Supabase:", newFonte);
@@ -81,6 +99,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         } catch (sheetError) {
           console.error("Errore specifico di Google Sheets:", sheetError);
           setGoogleSheetsStatus('error');
+          setErrorDetails(sheetError instanceof Error ? sheetError.message : 'Errore durante la comunicazione con Google Sheets');
           toast({
             title: "Errore Google Sheets",
             description: "Si è verificato un errore nell'aggiunta al foglio Google. La fonte è stata salvata solo localmente.",
@@ -93,7 +112,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       setNome('');
       setUrl('');
       setTipo('');
-      setAddToGoogleSheet(false);
       
       toast({
         title: "Fonte aggiunta",
@@ -110,12 +128,16 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       });
       if (addToGoogleSheet) {
         setGoogleSheetsStatus('error');
+        setErrorDetails(error instanceof Error ? error.message : 'Errore sconosciuto');
       }
     } finally {
       setIsAdding(false);
-      // Reset dello stato Google Sheets dopo 5 secondi
+      // Reset dello stato Google Sheets dopo 30 secondi
       if (googleSheetsStatus !== 'idle') {
-        setTimeout(() => setGoogleSheetsStatus('idle'), 5000);
+        setTimeout(() => {
+          setGoogleSheetsStatus('idle');
+          setErrorDetails('');
+        }, 30000);
       }
     }
   };
@@ -180,14 +202,15 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
           />
           
           {googleSheetsStatus === 'adding' && (
-            <div className="flex items-center space-x-2 text-yellow-600">
+            <div className="flex items-center space-x-2 text-yellow-600 p-2 bg-yellow-50 rounded border border-yellow-200">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Aggiunta al foglio Google in corso...</span>
+              <span>Aggiunta al foglio Google in corso... (questo può richiedere fino a 30 secondi)</span>
             </div>
           )}
           
           {googleSheetsStatus === 'success' && (
             <Alert variant="default" className="bg-green-50 border-green-200">
+              <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertTitle>Successo</AlertTitle>
               <AlertDescription>
                 La fonte è stata aggiunta con successo al foglio Google Sheets.
@@ -197,11 +220,23 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
           
           {googleSheetsStatus === 'error' && (
             <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Errore</AlertTitle>
-              <AlertDescription>
-                Si è verificato un errore durante l'aggiunta della fonte al foglio Google Sheets.
-                Verifica di aver configurato correttamente sia l'URL del foglio che l'URL di aggiornamento,
-                e che il foglio contenga le intestazioni corrette nella prima riga: row_number, url, nome, tipo.
+              <AlertDescription className="space-y-2">
+                <p>
+                  Si è verificato un errore durante l'aggiunta della fonte al foglio Google Sheets.
+                  Verifica di aver configurato correttamente sia l'URL del foglio che l'URL di aggiornamento.
+                </p>
+                <div className="font-mono text-xs bg-red-950 text-white p-2 rounded overflow-auto max-h-24">
+                  {errorDetails || "Errore di comunicazione con il foglio Google"}
+                </div>
+                <p className="text-sm font-semibold">Checklist:</p>
+                <ul className="list-disc pl-5 text-sm space-y-1">
+                  <li>Il foglio Google ha una scheda chiamata "Lista Fonti"</li>
+                  <li>La prima riga contiene le intestazioni: row_number, url, nome, tipo</li>
+                  <li>Lo script Google Apps Script è pubblicato come Web App con accesso "Anyone, even anonymous"</li>
+                  <li>Lo script può scrivere sul foglio (non è in sola lettura)</li>
+                </ul>
               </AlertDescription>
             </Alert>
           )}
