@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -226,7 +227,7 @@ const Bandi = () => {
               Bandi Salvati
             </Button>
           )}
-          <Button variant="outline" onClick={() => navigate('/importa-scraping')}>
+          <Button variant="outline" onClick={() => navigate('/importa-bandi')}>
             <FileText className="w-4 h-4 mr-2" />
             Importa Nuovi Bandi
           </Button>
