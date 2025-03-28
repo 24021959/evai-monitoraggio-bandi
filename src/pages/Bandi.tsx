@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,6 @@ import {
   FileText, 
   Search, 
   Filter,
-  FileSpreadsheet,
 } from 'lucide-react';
 import {
   Select,
@@ -123,11 +121,6 @@ const Bandi = () => {
     });
   };
 
-  const toggleBandiSource = () => {
-    setShowGoogleSheetsBandi(!showGoogleSheetsBandi);
-    setPaginaCorrente(1); // Reset to first page when switching
-  };
-
   const renderPagination = () => {
     if (totalePagine <= 1) return null;
 
@@ -217,16 +210,6 @@ const Bandi = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Elenco Bandi</h1>
         <div className="flex gap-2">
-          {bandiImportati.length > 0 && (
-            <Button 
-              variant={showGoogleSheetsBandi ? "default" : "outline"}
-              onClick={toggleBandiSource}
-              className="flex items-center gap-2"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              Bandi Salvati
-            </Button>
-          )}
           <Button variant="outline" onClick={() => navigate('/importa-bandi')}>
             <FileText className="w-4 h-4 mr-2" />
             Importa Nuovi Bandi
