@@ -183,11 +183,11 @@ export class MatchService {
     const rows = matches.map(match => [
       match.id,
       match.cliente.id,
-      `"${match.cliente.nome.replace(/"/g, '""')}"`, // Evita problemi con virgolette nei nomi
-      `"${match.cliente.settore.replace(/"/g, '""')}"`,
+      `"${match.cliente.nome ? match.cliente.nome.replace(/"/g, '""') : ''}"`,
+      `"${match.cliente.settore ? match.cliente.settore.replace(/"/g, '""') : ''}"`,
       match.bando.id,
-      `"${match.bando.titolo.replace(/"/g, '""')}"`,
-      `"${match.bando.fonte.replace(/"/g, '""')}"`,
+      `"${match.bando.titolo ? match.bando.titolo.replace(/"/g, '""') : ''}"`,
+      `"${match.bando.fonte ? match.bando.fonte.replace(/"/g, '""') : ''}"`,
       match.bando.scadenza,
       match.punteggio,
       match.dataMatch

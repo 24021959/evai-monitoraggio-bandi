@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeftRight, InfoIcon, AlertCircle, FileText, ChevronRight } from 'lucide-react';
+import { ArrowLeftRight, InfoIcon, AlertCircle, ChevronRight } from 'lucide-react';
 import MatchTable from '@/components/MatchTable';
 import { Bando, Cliente } from '@/types';
 import { SupabaseBandiService } from '@/utils/SupabaseBandiService';
@@ -27,30 +26,25 @@ export default function Match() {
   const [filteredMatches, setFilteredMatches] = useState<MatchResult[]>([]);
   const [selectedSector, setSelectedSector] = useState('tutti');
   
-  // Carica dati da Supabase
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       
       try {
-        // Carica clienti
         const loadedClienti = await SupabaseClientiService.getClienti();
         setClienti(loadedClienti);
         console.log('Match: Clienti caricati:', loadedClienti.length);
         
-        // Carica bandi
         const loadedBandi = await SupabaseBandiService.getBandiCombinati();
         setBandi(loadedBandi);
         console.log('Match: Bandi caricati:', loadedBandi.length);
         
         if (loadedClienti.length > 0 && loadedBandi.length > 0) {
-          // Genera i match
           const calculatedMatches = MatchService.generateMatches(loadedClienti, loadedBandi);
           setMatches(calculatedMatches);
           setFilteredMatches(calculatedMatches);
           console.log('Match: Match generati:', calculatedMatches.length);
           
-          // Prepara i dati per le viste "Per Cliente" e "Per Bando"
           prepareClienteAndBandoViews(calculatedMatches);
           
           toast({
@@ -73,17 +67,11 @@ export default function Match() {
     loadData();
   }, [toast]);
   
-  // Prepara i dati per le viste "Per Cliente" e "Per Bando"
   const prepareClienteAndBandoViews = (calculatedMatches: MatchResult[]) => {
-    // Aggregazione per cliente
     const clientMap = new Map<string, { nome: string; settore: string; bandi: number; punteggio: number }>();
-    
-    // Aggregazione per bando
     const bandoMap = new Map<string, { titolo: string; fonte: string; clienti: number; punteggio: number }>();
     
-    // Popola le mappe con i dati dei match
     calculatedMatches.forEach(match => {
-      // Aggiorna dati cliente
       if (!clientMap.has(match.cliente.id)) {
         clientMap.set(match.cliente.id, {
           nome: match.cliente.nome,
@@ -97,7 +85,6 @@ export default function Match() {
       clienteData.bandi += 1;
       clienteData.punteggio = Math.max(clienteData.punteggio, match.punteggio);
       
-      // Aggiorna dati bando
       if (!bandoMap.has(match.bando.id)) {
         bandoMap.set(match.bando.id, {
           titolo: match.bando.titolo,
@@ -112,7 +99,6 @@ export default function Match() {
       bandoData.punteggio = Math.max(bandoData.punteggio, match.punteggio);
     });
     
-    // Converti le mappe in array e ordina per punteggio
     const clientiArray = Array.from(clientMap.entries()).map(([id, data]) => ({
       id,
       nome: data.nome,
@@ -133,7 +119,6 @@ export default function Match() {
     setBandiMatch(bandiArray);
   };
   
-  // Filtra i match per settore
   const handleSectorFilter = (sector: string) => {
     setSelectedSector(sector);
     
@@ -147,7 +132,6 @@ export default function Match() {
     }
   };
   
-  // Esportazione CSV
   const handleExportCSV = () => {
     try {
       const csvContent = MatchService.exportMatchesToCSV(filteredMatches);
@@ -171,16 +155,6 @@ export default function Match() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Match Clienti-Bandi</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2"
-            onClick={handleExportCSV}
-          >
-            <FileText className="h-4 w-4" />
-            Esporta Report
-          </Button>
-        </div>
       </div>
       
       {loading ? (
@@ -420,7 +394,6 @@ export default function Match() {
                           Tutti
                         </Badge>
                         
-                        {/* Genera badge dai settori disponibili */}
                         {Array.from(new Set(clienti.map(c => c.settore))).map(settore => (
                           <Badge 
                             key={settore}
@@ -474,7 +447,6 @@ export default function Match() {
                     <div>
                       <h4 className="text-sm font-medium mb-2">Per fonte</h4>
                       <div className="flex flex-wrap gap-2">
-                        {/* Genera badge dalle fonti disponibili */}
                         {Array.from(new Set(bandi.map(b => b.fonte))).slice(0, 5).map(fonte => (
                           <Badge 
                             key={fonte}
