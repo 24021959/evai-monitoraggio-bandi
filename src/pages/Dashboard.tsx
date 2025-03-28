@@ -85,13 +85,15 @@ const Dashboard = () => {
   
   const stats = calcStatistiche();
   
+  // Updated colors for better visibility
   const distribuzioneBandiData = [
-    { name: 'Europei', value: stats.distribuzioneBandi.europei, color: '#3b82f6' },
-    { name: 'Statali', value: stats.distribuzioneBandi.statali, color: '#22c55e' },
-    { name: 'Regionali', value: stats.distribuzioneBandi.regionali, color: '#f59e0b' },
-    { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#94a3b8' },
+    { name: 'Europei', value: stats.distribuzioneBandi.europei, color: '#0066cc' },
+    { name: 'Statali', value: stats.distribuzioneBandi.statali, color: '#00cc44' },
+    { name: 'Regionali', value: stats.distribuzioneBandi.regionali, color: '#ff9900' },
+    { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#5A6474' },
   ].filter(item => item.value > 0); // Show only non-zero values
 
+  // Updated label renderer with better text contrast
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: any) => {
     if (percent === 0) return null;
     
@@ -101,7 +103,17 @@ const Dashboard = () => {
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+      <text 
+        x={x} 
+        y={y} 
+        fill="#ffffff" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontWeight="bold"
+        stroke="#000000"
+        strokeWidth="0.5"
+        fontSize="12"
+      >
         {`${value} (${(percent * 100).toFixed(0)}%)`}
       </text>
     );
@@ -163,8 +175,14 @@ const Dashboard = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Legend />
-                  <Tooltip formatter={(value) => [value, 'Quantità']} />
+                  <Legend 
+                    formatter={(value) => <span style={{ color: '#000000', fontWeight: 500 }}>{value}</span>} 
+                  />
+                  <Tooltip 
+                    formatter={(value) => [value, 'Quantità']} 
+                    contentStyle={{ backgroundColor: 'white', borderColor: '#cccccc' }}
+                    labelStyle={{ fontWeight: 'bold', color: '#333333' }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -234,11 +252,17 @@ const Dashboard = () => {
                   fill="#8884d8"
                 >
                   {mockStatistiche.matchPerCliente.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={['#3b82f6', '#f59e0b', '#22c55e', '#ef4444'][index % 4]} />
+                    <Cell key={`cell-${index}`} fill={['#0066cc', '#ff9900', '#00cc44', '#cc3300'][index % 4]} />
                   ))}
                 </Pie>
-                <Legend />
-                <Tooltip formatter={(value) => [`${value}%`, 'Percentuale']} />
+                <Legend 
+                  formatter={(value) => <span style={{ color: '#000000', fontWeight: 500 }}>{value}</span>}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${value}%`, 'Percentuale']}
+                  contentStyle={{ backgroundColor: 'white', borderColor: '#cccccc' }}
+                  labelStyle={{ fontWeight: 'bold', color: '#333333' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -249,4 +273,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
