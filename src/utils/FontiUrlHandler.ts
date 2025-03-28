@@ -18,7 +18,7 @@ export const useFontiUrlHandler = () => {
         toast({
           title: "Configurazione incompleta",
           description: "Configura gli URL del foglio Google e dell'aggiornamento nelle impostazioni",
-          variant: "warning",
+          variant: "default",
         });
         return false;
       }

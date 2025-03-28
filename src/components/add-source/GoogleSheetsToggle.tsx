@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
 interface GoogleSheetsToggleProps {
@@ -17,10 +17,22 @@ export const GoogleSheetsToggle: React.FC<GoogleSheetsToggleProps> = ({
   const [configComplete, setConfigComplete] = useState(false);
   
   useEffect(() => {
-    const sheetUrl = localStorage.getItem('googleSheetUrl');
-    const updateUrl = localStorage.getItem('googleSheetUpdateUrl');
-    setConfigComplete(!!sheetUrl && !!updateUrl);
-  }, [checked]);
+    const checkConfig = () => {
+      const sheetUrl = localStorage.getItem('googleSheetUrl');
+      const updateUrl = localStorage.getItem('googleSheetUpdateUrl');
+      setConfigComplete(!!sheetUrl && !!updateUrl);
+    };
+    
+    // Controlla all'inizio
+    checkConfig();
+    
+    // Aggiungi un listener per verificare modifiche al localStorage
+    window.addEventListener('storage', checkConfig);
+    
+    return () => {
+      window.removeEventListener('storage', checkConfig);
+    };
+  }, []);
   
   return (
     <div className="flex items-center space-x-2 my-4">
@@ -38,6 +50,13 @@ export const GoogleSheetsToggle: React.FC<GoogleSheetsToggleProps> = ({
           <Badge variant="outline" className="ml-2 text-xs flex items-center bg-amber-50 border-amber-200 text-amber-700">
             <AlertCircle className="h-3 w-3 mr-1" />
             Configurazione incompleta
+          </Badge>
+        )}
+        
+        {configComplete && (
+          <Badge variant="outline" className="ml-2 text-xs flex items-center bg-green-50 border-green-200 text-green-700">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Pronto
           </Badge>
         )}
       </Label>

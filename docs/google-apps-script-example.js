@@ -11,7 +11,7 @@
 //    row_number, url, nome, tipo (e opzionalmente stato_elaborazione, data_ultimo_aggiornamento)
 
 function doGet(e) {
-  return HtmlService.createHtmlOutput("Google Apps Script per l'aggiornamento delle fonti è attivo! Versione 2.0")
+  return HtmlService.createHtmlOutput("Google Apps Script per l'aggiornamento delle fonti è attivo! Versione 2.1")
     .addMetaTag('Content-Type', 'application/json')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -27,40 +27,54 @@ function setCorsHeaders(response) {
 
 function doPost(e) {
   try {
+    console.log("Richiesta POST ricevuta");
+    
     // Gestisce le richieste OPTIONS (preflight CORS)
     if (e.parameter && e.parameter.callback) {
       // Questo è un JSONP callback
       var callback = e.parameter.callback;
       var data = JSON.parse(e.parameter.data || '{}');
       
-      Logger.log("Richiesta JSONP ricevuta con callback: " + callback);
-      Logger.log("Dati JSONP: " + JSON.stringify(data));
+      console.log("Richiesta JSONP ricevuta con callback: " + callback);
+      console.log("Dati JSONP: " + JSON.stringify(data));
       
       const result = addFonteToSheet(data.fonte, data.sheetId);
       return HtmlService.createHtmlOutput(callback + "(" + JSON.stringify(result) + ");")
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
     
-    // Richiesta POST standard
-    var data = e.postData ? JSON.parse(e.postData.contents) : {};
+    // Registra i dati grezzi ricevuti
+    console.log("Contenuto grezzo della richiesta: " + JSON.stringify(e));
     
-    // Registra i dati ricevuti per debug
-    Logger.log("Dati ricevuti (POST): " + JSON.stringify(data));
+    // Richiesta POST standard
+    var data;
+    try {
+      // Prova a parsare i dati JSON
+      data = e.postData ? JSON.parse(e.postData.contents) : {};
+      console.log("Dati ricevuti (POST): " + JSON.stringify(data));
+    } catch (parseError) {
+      console.error("Errore nel parsing dei dati JSON: " + parseError);
+      data = e.parameter || {};
+      console.log("Usando i parametri della query string: " + JSON.stringify(data));
+    }
     
     // Controlla che azione eseguire
     if (data.action === "updateFonte") {
+      console.log("Esecuzione azione updateFonte");
       const result = addFonteToSheet(data.fonte, data.sheetId);
+      console.log("Risultato azione: " + JSON.stringify(result));
       return setCorsHeaders(JSON.stringify(result));
     }
     
     // Azione non riconosciuta
+    console.log("Azione non riconosciuta: " + (data.action || "nessuna"));
     return setCorsHeaders(JSON.stringify({ 
       success: false, 
-      error: "Azione non riconosciuta" 
+      error: "Azione non riconosciuta: " + (data.action || "nessuna") 
     }));
     
   } catch (error) {
-    Logger.log("Errore: " + error.toString());
+    console.error("Errore generale: " + error.toString());
     return setCorsHeaders(JSON.stringify({ 
       success: false, 
       error: error.toString() 
@@ -70,36 +84,36 @@ function doPost(e) {
 
 function addFonteToSheet(fonte, sheetId) {
   try {
-    Logger.log("addFonteToSheet chiamato con fonte: " + JSON.stringify(fonte) + ", sheetId: " + sheetId);
+    console.log("addFonteToSheet chiamato con fonte: " + JSON.stringify(fonte) + ", sheetId: " + sheetId);
     
     // Se non è specificato uno sheetId, usa quello del foglio corrente
     var ss = sheetId 
       ? SpreadsheetApp.openById(sheetId)
       : SpreadsheetApp.getActiveSpreadsheet();
     
-    Logger.log("Foglio Google aperto: " + ss.getName());
+    console.log("Foglio Google aperto: " + ss.getName());
     
     // Apri la scheda "Lista Fonti"
     var sheet = ss.getSheetByName("Lista Fonti");
     if (!sheet) {
-      Logger.log("Scheda 'Lista Fonti' non trovata!");
+      console.error("Scheda 'Lista Fonti' non trovata!");
       return { 
         success: false, 
         error: "Scheda 'Lista Fonti' non trovata nel foglio specificato" 
       };
     }
     
-    Logger.log("Foglio trovato: " + sheet.getName());
+    console.log("Foglio trovato: " + sheet.getName());
     
     // Ottieni le intestazioni delle colonne dalla prima riga
     var headerRange = sheet.getRange(1, 1, 1, sheet.getLastColumn());
     var headers = headerRange.getValues()[0];
     
-    Logger.log("Intestazioni foglio: " + headers.join(", "));
+    console.log("Intestazioni foglio: " + headers.join(", "));
     
     // Verifica che ci siano intestazioni
     if (headers.length === 0 || headers.every(function(h) { return h === ""; })) {
-      Logger.log("Nessuna intestazione trovata!");
+      console.error("Nessuna intestazione trovata!");
       return { 
         success: false, 
         error: "Nessuna intestazione trovata nel foglio" 
@@ -110,7 +124,7 @@ function addFonteToSheet(fonte, sheetId) {
     var lastRow = Math.max(sheet.getLastRow(), 1);
     var nextRowNumber = lastRow + 1;
     
-    Logger.log("Ultima riga: " + lastRow + ", prossima riga: " + nextRowNumber);
+    console.log("Ultima riga: " + lastRow + ", prossima riga: " + nextRowNumber);
     
     // Crea una mappa delle posizioni delle intestazioni (insensibile alle maiuscole)
     var headerMap = {};
@@ -120,21 +134,21 @@ function addFonteToSheet(fonte, sheetId) {
       }
     }
     
-    Logger.log("Mappa intestazioni: " + JSON.stringify(headerMap));
+    console.log("Mappa intestazioni: " + JSON.stringify(headerMap));
     
     // Verifica le intestazioni minime necessarie
-    const requiredHeaders = ["url"];
-    let missingHeaders = [];
+    var requiredHeaders = ["url", "nome", "tipo"];
+    var missingHeaders = [];
     
-    for (let i = 0; i < requiredHeaders.length; i++) {
+    for (var i = 0; i < requiredHeaders.length; i++) {
       if (headerMap[requiredHeaders[i].toLowerCase()] === undefined) {
         missingHeaders.push(requiredHeaders[i]);
       }
     }
     
     if (missingHeaders.length > 0) {
-      const errorMsg = "Intestazioni mancanti: " + missingHeaders.join(", ");
-      Logger.log(errorMsg);
+      var errorMsg = "Intestazioni mancanti: " + missingHeaders.join(", ");
+      console.error(errorMsg);
       return { 
         success: false, 
         error: errorMsg
@@ -169,12 +183,12 @@ function addFonteToSheet(fonte, sheetId) {
       rowData[headerMap["data_ultimo_aggiornamento"]] = new Date().toISOString().split('T')[0];
     }
     
-    Logger.log("Sto per scrivere i dati alla riga " + nextRowNumber + ": " + rowData.join(", "));
+    console.log("Sto per scrivere i dati alla riga " + nextRowNumber + ": " + rowData.join(", "));
     
     // Scrivi la nuova riga nel foglio
     sheet.getRange(nextRowNumber, 1, 1, rowData.length).setValues([rowData]);
     
-    Logger.log("Fonte aggiunta con successo alla riga " + nextRowNumber);
+    console.log("Fonte aggiunta con successo alla riga " + nextRowNumber);
     
     return { 
       success: true, 
@@ -183,7 +197,7 @@ function addFonteToSheet(fonte, sheetId) {
     };
     
   } catch (error) {
-    Logger.log("Errore nell'aggiunta della fonte: " + error.toString());
+    console.error("Errore nell'aggiunta della fonte: " + error.toString());
     return { 
       success: false, 
       error: error.toString() 
