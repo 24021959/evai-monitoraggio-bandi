@@ -35,7 +35,7 @@ export class SupabaseFontiService {
     try {
       // Assicuriamoci che la fonte abbia un ID valido (UUID)
       let fonteId = fonte.id;
-      if (!fonteId || fonteId.startsWith('temp-')) {
+      if (!fonteId || fonteId.startsWith('temp-') || fonteId.startsWith('fonte-')) {
         fonteId = uuidv4();
         console.log(`Generato nuovo UUID per fonte: ${fonteId}`);
       }

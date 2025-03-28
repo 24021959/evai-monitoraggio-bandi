@@ -95,13 +95,21 @@ export function useFonti() {
     }
   };
 
-  const handleAddSource = async (newSource: Omit<Fonte, 'id'>) => {
+  const handleAddSource = async (newSource: Omit<Fonte, 'id'>): Promise<boolean> => {
     try {
-      const newFonte: Fonte = { id: `temp-${Date.now()}`, ...newSource };
+      console.log("Aggiunta fonte:", newSource);
+      
+      // The service will generate a proper UUID
+      const newFonte: Fonte = { 
+        id: `temp-${Date.now()}`, 
+        ...newSource 
+      };
+      
       const success = await SupabaseFontiService.saveFonte(newFonte);
       if (success) {
-        const updatedFonti = await SupabaseFontiService.getFonti();
-        setFonti(updatedFonti);
+        // We need to refetch to get the updated list with correct IDs
+        await refetch();
+        
         toast({
           title: "Fonte aggiunta",
           description: "La fonte è stata aggiunta con successo",
@@ -117,6 +125,7 @@ export function useFonti() {
         });
       }
     } catch (error) {
+      console.error("Errore durante l'aggiunta della fonte:", error);
       toast({
         title: "Errore",
         description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
@@ -140,7 +149,9 @@ export function useFonti() {
 
     setImportingFromSheets(true);
     try {
+      console.log('Importazione da Google Sheets iniziata');
       const fontesFromSheet = await GoogleSheetsService.fetchFontiFromSheet(sheetUrl);
+      
       if (fontesFromSheet.length === 0) {
         toast({
           title: "Nessuna fonte trovata",
@@ -150,12 +161,23 @@ export function useFonti() {
         return;
       }
 
-      // Save fonti to Supabase
-      const savedCount = await SupabaseFontiService.saveFonti(fontesFromSheet);
+      console.log(`Trovate ${fontesFromSheet.length} fonti da importare:`, fontesFromSheet);
+
+      // Save fonti to Supabase one by one to better track errors
+      let savedCount = 0;
+      for (const fonte of fontesFromSheet) {
+        try {
+          const saved = await SupabaseFontiService.saveFonte(fonte);
+          if (saved) {
+            savedCount++;
+          }
+        } catch (err) {
+          console.error(`Errore nel salvare la fonte ${fonte.url}:`, err);
+        }
+      }
       
       // Refresh the list
-      const updatedFonti = await SupabaseFontiService.getFonti();
-      setFonti(updatedFonti);
+      await refetch();
       
       toast({
         title: "Importazione completata",

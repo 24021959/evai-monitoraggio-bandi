@@ -409,7 +409,8 @@ export class GoogleSheetsService {
           
           switch(header.toLowerCase()) {
             case 'id_number':
-              fonte.id = value || `fonte-${Date.now()}-${i}`;
+              // Do not use any custom ID format, we'll generate proper UUIDs later
+              // fonte.id will be handled by SupabaseFontiService
               break;
             case 'url':
               fonte.url = value;
@@ -475,9 +476,7 @@ export class GoogleSheetsService {
       
       // Assicurati che i campi obbligatori abbiano valori
       if (fonte.url) {
-        if (!fonte.id) {
-          fonte.id = `fonte-${Date.now()}-${i}`;
-        }
+        // Do not set ID here, we'll handle it in SupabaseFontiService
         if (!fonte.tipo) {
           fonte.tipo = 'altro';
         }

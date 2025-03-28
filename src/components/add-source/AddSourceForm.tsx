@@ -56,21 +56,36 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     setIsAdding(true);
     
     try {
+      console.log("Aggiunta fonte a Supabase:", newFonte);
+      
       // Add to Supabase
-      onAddSource(newFonte);
+      await onAddSource(newFonte);
       
       // Add to Google Sheet if enabled
       if (addToGoogleSheet) {
         await handleAddToGoogleSheet(newFonte);
       }
-    } catch (error) {
-      console.error("Errore durante il salvataggio:", error);
-    } finally {
+      
       // Reset form
       setNome('');
       setUrl('');
       setTipo('');
       setAddToGoogleSheet(false);
+      
+      toast({
+        title: "Fonte aggiunta",
+        description: "La fonte è stata aggiunta con successo",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Errore durante il salvataggio:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio della fonte",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
       setIsAdding(false);
     }
   };
@@ -83,34 +98,42 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         description: "Configura prima l'URL del foglio Google dalla pagina Fonti",
         variant: "default",
       });
-    } else {
-      try {
-        const tempId = `temp-${Date.now()}`;
-        const result = await GoogleSheetsService.updateFonteInSheet({
-          id: tempId,
-          ...newFonte
-        });
-        
-        if (result) {
-          toast({
-            title: "Fonte aggiunta al foglio Google",
-            description: "La fonte è stata aggiunta con successo anche al foglio Google Sheets",
-          });
-        } else {
-          toast({
-            title: "Attenzione",
-            description: "La fonte è stata salvata localmente ma non sul foglio Google Sheets",
-            variant: "default",
-          });
-        }
-      } catch (error) {
-        console.error("Errore nell'aggiunta al foglio Google:", error);
+      return false;
+    } 
+    
+    try {
+      console.log("Aggiunta fonte al foglio Google:", newFonte);
+      
+      // We need a temporary ID here that will be replaced with a proper UUID
+      const fonte: Fonte = {
+        id: 'temp-' + Date.now(),
+        ...newFonte
+      };
+      
+      const result = await GoogleSheetsService.updateFonteInSheet(fonte);
+      
+      if (result) {
         toast({
-          title: "Errore",
-          description: "Si è verificato un errore nell'aggiunta della fonte al foglio Google",
-          variant: "destructive",
+          title: "Fonte aggiunta al foglio Google",
+          description: "La fonte è stata aggiunta con successo anche al foglio Google Sheets",
         });
+        return true;
+      } else {
+        toast({
+          title: "Attenzione",
+          description: "La fonte è stata salvata localmente ma non sul foglio Google Sheets",
+          variant: "default",
+        });
+        return false;
       }
+    } catch (error) {
+      console.error("Errore nell'aggiunta al foglio Google:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore nell'aggiunta della fonte al foglio Google",
+        variant: "destructive",
+      });
+      return false;
     }
   };
   
