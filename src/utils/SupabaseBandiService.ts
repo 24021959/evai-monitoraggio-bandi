@@ -32,6 +32,7 @@ export class SupabaseBandiService {
 
   /**
    * Recupera tutti i bandi combinati (Supabase + localStorage + sessionStorage) senza duplicati
+   * Modificato per evitare la duplicazione continua dei bandi
    */
   static async getBandiCombinati(): Promise<Bando[]> {
     try {
@@ -58,37 +59,63 @@ export class SupabaseBandiService {
       // 4. Combina tutti i bandi, rimuovendo duplicati basati su ID
       const allBandiMap = new Map<string, Bando>();
       
-      // Priorità a Supabase
+      // Priorità a Supabase - aggiungiamo tutti i bandi da Supabase
       supaBandi.forEach(bando => {
         allBandiMap.set(bando.id, bando);
       });
       
+      // Creiamo un set di chiavi univoche basate su titolo+fonte per identificare duplicati
+      const titoloFonteSet = new Set(
+        supaBandi.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+      );
+      
       // Poi localStorage (solo se non già presenti in Supabase)
       for (const bando of localBandi) {
+        // Verifichiamo prima se non c'è già un bando con questo ID
         if (!allBandiMap.has(bando.id)) {
-          // Se il bando è nel localStorage ma non in Supabase, proviamo a salvarlo in Supabase
-          try {
-            await this.saveBando(bando);
-            console.log(`Bando dal localStorage salvato in Supabase: ${bando.id}`);
-          } catch (err) {
-            console.error(`Errore nel salvare il bando dal localStorage in Supabase: ${bando.id}`, err);
+          // Verifichiamo anche se non esiste già un bando con lo stesso titolo e fonte
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          if (!titoloFonteSet.has(chiave)) {
+            // Solo in questo caso lo salviamo in Supabase (una tantum)
+            try {
+              await this.saveBando(bando);
+              console.log(`Bando dal localStorage salvato in Supabase: ${bando.id}`);
+              allBandiMap.set(bando.id, bando);
+              titoloFonteSet.add(chiave);
+            } catch (err) {
+              console.error(`Errore nel salvare il bando dal localStorage in Supabase: ${bando.id}`, err);
+            }
           }
-          allBandiMap.set(bando.id, bando);
         }
       }
       
-      // Infine importati (solo se non già presenti)
-      for (const bando of importedBandi) {
-        if (!allBandiMap.has(bando.id)) {
-          // Se il bando è in sessionStorage ma non in Supabase, proviamo a salvarlo in Supabase
-          try {
-            await this.saveBando(bando);
-            console.log(`Bando da sessionStorage salvato in Supabase: ${bando.id}`);
-          } catch (err) {
-            console.error(`Errore nel salvare il bando da sessionStorage in Supabase: ${bando.id}`, err);
+      // Solo la prima volta importiamo i bandi da sessionStorage a Supabase
+      // Le volte successive, li mostreremo solo se non esistono già bandi simili
+      const bandiImportatiFlag = sessionStorage.getItem('bandiImportatiFlag');
+      if (!bandiImportatiFlag && importedBandi.length > 0) {
+        for (const bando of importedBandi) {
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          if (!titoloFonteSet.has(chiave)) {
+            try {
+              // Creiamo un ID valido se non esiste
+              if (!bando.id || !this.isValidUUID(bando.id)) {
+                bando.id = uuidv4();
+              }
+              
+              await this.saveBando(bando);
+              console.log(`Bando da sessionStorage salvato in Supabase: ${bando.id}`);
+              allBandiMap.set(bando.id, bando);
+              titoloFonteSet.add(chiave);
+            } catch (err) {
+              console.error(`Errore nel salvare il bando da sessionStorage in Supabase: ${bando.id}`, err);
+            }
           }
-          allBandiMap.set(bando.id, bando);
         }
+        
+        // Impostiamo il flag per evitare di importare più volte
+        sessionStorage.setItem('bandiImportatiFlag', 'true');
+      } else {
+        console.log('I bandi da sessionStorage sono già stati importati in precedenza.');
       }
       
       const combinedBandi = Array.from(allBandiMap.values());
@@ -262,29 +289,45 @@ export class SupabaseBandiService {
       
       const bandiImportati = JSON.parse(bandiImportatiString);
       
+      // Recuperiamo prima i bandi esistenti per evitare duplicazioni
+      const bandiEsistenti = await this.getBandi();
+      const titoliFonteEsistenti = new Set(
+        bandiEsistenti.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+      );
+      
       let contatore = 0;
       
       for (const bando of bandiImportati) {
         try {
-          // Assicuriamo che ogni bando abbia tutti i campi necessari
-          const bandoCompleto = {
-            ...bando,
-            settori: bando.settori || [],
-            fonte: bando.fonte || 'Importato',
-            tipo: bando.tipo || 'altro'
-          };
-          
-          const salvato = await this.saveBando(bandoCompleto);
-          if (salvato) {
-            contatore++;
-            console.log(`Bando importato e salvato con successo in Supabase: ${bando.titolo}`);
+          // Verifichiamo che non esista già un bando con lo stesso titolo e fonte
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          if (!titoliFonteEsistenti.has(chiave)) {
+            // Assicuriamo che ogni bando abbia tutti i campi necessari
+            const bandoCompleto = {
+              ...bando,
+              settori: bando.settori || [],
+              fonte: bando.fonte || 'Importato',
+              tipo: bando.tipo || 'altro'
+            };
+            
+            const salvato = await this.saveBando(bandoCompleto);
+            if (salvato) {
+              contatore++;
+              titoliFonteEsistenti.add(chiave);
+              console.log(`Bando importato e salvato con successo in Supabase: ${bando.titolo}`);
+            } else {
+              console.error(`Errore nel salvataggio del bando in Supabase: ${bando.titolo}`);
+            }
           } else {
-            console.error(`Errore nel salvataggio del bando in Supabase: ${bando.titolo}`);
+            console.log(`Bando "${bando.titolo}" da ${bando.fonte} già presente nel database, saltato.`);
           }
         } catch (err) {
           console.error(`Errore nell'elaborazione del bando: ${bando.titolo}`, err);
         }
       }
+      
+      // Impostiamo il flag per evitare di importare più volte
+      sessionStorage.setItem('bandiImportatiFlag', 'true');
       
       return contatore;
     } catch (error) {

@@ -87,6 +87,9 @@ const ImportaBandi = () => {
             }
           }
           
+          // Impostiamo il flag per indicare che i bandi sono stati importati
+          sessionStorage.setItem('bandiImportatiFlag', 'true');
+          
           console.log(`Bandi salvati in Supabase: ${contatoreSalvati}/${bandiUnici.length}`);
           
           setBandiAnteprima(bandiUnici.slice(0, 5));
@@ -118,7 +121,7 @@ const ImportaBandi = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Importa Bandi da Google Sheets</h1>
+        <h1 className="text-2xl font-bold">Importa Bandi</h1>
       </div>
       
       <Card>
