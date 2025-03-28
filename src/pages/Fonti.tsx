@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HelpCircle, AlertCircle } from 'lucide-react';
+import { HelpCircle, AlertCircle, FileSpreadsheet, Loader2 } from 'lucide-react';
 import FontiTable from '@/components/FontiTable';
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,15 +11,18 @@ import { Fonte } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery } from '@tanstack/react-query';
 import SupabaseFontiService from '@/utils/SupabaseFontiService';
+import { Button } from '@/components/ui/button';
+import GoogleSheetsService from '@/utils/GoogleSheetsService';
 
 const Fonti = () => {
   const { toast } = useToast();
   const [fonti, setFonti] = useState<Fonte[]>([]);
   const [activeTab, setActiveTab] = useState("fonti");
   const [selectedFonte, setSelectedFonte] = useState<Fonte | null>(null);
-  const [currentScrapingFonte, setCurrentScrapingFonte] = useState<Fonte | null>(null);
+  const [importingFromSheets, setImportingFromSheets] = useState(false);
+  const [exportingToSheets, setExportingToSheets] = useState(false);
   
-  const { data: supabaseFonti, isLoading } = useQuery({
+  const { data: supabaseFonti, isLoading, refetch } = useQuery({
     queryKey: ['fonti'],
     queryFn: async () => {
       const sources = await SupabaseFontiService.getFonti();
@@ -136,10 +139,81 @@ const Fonti = () => {
     }
   };
 
+  const importFromGoogleSheets = async () => {
+    const sheetUrl = localStorage.getItem('googleSheetUrl');
+    if (!sheetUrl) {
+      toast({
+        title: "URL non configurato",
+        description: "Configura prima l'URL del foglio Google Sheets",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setImportingFromSheets(true);
+    try {
+      const fontesFromSheet = await GoogleSheetsService.fetchFontiFromSheet(sheetUrl);
+      if (fontesFromSheet.length === 0) {
+        toast({
+          title: "Nessuna fonte trovata",
+          description: "Il foglio Google non contiene fonti o non è accessibile",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Save fonti to Supabase
+      const savedCount = await SupabaseFontiService.saveFonti(fontesFromSheet);
+      
+      // Refresh the list
+      const updatedFonti = await SupabaseFontiService.getFonti();
+      setFonti(updatedFonti);
+      
+      toast({
+        title: "Importazione completata",
+        description: `Importate ${savedCount} fonti dal foglio Google Sheets`,
+      });
+    } catch (error) {
+      console.error('Errore durante l\'importazione:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'importazione delle fonti",
+        variant: "destructive",
+      });
+    } finally {
+      setImportingFromSheets(false);
+    }
+  };
+
+  const exportToGoogleSheets = async () => {
+    // This function would require a different Google Apps Script endpoint
+    // that can handle updating the sheet with all current sources
+    toast({
+      title: "Funzionalità non implementata",
+      description: "L'esportazione completa al foglio Google è in fase di sviluppo",
+      variant: "default",
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gestione Fonti di Dati</h1>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={importFromGoogleSheets}
+            disabled={importingFromSheets}
+            className="flex items-center gap-2"
+          >
+            {importingFromSheets ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4" />
+            )}
+            Importa da Google Sheets
+          </Button>
+        </div>
       </div>
       
       {isLoading && (
@@ -184,7 +258,6 @@ const Fonti = () => {
                   fonti={fonti} 
                   onEdit={handleEdit}
                   onDelete={handleDelete}
-                  currentScrapingId={currentScrapingFonte?.id}
                 />
               )}
             </CardContent>

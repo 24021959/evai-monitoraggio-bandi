@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Fonte } from '../types';
-import { Trash2, CheckCircle, Edit, ExternalLink, Save, X } from 'lucide-react';
+import { Trash2, CheckCircle, Edit, ExternalLink, Save, X, FileSpreadsheet } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -20,14 +20,12 @@ interface FontiTableProps {
   fonti: Fonte[];
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
-  currentScrapingId?: string | null;
 }
 
 const FontiTable: React.FC<FontiTableProps> = ({ 
   fonti, 
   onEdit, 
-  onDelete, 
-  currentScrapingId
+  onDelete
 }) => {
   const { toast } = useToast();
   const [editingFonte, setEditingFonte] = useState<string | null>(null);
@@ -35,6 +33,8 @@ const FontiTable: React.FC<FontiTableProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [updateSheetUrl, setUpdateSheetUrl] = useState<string>(localStorage.getItem('googleSheetUpdateUrl') || '');
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [googleSheetUrl, setGoogleSheetUrl] = useState<string>(localStorage.getItem('googleSheetUrl') || '');
 
   const getTipoClass = (tipo: string) => {
     switch (tipo) {
@@ -60,6 +60,16 @@ const FontiTable: React.FC<FontiTableProps> = ({
     toast({
       title: "URL salvato",
       description: "L'URL per l'aggiornamento del foglio Google è stato salvato",
+    });
+  };
+
+  const saveGoogleSheetUrl = () => {
+    localStorage.setItem('googleSheetUrl', googleSheetUrl);
+    GoogleSheetsService.setSheetUrl(googleSheetUrl);
+    setShowImportDialog(false);
+    toast({
+      title: "URL salvato",
+      description: "L'URL del foglio Google è stato salvato",
     });
   };
 
@@ -106,6 +116,17 @@ const FontiTable: React.FC<FontiTableProps> = ({
 
   return (
     <>
+      <div className="flex justify-between mb-4">
+        <Button 
+          variant="outline" 
+          onClick={() => setShowImportDialog(true)}
+          className="flex items-center gap-2"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Configura Google Sheets
+        </Button>
+      </div>
+      
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -254,6 +275,35 @@ const FontiTable: React.FC<FontiTableProps> = ({
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowUpdateDialog(false)}>Annulla</Button>
             <Button onClick={saveUpdateSheetUrl}>Salva</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configura Google Sheets</DialogTitle>
+            <DialogDescription>
+              Inserisci l'URL del foglio Google Sheets che contiene le fonti da importare e sincronizzare.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="sheet-url" className="text-sm font-medium">URL del foglio Google</label>
+              <Input
+                id="sheet-url"
+                value={googleSheetUrl}
+                onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/1E4ZR9tgeBZV545JJuduvWHtlRqo5GyW_woBXt8ooQ8E/edit"
+              />
+              <p className="text-xs text-gray-500">
+                Esempio: https://docs.google.com/spreadsheets/d/1E4ZR9tgeBZV545JJuduvWHtlRqo5GyW_woBXt8ooQ8E/edit
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>Annulla</Button>
+            <Button onClick={saveGoogleSheetUrl}>Salva</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

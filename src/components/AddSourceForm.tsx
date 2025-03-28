@@ -13,7 +13,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Fonte, TipoBando } from "@/types";
-import { Save } from 'lucide-react';
+import { Save, FileSpreadsheet } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import GoogleSheetsService from '@/utils/GoogleSheetsService';
 
 interface AddSourceFormProps {
   onAddSource: (fonte: Omit<Fonte, 'id'>) => void;
@@ -24,8 +26,10 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [nome, setNome] = useState('');
   const [url, setUrl] = useState('');
   const [tipo, setTipo] = useState<TipoBando | ''>('');
+  const [addToGoogleSheet, setAddToGoogleSheet] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!nome || !url || !tipo) {
@@ -50,24 +54,69 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       });
       return;
     }
-    
-    onAddSource({
+
+    const newFonte: Omit<Fonte, 'id'> = {
       nome,
       url,
       tipo: tipo as TipoBando,
       stato: 'attivo'
-    });
+    };
     
-    // Reset form
-    setNome('');
-    setUrl('');
-    setTipo('');
+    setIsAdding(true);
     
-    toast({
-      title: "Fonte aggiunta",
-      description: "La nuova fonte è stata aggiunta con successo",
-      duration: 3000,
-    });
+    try {
+      // Add to Supabase
+      onAddSource(newFonte);
+      
+      // Add to Google Sheet if enabled
+      if (addToGoogleSheet) {
+        const sheetUrl = localStorage.getItem('googleSheetUrl');
+        if (!sheetUrl) {
+          toast({
+            title: "Google Sheet non configurato",
+            description: "Configura prima l'URL del foglio Google dalla pagina Fonti",
+            variant: "default",
+          });
+        } else {
+          try {
+            const tempId = `temp-${Date.now()}`;
+            const result = await GoogleSheetsService.updateFonteInSheet({
+              id: tempId,
+              ...newFonte
+            });
+            
+            if (result) {
+              toast({
+                title: "Fonte aggiunta al foglio Google",
+                description: "La fonte è stata aggiunta con successo anche al foglio Google Sheets",
+              });
+            } else {
+              toast({
+                title: "Attenzione",
+                description: "La fonte è stata salvata localmente ma non sul foglio Google Sheets",
+                variant: "default",
+              });
+            }
+          } catch (error) {
+            console.error("Errore nell'aggiunta al foglio Google:", error);
+            toast({
+              title: "Errore",
+              description: "Si è verificato un errore nell'aggiunta della fonte al foglio Google",
+              variant: "destructive",
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Errore durante il salvataggio:", error);
+    } finally {
+      // Reset form
+      setNome('');
+      setUrl('');
+      setTipo('');
+      setAddToGoogleSheet(false);
+      setIsAdding(false);
+    }
   };
   
   return (
@@ -115,9 +164,34 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
             </Select>
           </div>
           
-          <Button type="submit" className="w-full flex items-center justify-center gap-2">
-            <Save className="w-4 h-4" />
-            Salva Fonte
+          <div className="flex items-center space-x-2 my-4">
+            <Switch 
+              id="add-to-sheet"
+              checked={addToGoogleSheet}
+              onCheckedChange={setAddToGoogleSheet}
+            />
+            <Label htmlFor="add-to-sheet" className="flex items-center cursor-pointer">
+              <FileSpreadsheet className="h-4 w-4 mr-1 text-green-600" />
+              Aggiungi anche al foglio Google Sheets
+            </Label>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full flex items-center justify-center gap-2"
+            disabled={isAdding}
+          >
+            {isAdding ? (
+              <>
+                <span className="animate-spin h-4 w-4 border-2 border-t-transparent border-current rounded-full"></span>
+                Salvataggio...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Salva Fonte
+              </>
+            )}
           </Button>
         </form>
       </CardContent>

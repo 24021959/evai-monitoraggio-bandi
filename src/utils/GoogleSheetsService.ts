@@ -195,6 +195,15 @@ export class GoogleSheetsService {
     }
   }
 
+  public async addFonteToSheet(fonte: Fonte): Promise<boolean> {
+    try {
+      return this.updateFonteInSheet(fonte);
+    } catch (error) {
+      console.error('Errore durante l\'aggiunta della fonte al foglio:', error);
+      return false;
+    }
+  }
+
   private extractSheetId(url: string): string | null {
     // Extract sheet ID from various Google Sheets URL formats
     const regex = /\/d\/([a-zA-Z0-9-_]+)/;
