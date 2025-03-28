@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -293,14 +294,15 @@ const Bandi = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bandiPaginati.map(bando => (
-                <BandoCard 
-                  key={bando.id} 
-                  bando={bando} 
-                  onViewDetails={handleViewDetail}
-                  onDelete={handleDeleteBando}
-                  showFullDetails={showGoogleSheetsBandi}
-                />
+              {bandiPaginati.map((bando, index) => (
+                <div key={bando.id} className={index % 2 === 0 ? "" : "bg-[#FEF7CD] rounded-lg"}>
+                  <BandoCard 
+                    bando={bando} 
+                    onViewDetails={handleViewDetail}
+                    onDelete={handleDeleteBando}
+                    showFullDetails={showGoogleSheetsBandi}
+                  />
+                </div>
               ))}
             </div>
             
