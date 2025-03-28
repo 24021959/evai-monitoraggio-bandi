@@ -31,7 +31,8 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails, onD
             <TableHead className="text-white font-semibold">Regione</TableHead>
             <TableHead className="text-white font-semibold">Email</TableHead>
             <TableHead className="text-white font-semibold">Telefono</TableHead>
-            <TableHead className="text-white font-semibold">Azioni</TableHead>
+            <TableHead className="text-white font-semibold">Codice ATECO</TableHead>
+            <TableHead className="text-white font-semibold text-center">Azioni</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -47,8 +48,9 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails, onD
               <TableCell>{cliente.regione}</TableCell>
               <TableCell>{cliente.email}</TableCell>
               <TableCell>{cliente.telefono || '-'}</TableCell>
+              <TableCell>{cliente.codiceATECO || '-'}</TableCell>
               <TableCell>
-                <div className="flex space-x-2">
+                <div className="flex justify-center space-x-4">
                   {onViewDetails && (
                     <Button 
                       size="icon" 

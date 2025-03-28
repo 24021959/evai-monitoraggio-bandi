@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 
 const DettaglioCliente = () => {
@@ -28,7 +28,7 @@ const DettaglioCliente = () => {
       setFormData(clienteTrovato);
       
       // Estrai i campi aggiuntivi (tutto ciò che non è un campo standard)
-      const campiStandard = ['id', 'nome', 'settore', 'regione', 'provincia', 'fatturato', 'dipendenti', 'email', 'interessiSettoriali', 'telefono'];
+      const campiStandard = ['id', 'nome', 'settore', 'regione', 'provincia', 'fatturato', 'dipendenti', 'email', 'interessiSettoriali', 'telefono', 'codiceATECO', 'annoFondazione', 'formaGiuridica'];
       const campiExtra = Object.entries(clienteTrovato)
         .filter(([key]) => !campiStandard.includes(key))
         .map(([nome, valore]) => ({
@@ -208,6 +208,15 @@ const DettaglioCliente = () => {
                   onChange={handleInputChange} 
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="codiceATECO">Codice ATECO</Label>
+                <Input 
+                  id="codiceATECO" 
+                  name="codiceATECO" 
+                  value={formData.codiceATECO || ''} 
+                  onChange={handleInputChange} 
+                />
+              </div>
               
               {/* Campi aggiuntivi */}
               {campiAggiuntivi.map((campo, index) => (
@@ -297,6 +306,10 @@ const DettaglioCliente = () => {
               <div>
                 <h3 className="font-medium text-sm text-gray-500">Telefono</h3>
                 <p>{cliente.telefono || '-'}</p>
+              </div>
+              <div>
+                <h3 className="font-medium text-sm text-gray-500">Codice ATECO</h3>
+                <p>{cliente.codiceATECO || '-'}</p>
               </div>
               
               {/* Visualizza campi aggiuntivi */}
