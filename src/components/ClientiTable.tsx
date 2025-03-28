@@ -51,24 +51,26 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails, onD
                 <div className="flex space-x-2">
                   {onViewDetails && (
                     <Button 
-                      size="sm" 
-                      variant="outline" 
+                      size="icon" 
+                      variant="ghost" 
                       onClick={() => onViewDetails(cliente.id)}
-                      className="text-blue-500 hover:text-blue-700"
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                      aria-label="Dettagli"
+                      title="Visualizza dettagli"
                     >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Dettagli
+                      <Eye className="h-5 w-5" />
                     </Button>
                   )}
                   {onDeleteClient && (
                     <Button 
-                      size="sm" 
-                      variant="outline" 
+                      size="icon" 
+                      variant="ghost" 
                       onClick={() => onDeleteClient(cliente.id)}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                      aria-label="Elimina"
+                      title="Elimina cliente"
                     >
-                      <Trash className="h-4 w-4 mr-1" />
-                      Elimina
+                      <Trash className="h-5 w-5" />
                     </Button>
                   )}
                 </div>
