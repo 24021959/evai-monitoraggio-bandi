@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
-import { CloudIcon, FileSpreadsheet } from 'lucide-react';
+import { CloudIcon, FileSpreadsheet, HelpCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface GoogleSheetsConfigDialogProps {
   open: boolean;
@@ -74,6 +75,7 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
           <DialogTitle>Configura Google Sheets</DialogTitle>
           <DialogDescription>
             Inserisci l'URL del foglio Google Sheets per importare e sincronizzare le fonti.
+            Il foglio deve contenere una scheda chiamata "Lista Fonti".
           </DialogDescription>
         </DialogHeader>
         
@@ -90,7 +92,7 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
               placeholder="https://docs.google.com/spreadsheets/d/..."
             />
             <p className="text-xs text-gray-500">
-              Inserisci l'URL completo del foglio Google Sheets. Assicurati che il foglio sia accessibile pubblicamente o condiviso con l'account che utilizzi.
+              Inserisci l'URL completo del foglio Google Sheets. Assicurati che il foglio contenga una scheda denominata "Lista Fonti" e che sia accessibile pubblicamente.
             </p>
           </div>
           
@@ -109,6 +111,22 @@ export const GoogleSheetsConfigDialog: React.FC<GoogleSheetsConfigDialogProps> =
               Per poter aggiungere fonti al foglio, inserisci l'URL del Web App di Google Apps Script. Se non lo hai, dovrai creare uno script e pubblicarlo come webapp.
             </p>
           </div>
+
+          <Alert variant="default" className="bg-blue-50 border-blue-200">
+            <AlertTitle className="flex items-center">
+              <HelpCircle className="h-4 w-4 mr-1" />
+              Come configurare
+            </AlertTitle>
+            <AlertDescription className="text-xs">
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Assicurati che il tuo foglio Google abbia una scheda chiamata "Lista Fonti"</li>
+                <li>Nella prima riga inserisci intestazioni come: row_number, url, stato_elaborazione, data_ultimo_aggiornamento, nome, tipo</li>
+                <li>Crea uno script Google Apps Script usando il codice di esempio in docs/google-apps-script-example.js</li>
+                <li>Pubblica lo script come Web App (accesso "Anyone, even anonymous")</li>
+                <li>Copia l'URL generato nel campo "URL per l'aggiornamento"</li>
+              </ol>
+            </AlertDescription>
+          </Alert>
         </div>
         
         <DialogFooter>

@@ -56,24 +56,62 @@ function addFonteToSheet(fonte, sheetId) {
       };
     }
     
+    // Ottieni le intestazioni delle colonne dalla prima riga
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    Logger.log("Intestazioni foglio: " + headers.join(", "));
+    
     // Trova l'ultima riga con dati
     var lastRow = sheet.getLastRow();
     var nextRowNumber = lastRow + 1;
     
     // Prepara i dati da inserire
-    var rowData = [
-      nextRowNumber,  // row_number
-      fonte.url,      // url
-      fonte.stato_elaborazione || "da elaborare", // stato_elaborazione
-      new Date().toISOString().split('T')[0],    // data_ultimo_aggiornamento
-      fonte.nome,     // nome (colonna opzionale)
-      fonte.tipo      // tipo (colonna opzionale)
-    ];
+    // Verifica le colonne disponibili e mappa i dati di conseguenza
+    var rowData = [];
+    
+    // Per compatibilità sia con il vecchio che con il nuovo formato
+    if (headers.includes("row_number") || headers.includes("id_number")) {
+      rowData.push(nextRowNumber); // row_number o id_number
+    }
+    
+    // Aggiungi sempre l'URL (essenziale)
+    rowData.push(fonte.url);
+    
+    // Se esiste la colonna stato_elaborazione
+    if (headers.includes("stato_elaborazione")) {
+      rowData.push(fonte.stato || "da elaborare");
+    }
+    
+    // Se esiste la colonna data_ultimo_aggiornamento
+    if (headers.includes("data_ultimo_aggiornamento")) {
+      rowData.push(new Date().toISOString().split('T')[0]);
+    }
+    
+    // Se esiste la colonna nome
+    if (headers.includes("nome")) {
+      rowData.push(fonte.nome || "");
+    }
+    
+    // Se esiste la colonna tipo
+    if (headers.includes("tipo")) {
+      rowData.push(fonte.tipo || "altro");
+    }
+    
+    // Se non ci sono intestazioni, usa un formato di base
+    if (headers.length === 0 || rowData.length === 0) {
+      rowData = [
+        nextRowNumber,
+        fonte.url,
+        fonte.stato || "da elaborare",
+        new Date().toISOString().split('T')[0],
+        fonte.nome || "",
+        fonte.tipo || "altro"
+      ];
+    }
     
     // Scrivi la nuova riga nel foglio
     sheet.getRange(nextRowNumber, 1, 1, rowData.length).setValues([rowData]);
     
-    Logger.log("Fonte aggiunta con successo alla riga " + nextRowNumber);
+    Logger.log("Fonte aggiunta con successo alla riga " + nextRowNumber + ". Dati: " + rowData.join(", "));
     
     return { 
       success: true, 

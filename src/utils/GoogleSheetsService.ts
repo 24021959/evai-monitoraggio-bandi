@@ -146,69 +146,37 @@ export class GoogleSheetsService {
 
   public async updateFonteInSheet(fonte: Fonte): Promise<boolean> {
     try {
-      const url = this.getSheetUrl();
-      
-      if (!url) {
-        console.error('URL del foglio Google non configurato');
-        return false;
-      }
-
-      // Extract the sheet ID from the URL
-      const sheetId = this.extractSheetId(url);
-      if (!sheetId) {
-        console.error('ID del foglio non valido');
-        return false;
-      }
-
       console.log('Tentativo di aggiungere fonte al foglio Google:', fonte);
       
-      // Metodo diretto: utilizziamo Google Apps Script Web App
       const updateAppUrl = localStorage.getItem('googleSheetUpdateUrl');
       
       if (!updateAppUrl) {
         console.log('URL per aggiornamento Google Sheet non configurato');
-        
-        // Tentativo fallback: proviamo ad aggiungere direttamente tramite fetch con CORS proxy
-        try {
-          // Utilizziamo un approccio alternativo: inserimento diretto in CSV
-          const newRow = [
-            fonte.id,
-            fonte.url,
-            fonte.stato || 'attivo',
-            new Date().toISOString(),
-            fonte.nome,
-            fonte.tipo
-          ];
-          
-          const formattedRow = newRow.map(val => 
-            typeof val === 'string' && val.includes(',') ? `"${val}"` : val
-          ).join(',');
-          
-          // Utilizziamo un servizio CORS proxy per evitare problemi di CORS
-          const corsProxyUrl = 'https://corsproxy.io/?';
-          const appendUrl = `${corsProxyUrl}${encodeURIComponent(
-            `https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse?entry.ID1=${encodeURIComponent(fonte.url)}&entry.ID2=${encodeURIComponent(fonte.nome)}&entry.ID3=${encodeURIComponent(fonte.tipo)}&submit=Submit`
-          )}`;
-          
-          console.log('Tentativo di inviare i dati tramite proxy CORS:', appendUrl);
-          
-          // Nota: questo metodo richiede un Google Form collegato al foglio
-          // Questo è solo un esempio e necessita di configurazione
-          const response = await fetch(appendUrl, {
-            method: 'GET',
-            mode: 'cors',
-          });
-          
-          console.log('Risposta dal tentativo di aggiunta:', response.status);
-          return response.ok;
-        } catch (fallbackError) {
-          console.error('Fallback per aggiunta fonte fallito:', fallbackError);
-          return false;
-        }
+        return false;
+      }
+      
+      // Estrai l'ID del foglio se disponibile
+      const sheetUrl = this.getSheetUrl();
+      let sheetId = null;
+      
+      if (sheetUrl) {
+        sheetId = this.extractSheetId(sheetUrl);
       }
       
       // Approccio principale: utilizzo dell'App Script
       console.log('Invio dati a Google Apps Script:', updateAppUrl);
+      console.log('Dati da inviare:', {
+        sheetId,
+        action: 'updateFonte',
+        fonte: {
+          id: fonte.id,
+          url: fonte.url,
+          nome: fonte.nome, 
+          tipo: fonte.tipo,
+          stato: fonte.stato || 'attivo'
+        }
+      });
+      
       const response = await fetch(updateAppUrl, {
         method: 'POST',
         headers: {
@@ -218,13 +186,10 @@ export class GoogleSheetsService {
           sheetId,
           action: 'updateFonte',
           fonte: {
-            id: fonte.id,
             url: fonte.url,
             nome: fonte.nome, 
             tipo: fonte.tipo,
-            stato: fonte.stato || 'attivo',
-            stato_elaborazione: fonte.stato || 'attivo',
-            data_ultimo_aggiornamento: new Date().toISOString().split('T')[0]
+            stato: fonte.stato || 'attivo'
           }
         }),
       });
