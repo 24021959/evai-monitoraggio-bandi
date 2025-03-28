@@ -84,18 +84,22 @@ const Report = () => {
     // Convert to array and calculate percentages
     const bandoPerSettore = Array.from(settoriMap.entries())
       .map(([settore, count]) => ({
-        settore,
+        settore: settore.length > 15 ? settore.substring(0, 15) + '...' : settore,
+        settoreOriginal: settore,
+        conteggio: count,
         percentuale: Math.round((count / bandi.length) * 100)
       }))
-      .sort((a, b) => b.percentuale - a.percentuale)
+      .sort((a, b) => b.conteggio - a.conteggio)
       .slice(0, 8); // Take top 8 sectors
     
     // Match per cliente
     const clientiMatchMap = new Map();
     matches.forEach(match => {
-      const clienteId = match.cliente.id;
-      const count = clientiMatchMap.get(clienteId) || 0;
-      clientiMatchMap.set(clienteId, count + 1);
+      const clienteId = match.cliente?.id;
+      if (clienteId) {
+        const count = clientiMatchMap.get(clienteId) || 0;
+        clientiMatchMap.set(clienteId, count + 1);
+      }
     });
     
     // Convert to array and calculate percentages
@@ -103,11 +107,13 @@ const Report = () => {
       .map(([clienteId, count]) => {
         const cliente = clienti.find(c => c.id === clienteId) || { nome: 'N/D' };
         return {
-          cliente: cliente.nome,
+          cliente: cliente.nome.length > 20 ? cliente.nome.substring(0, 20) + '...' : cliente.nome,
+          clienteOriginal: cliente.nome,
+          conteggio: count,
           percentuale: Math.round((count / matches.length) * 100)
         };
       })
-      .sort((a, b) => b.percentuale - a.percentuale)
+      .sort((a, b) => b.conteggio - a.conteggio)
       .slice(0, 5); // Take top 5 clients
     
     setStatistiche({
@@ -191,6 +197,21 @@ const Report = () => {
     });
   };
 
+  // Custom tooltip formatter per il grafico a barre
+  const customBarTooltipFormatter = (value, name, props) => {
+    const item = props.payload;
+    return [`${item.conteggio} bandi (${value}%)`, 'Percentuale'];
+  };
+  
+  // Custom tooltip formatter per il grafico a torta
+  const customPieTooltipFormatter = (value, name, props) => {
+    const item = props.payload;
+    if (item.clienteOriginal) {
+      return [`${item.conteggio} match (${value}%)`, item.clienteOriginal];
+    }
+    return [`${value}%`, name];
+  };
+
   // Preparazione dati per grafico a torta distribuzione bandi
   const distribuzioneBandiData = [
     { name: 'Europei', value: statistiche.distribuzioneBandi.europei, color: '#3b82f6' },
@@ -216,12 +237,33 @@ const Report = () => {
                     <BarChart
                       data={statistiche.bandoPerSettore}
                       layout="vertical"
-                      margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                      margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
                     >
                       <XAxis type="number" />
-                      <YAxis dataKey="settore" type="category" width={80} />
-                      <Tooltip formatter={(value) => [`${value}%`, 'Percentuale']} />
-                      <Bar dataKey="percentuale" fill="#3b82f6" barSize={20} />
+                      <YAxis 
+                        dataKey="settore" 
+                        type="category" 
+                        width={120} 
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        formatter={customBarTooltipFormatter}
+                        labelFormatter={(label) => {
+                          const item = statistiche.bandoPerSettore.find(s => s.settore === label);
+                          return item ? item.settoreOriginal : label;
+                        }}
+                      />
+                      <Bar 
+                        dataKey="percentuale" 
+                        fill="#3b82f6" 
+                        barSize={20}
+                        label={{ 
+                          position: 'right',
+                          formatter: (value) => `${value}%`,
+                          fill: '#1f2937',
+                          fontSize: 12
+                        }}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -246,12 +288,17 @@ const Report = () => {
                         outerRadius={120}
                         fill="#8884d8"
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        labelLine={{ stroke: '#666', strokeWidth: 1 }}
                       >
                         {statistiche.matchPerCliente.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={['#3b82f6', '#f59e0b', '#22c55e', '#ef4444', '#8b5cf6'][index % 5]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`${value}%`, 'Percentuale']} />
+                      <Tooltip formatter={customPieTooltipFormatter} />
+                      <Legend formatter={(value, entry, index) => {
+                        const item = statistiche.matchPerCliente[index];
+                        return item ? item.clienteOriginal : value;
+                      }} />
                     </RePieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -288,7 +335,7 @@ const Report = () => {
                   <li>Settori di applicazione</li>
                 </ul>
                 <Button 
-                  className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600"
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={handleDownloadBandiCSV}
                 >
                   <Download className="h-4 w-4" />
@@ -319,7 +366,7 @@ const Report = () => {
                   <li>Data di scadenza del bando</li>
                 </ul>
                 <Button 
-                  className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600"
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={handleDownloadMatchCSV}
                 >
                   <Download className="h-4 w-4" />
