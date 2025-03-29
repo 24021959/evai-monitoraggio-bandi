@@ -6,8 +6,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Configurazione base condizionale per sviluppo e produzione
-  base: mode === 'production' ? "/evai-monitoraggio-bandi/" : "/",
+  // Configurazione base semplice
+  base: "/",
   server: {
     host: "::",
     port: 8080,

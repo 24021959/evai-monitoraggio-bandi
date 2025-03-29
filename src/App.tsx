@@ -20,15 +20,13 @@ import NotFound from "./pages/NotFound";
 import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();
-// Determina il basename corretto a seconda dell'ambiente
-const basename = import.meta.env.MODE === 'production' ? '/evai-monitoraggio-bandi' : '';
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename={basename}>
+      <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Index />} />
