@@ -45,7 +45,7 @@ const App = () => (
             <Route path="report" element={<Report />} />
             <Route path="fonti" element={<Fonti />} />
             <Route path="importa-bandi" element={<ImportaBandi />} />
-            <Route path="/admin" element={<AdminSettings />} />
+            <Route path="admin" element={<AdminSettings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

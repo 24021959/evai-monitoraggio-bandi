@@ -103,7 +103,7 @@ export interface Fonte {
   stato?: string;
 }
 
-// Interface for data items used in charts
+// Interface for data items used in charts with index signature
 export interface DataItem {
   [key: string]: string | number | undefined;
   periodo?: string;
