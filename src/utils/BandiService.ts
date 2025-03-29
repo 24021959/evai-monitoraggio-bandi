@@ -34,6 +34,25 @@ export class BandiService {
       return [];
     }
   }
+  
+  /**
+   * Cerca bandi per titolo
+   */
+  static async getBandiByTitle(searchTerm: string): Promise<Bando[]> {
+    try {
+      if (!searchTerm) return [];
+      
+      const bandi = await SupabaseBandiService.getBandiCombinati();
+      
+      const normalizedSearchTerm = searchTerm.toLowerCase().trim();
+      return bandi.filter(bando => 
+        bando.titolo.toLowerCase().includes(normalizedSearchTerm)
+      );
+    } catch (error) {
+      console.error('Errore nella ricerca dei bandi per titolo:', error);
+      return [];
+    }
+  }
 }
 
 export default BandiService;

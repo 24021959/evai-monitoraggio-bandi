@@ -1,12 +1,11 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, RotateCw, FileText, Filter, Calendar } from 'lucide-react';
+import { Search, RotateCw, FileText, Filter, Calendar, X } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Bando, Cliente } from "@/types";
 import MatchTable from "@/components/MatchTable";
@@ -28,9 +27,26 @@ const MatchPage = () => {
   const [searchResults, setSearchResults] = useState<Bando[]>([]);
   const [activeTab, setActiveTab] = useState<string>('tutti');
   const [isGeneratingMatches, setIsGeneratingMatches] = useState<boolean>(false);
+  const [isBandoDropdownOpen, setIsBandoDropdownOpen] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && 
+          !dropdownRef.current.contains(event.target as Node) && 
+          searchInputRef.current && 
+          !searchInputRef.current.contains(event.target as Node)) {
+        setIsBandoDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -91,8 +107,20 @@ const MatchPage = () => {
       );
       setSearchResults(results);
     } else {
-      setSearchResults([]);
+      setSearchResults(bandi);
     }
+  };
+
+  const handleBandoClick = (bando: Bando) => {
+    setSelectedBando(bando.id);
+    setSearchTerm(bando.titolo);
+    setIsBandoDropdownOpen(false);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setSelectedBando('');
+    setSearchResults([]);
   };
 
   const handleMatch = async () => {
@@ -119,10 +147,8 @@ const MatchPage = () => {
 
     setIsLoading(true);
     try {
-      // Calcoliamo il punteggio di compatibilità con l'algoritmo avanzato
       const { punteggio, dettaglioMatch } = MatchService.calculateMatch(bando, cliente);
       
-      // Creiamo il match
       const matchResult = {
         id: crypto.randomUUID(),
         cliente: {
@@ -141,7 +167,6 @@ const MatchPage = () => {
         dettaglioMatch
       };
 
-      // Salviamo in Supabase
       const success = await SupabaseMatchService.saveMatch({
         id: matchResult.id,
         clienteId: cliente.id,
@@ -151,7 +176,6 @@ const MatchPage = () => {
       });
 
       if (success) {
-        // Aggiorniamo la lista di match
         setMatches([matchResult, ...matches]);
         
         toast({
@@ -159,7 +183,6 @@ const MatchPage = () => {
           description: `Match creato con compatibilità del ${punteggio}%`,
         });
         
-        // Reset del form
         setSelectedBando('');
         setSelectedCliente('');
         setSearchTerm('');
@@ -175,7 +198,7 @@ const MatchPage = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handleExportCSV = () => {
     if (matches.length === 0) {
       toast({
@@ -265,39 +288,67 @@ const MatchPage = () => {
             <CardContent className="pt-6">
               <div className="grid gap-4">
                 <div>
-                  <Label htmlFor="bando" className="text-slate-700">Bando</Label>
+                  <Label htmlFor="bando" className="text-slate-700 mb-1.5 block">Bando</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                     <Input
+                      ref={searchInputRef}
                       type="text"
                       id="bando"
                       placeholder="Cerca bando per titolo..."
                       value={searchTerm}
                       onChange={handleSearch}
-                      className="pl-10"
+                      onFocus={() => setIsBandoDropdownOpen(true)}
+                      className="pl-10 pr-10"
+                      autoComplete="off"
                     />
+                    {searchTerm && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-1 top-1 h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={clearSearch}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   
-                  {searchTerm && searchResults.length > 0 && (
-                    <Card className="mt-2 absolute z-10 w-full max-w-md">
-                      <CardContent className="p-1">
-                        <ul className="max-h-48 overflow-y-auto">
-                          {searchResults.map(bando => (
-                            <li
-                              key={bando.id}
-                              className="hover:bg-slate-100 p-2 cursor-pointer rounded-md text-sm"
-                              onClick={() => {
-                                setSelectedBando(bando.id);
-                                setSearchTerm(bando.titolo);
-                                setSearchResults([]);
-                              }}
-                            >
-                              {bando.titolo}
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
+                  {isBandoDropdownOpen && (
+                    <div ref={dropdownRef} className="absolute z-10 w-full max-w-md">
+                      <Card className="mt-1 shadow-lg">
+                        <CardContent className="p-1">
+                          <div className="max-h-60 overflow-y-auto">
+                            {searchResults.length > 0 ? (
+                              <ul className="divide-y divide-slate-100">
+                                {searchResults.map(bando => (
+                                  <li
+                                    key={bando.id}
+                                    className="hover:bg-slate-50 p-2 cursor-pointer rounded-md text-sm"
+                                    onClick={() => handleBandoClick(bando)}
+                                  >
+                                    <div className="font-medium text-slate-800">{bando.titolo}</div>
+                                    <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                      <span className={`inline-block w-2 h-2 rounded-full ${
+                                        bando.tipo === 'europeo' ? 'bg-blue-500' : 
+                                        bando.tipo === 'statale' ? 'bg-green-500' :
+                                        bando.tipo === 'regionale' ? 'bg-teal-500' : 'bg-gray-500'
+                                      }`}></span>
+                                      {bando.fonte} · Scadenza: {new Date(bando.scadenza).toLocaleDateString('it-IT')}
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="p-4 text-center text-slate-500">
+                                Nessun bando trovato
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   )}
                 </div>
                 
