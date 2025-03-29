@@ -1,5 +1,19 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { v4 as uuidv4 } from 'uuid';
+import { Fonte, Bando } from '@/types';
+
+// Definizione dei tipi di risposta
+interface CrawlResponse {
+  success: boolean;
+  data: any;
+  message?: string;
+}
+
+interface ErrorResponse {
+  success: boolean;
+  message: string;
+  error?: any;
+}
 
 // Function to determine fonte type based on URL
 function determineFonteType(url: string): 'europeo' | 'statale' | 'regionale' | 'altro' {

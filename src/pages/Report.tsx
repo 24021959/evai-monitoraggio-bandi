@@ -1,58 +1,109 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar"
-import { Button } from "@/components/ui/button"
-import { CalendarIcon, Download, FileText, FileJson } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
-import { addDays, format } from "date-fns"
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
-import { useToast } from "@/components/ui/use-toast"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useQuery } from "@tanstack/react-query"
-import SupabaseReportService from "@/utils/SupabaseReportService"
-import ChartContainer from "@/components/ChartContainer";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon, Download, FileText, FileJson, PieChart as PieChartIcon, BarChart as BarChartIcon, LineChart as LineChartIcon, MapPin } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { addDays, format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import SupabaseReportService from "@/utils/SupabaseReportService";
 import StatCard from "@/components/StatCard";
-import { DataTable } from "@/components/ui/data-table";
+import StatisticheCard from "@/components/StatisticheCard";
+import LineChartCard from "@/components/LineChartCard";
+import BarChartCard from "@/components/BarChartCard";
+import DataTableCard from "@/components/DataTableCard";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1', '#a4de6c', '#d0ed57'];
+// Colonne per la tabella dei settori
+const sectorColumns = [
+  {
+    accessorKey: "settore",
+    header: "Settore",
+  },
+  {
+    accessorKey: "numeroBandi",
+    header: "Bandi",
+  },
+  {
+    accessorKey: "numeroClienti",
+    header: "Clienti",
+  },
+  {
+    accessorKey: "numeroMatch",
+    header: "Match",
+  },
+];
+
+// Colonne per la tabella di performance
+const performanceColumns = [
+  {
+    accessorKey: "cliente",
+    header: "Cliente",
+  },
+  {
+    accessorKey: "settore",
+    header: "Settore",
+  },
+  {
+    accessorKey: "numBandiCompatibili",
+    header: "Bandi Compatibili",
+  },
+  {
+    accessorKey: "compatibilitaMedia",
+    header: "Compatibilità Media %",
+  },
+];
+
+// Colonne per la tabella geografica
+const geographicColumns = [
+  {
+    accessorKey: "regione",
+    header: "Regione",
+  },
+  {
+    accessorKey: "numeroClienti",
+    header: "Clienti",
+  },
+  {
+    accessorKey: "numeroBandi",
+    header: "Bandi",
+  },
+  {
+    accessorKey: "percentuale",
+    header: "Percentuale %",
+  },
+];
+
+// Colonne per dettaglio mensile
+const monthlyColumns = [
+  {
+    accessorKey: "periodo",
+    header: "Periodo",
+  },
+  {
+    accessorKey: "bandiCreati",
+    header: "Bandi Creati",
+  },
+  {
+    accessorKey: "clientiCreati",
+    header: "Clienti Creati",
+  },
+  {
+    accessorKey: "matchCreati",
+    header: "Match Creati",
+  },
+];
 
 const Report = () => {
-  const { toast } = useToast()
-  const [startDate, setStartDate] = useState<Date | undefined>(addDays(new Date(), -30))
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date())
-  const [activeTab, setActiveTab] = useState("dashboard")
-  const [isGenerating, setIsGenerating] = useState(false)
+  const { toast } = useToast();
+  const [startDate, setStartDate] = useState<Date | undefined>(addDays(new Date(), -30));
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: reportData, isLoading: isReportLoading, refetch } = useQuery({
     queryKey: ['advancedReport'],
@@ -149,206 +200,44 @@ const Report = () => {
     });
   };
 
-  const renderTimeAnalysisChart = () => {
-    if (!reportData?.analisiTemporale || reportData.analisiTemporale.length === 0) {
-      return <p className="text-center py-8 text-muted-foreground">Nessun dato disponibile</p>;
-    }
-
-    return (
-      <ResponsiveContainer width="100%" height={350}>
-        <LineChart
-          data={reportData.analisiTemporale}
-          margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="periodo" />
-          <YAxis />
-          <Tooltip formatter={(value) => value} />
-          <Legend />
-          <Line type="monotone" dataKey="bandiCreati" stroke="#8884d8" activeDot={{ r: 8 }} name="Bandi" />
-          <Line type="monotone" dataKey="clientiCreati" stroke="#82ca9d" name="Clienti" />
-          <Line type="monotone" dataKey="matchCreati" stroke="#ffc658" name="Match" />
-        </LineChart>
-      </ResponsiveContainer>
-    );
+  const prepareBandiDistributionData = () => {
+    if (!reportData) return [];
+    
+    return [
+      { name: "Europei", value: reportData.distribuzioneBandi.europei },
+      { name: "Statali", value: reportData.distribuzioneBandi.statali },
+      { name: "Regionali", value: reportData.distribuzioneBandi.regionali },
+    ];
   };
-
-  const renderSectorAnalysisChart = () => {
-    if (!reportData?.analisiSettoriale || reportData.analisiSettoriale.length === 0) {
-      return <p className="text-center py-8 text-muted-foreground">Nessun dato disponibile</p>;
-    }
-
-    return (
-      <ResponsiveContainer width="100%" height={350}>
-        <BarChart
-          data={reportData.analisiSettoriale}
-          margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="settore" angle={-45} textAnchor="end" height={70} />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="numeroBandi" name="Bandi" fill="#8884d8" />
-          <Bar dataKey="numeroClienti" name="Clienti" fill="#82ca9d" />
-          <Bar dataKey="numeroMatch" name="Match" fill="#ffc658" />
-        </BarChart>
-      </ResponsiveContainer>
-    );
-  };
-
-  const renderPerformanceMatchChart = () => {
-    if (!reportData?.performanceMatch || reportData.performanceMatch.length === 0) {
-      return <p className="text-center py-8 text-muted-foreground">Nessun dato disponibile</p>;
-    }
-
-    return (
-      <ResponsiveContainer width="100%" height={350}>
-        <BarChart
-          data={reportData.performanceMatch}
-          margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="cliente" angle={-45} textAnchor="end" height={70} />
-          <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-          <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-          <Tooltip />
-          <Legend />
-          <Bar yAxisId="left" dataKey="numBandiCompatibili" name="Bandi Compatibili" fill="#8884d8" />
-          <Bar yAxisId="right" dataKey="compatibilitaMedia" name="Compatibilità Media %" fill="#82ca9d" />
-        </BarChart>
-      </ResponsiveContainer>
-    );
-  };
-
-  const renderGeographicAnalysisChart = () => {
-    if (!reportData?.analisiGeografica || reportData.analisiGeografica.length === 0) {
-      return <p className="text-center py-8 text-muted-foreground">Nessun dato disponibile</p>;
-    }
-
-    return (
-      <ResponsiveContainer width="100%" height={350}>
-        <PieChart>
-          <Pie
-            data={reportData.analisiGeografica}
-            cx="50%"
-            cy="50%"
-            labelLine={true}
-            outerRadius={110}
-            fill="#8884d8"
-            dataKey="numeroClienti"
-            nameKey="regione"
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-          >
-            {reportData.analisiGeografica.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value, name, props) => [value, props.payload.regione]} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    );
-  };
-
-  const renderSectorDistributionChart = () => {
-    if (!reportData?.bandoPerSettore || reportData.bandoPerSettore.length === 0) {
-      return <p className="text-center py-8 text-muted-foreground">Nessun dato disponibile</p>;
-    }
-
-    return (
-      <ResponsiveContainer width="100%" height={350}>
-        <PieChart>
-          <Pie
-            data={reportData.bandoPerSettore}
-            cx="50%"
-            cy="50%"
-            labelLine={true}
-            outerRadius={110}
-            fill="#8884d8"
-            dataKey="percentuale"
-            nameKey="settore"
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-          >
-            {reportData.bandoPerSettore.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value) => `${value}%`} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    );
-  };
-
-  // Crea delle colonne per la tabella dei settori
-  const sectorColumns = [
-    {
-      accessorKey: "settore",
-      header: "Settore",
-    },
-    {
-      accessorKey: "numeroBandi",
-      header: "Bandi",
-    },
-    {
-      accessorKey: "numeroClienti",
-      header: "Clienti",
-    },
-    {
-      accessorKey: "numeroMatch",
-      header: "Match",
-    },
-  ];
-
-  // Crea delle colonne per la tabella di performance
-  const performanceColumns = [
-    {
-      accessorKey: "cliente",
-      header: "Cliente",
-    },
-    {
-      accessorKey: "settore",
-      header: "Settore",
-    },
-    {
-      accessorKey: "numBandiCompatibili",
-      header: "Bandi Compatibili",
-    },
-    {
-      accessorKey: "compatibilitaMedia",
-      header: "Compatibilità Media %",
-    },
-  ];
-
-  // Crea delle colonne per la tabella geografica
-  const geographicColumns = [
-    {
-      accessorKey: "regione",
-      header: "Regione",
-    },
-    {
-      accessorKey: "numeroClienti",
-      header: "Clienti",
-    },
-    {
-      accessorKey: "numeroBandi",
-      header: "Bandi",
-    },
-    {
-      accessorKey: "percentuale",
-      header: "Percentuale %",
-    },
-  ];
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Dashboard Report</CardTitle>
-          <CardDescription>
-            Seleziona un intervallo di date per generare un report dettagliato.
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-2xl font-bold">Dashboard Report</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Analisi e statistiche dettagliate del sistema
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                onClick={generateReport} 
+                disabled={isGenerating || isReportLoading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isGenerating ? "Generazione..." : "Genera Report"}
+              </Button>
+              <Button 
+                onClick={saveReport} 
+                disabled={isGenerating || isReportLoading || !reportData}
+                variant="outline"
+              >
+                Salva Report
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
@@ -403,24 +292,12 @@ const Report = () => {
               </Popover>
             </div>
           </div>
-          <div className="flex flex-wrap gap-4">
-            <Button 
-              onClick={generateReport} 
-              disabled={isGenerating || isReportLoading}
-            >
-              {isGenerating ? "Generazione..." : "Genera Report"}
-            </Button>
-            <Button 
-              onClick={saveReport} 
-              disabled={isGenerating || isReportLoading || !reportData}
-              variant="outline"
-            >
-              Salva Report
-            </Button>
+          <div className="flex flex-wrap gap-2">
             <Button 
               onClick={exportToCSV} 
               disabled={isGenerating || isReportLoading || !reportData}
               variant="outline"
+              size="sm"
             >
               <FileText className="mr-2 h-4 w-4" />
               Esporta CSV
@@ -429,6 +306,7 @@ const Report = () => {
               onClick={exportToJSON} 
               disabled={isGenerating || isReportLoading || !reportData}
               variant="outline"
+              size="sm"
             >
               <FileJson className="mr-2 h-4 w-4" />
               Esporta JSON
@@ -454,12 +332,27 @@ const Report = () => {
         </Card>
       ) : reportData ? (
         <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 grid grid-cols-4 md:grid-cols-5">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="temporal">Analisi Temporale</TabsTrigger>
-            <TabsTrigger value="sectorial">Analisi Settoriale</TabsTrigger>
-            <TabsTrigger value="geographic">Analisi Geografica</TabsTrigger>
-            <TabsTrigger value="performance" className="hidden md:block">Performance Match</TabsTrigger>
+          <TabsList className="mb-6 grid grid-cols-2 md:grid-cols-5">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <PieChartIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="temporal" className="gap-2">
+              <LineChartIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Temporale</span>
+            </TabsTrigger>
+            <TabsTrigger value="sectorial" className="gap-2">
+              <BarChartIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Settoriale</span>
+            </TabsTrigger>
+            <TabsTrigger value="geographic" className="gap-2">
+              <MapPin className="h-4 w-4" />
+              <span className="hidden sm:inline">Geografica</span>
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="gap-2 hidden md:flex">
+              <PieChartIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Performance</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-6">
@@ -482,184 +375,154 @@ const Report = () => {
             </div>
 
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              <ChartContainer title="Distribuzione Bandi">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={[
-                      { name: "Europei", value: reportData.distribuzioneBandi.europei },
-                      { name: "Statali", value: reportData.distribuzioneBandi.statali },
-                      { name: "Regionali", value: reportData.distribuzioneBandi.regionali },
-                    ]}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8884d8" name="Bandi" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+              <BarChartCard
+                title="Distribuzione Bandi"
+                description="Suddivisione per tipologia"
+                data={prepareBandiDistributionData()}
+                bars={[
+                  { dataKey: "value", fill: "#8884d8", name: "Bandi" }
+                ]}
+                xAxisDataKey="name"
+              />
 
-              <ChartContainer title="Bandi per Settore">
-                {renderSectorDistributionChart()}
-              </ChartContainer>
+              <StatisticheCard
+                title="Bandi per Settore"
+                description="Distribuzione percentuale"
+                data={reportData.bandoPerSettore.map(item => ({
+                  name: item.settore,
+                  value: item.percentuale
+                }))}
+              />
             </div>
 
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ultimi 6 Mesi</CardTitle>
-                  <CardDescription>Trend di crescita di bandi, clienti e match</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {renderTimeAnalysisChart()}
-                </CardContent>
-              </Card>
+              <LineChartCard
+                title="Trend Ultimi 6 Mesi"
+                description="Andamento di bandi, clienti e match"
+                data={reportData.analisiTemporale}
+                lines={[
+                  { dataKey: "bandiCreati", stroke: "#8884d8", name: "Bandi" },
+                  { dataKey: "clientiCreati", stroke: "#82ca9d", name: "Clienti" },
+                  { dataKey: "matchCreati", stroke: "#ffc658", name: "Match" }
+                ]}
+                xAxisDataKey="periodo"
+              />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance di Match per Cliente</CardTitle>
-                  <CardDescription>Clienti con maggior compatibilità</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DataTable 
-                    columns={performanceColumns} 
-                    data={reportData.performanceMatch || []} 
-                    searchColumn="cliente"
-                  />
-                </CardContent>
-              </Card>
+              <DataTableCard
+                title="Top Clienti per Match"
+                description="Clienti con maggior compatibilità"
+                data={reportData.performanceMatch}
+                columns={performanceColumns}
+                searchColumn="cliente"
+              />
             </div>
           </TabsContent>
 
           <TabsContent value="temporal" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analisi Temporale</CardTitle>
-                <CardDescription>Trend dei dati negli ultimi 6 mesi</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderTimeAnalysisChart()}
-              </CardContent>
-            </Card>
+            <LineChartCard
+              title="Analisi Temporale"
+              description="Trend dei dati negli ultimi 6 mesi"
+              data={reportData.analisiTemporale}
+              lines={[
+                { dataKey: "bandiCreati", stroke: "#8884d8", name: "Bandi" },
+                { dataKey: "clientiCreati", stroke: "#82ca9d", name: "Clienti" },
+                { dataKey: "matchCreati", stroke: "#ffc658", name: "Match" }
+              ]}
+              xAxisDataKey="periodo"
+            />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Dettaglio Mensile</CardTitle>
-                <CardDescription>Dati mensili di bandi, clienti e match</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Periodo</TableHead>
-                      <TableHead>Bandi Creati</TableHead>
-                      <TableHead>Clienti Creati</TableHead>
-                      <TableHead>Match Creati</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reportData.analisiTemporale && reportData.analisiTemporale.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.periodo}</TableCell>
-                        <TableCell>{item.bandiCreati}</TableCell>
-                        <TableCell>{item.clientiCreati}</TableCell>
-                        <TableCell>{item.matchCreati}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <DataTableCard
+              title="Dettaglio Mensile"
+              description="Dati mensili di bandi, clienti e match"
+              data={reportData.analisiTemporale}
+              columns={monthlyColumns}
+            />
           </TabsContent>
 
           <TabsContent value="sectorial" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analisi Settoriale</CardTitle>
-                <CardDescription>Distribuzione di bandi e clienti per settore</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderSectorAnalysisChart()}
-              </CardContent>
-            </Card>
+            <BarChartCard
+              title="Analisi Settoriale"
+              description="Distribuzione di bandi e clienti per settore"
+              data={reportData.analisiSettoriale}
+              bars={[
+                { dataKey: "numeroBandi", fill: "#8884d8", name: "Bandi" },
+                { dataKey: "numeroClienti", fill: "#82ca9d", name: "Clienti" },
+                { dataKey: "numeroMatch", fill: "#ffc658", name: "Match" }
+              ]}
+              xAxisDataKey="settore"
+              xAxisAngle={-45}
+            />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Dettaglio Settori</CardTitle>
-                <CardDescription>Dati dettagliati per ogni settore</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataTable 
-                  columns={sectorColumns} 
-                  data={reportData.analisiSettoriale || []} 
-                  searchColumn="settore"
-                />
-              </CardContent>
-            </Card>
+            <DataTableCard
+              title="Dettaglio Settori"
+              description="Dati dettagliati per ogni settore"
+              data={reportData.analisiSettoriale}
+              columns={sectorColumns}
+              searchColumn="settore"
+            />
           </TabsContent>
 
           <TabsContent value="geographic" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analisi Geografica</CardTitle>
-                <CardDescription>Distribuzione regionale dei clienti</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderGeographicAnalysisChart()}
-              </CardContent>
-            </Card>
+            <StatisticheCard
+              title="Analisi Geografica"
+              description="Distribuzione regionale dei clienti"
+              data={reportData.analisiGeografica.map(item => ({
+                name: item.regione,
+                value: item.numeroClienti
+              }))}
+            />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Dettaglio Regioni</CardTitle>
-                <CardDescription>Dati dettagliati per ogni regione</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataTable 
-                  columns={geographicColumns} 
-                  data={reportData.analisiGeografica || []} 
-                  searchColumn="regione"
-                />
-              </CardContent>
-            </Card>
+            <DataTableCard
+              title="Dettaglio Regioni"
+              description="Dati dettagliati per ogni regione"
+              data={reportData.analisiGeografica}
+              columns={geographicColumns}
+              searchColumn="regione"
+            />
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance di Match</CardTitle>
-                <CardDescription>Analisi delle prestazioni dei match per cliente</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderPerformanceMatchChart()}
-              </CardContent>
-            </Card>
+            <BarChartCard
+              title="Performance di Match"
+              description="Analisi delle prestazioni dei match per cliente"
+              data={reportData.performanceMatch}
+              bars={[
+                { dataKey: "numBandiCompatibili", fill: "#8884d8", name: "Bandi Compatibili", yAxisId: "left" },
+                { dataKey: "compatibilitaMedia", fill: "#82ca9d", name: "Compatibilità Media %", yAxisId: "right" }
+              ]}
+              xAxisDataKey="cliente"
+              xAxisAngle={-45}
+              showSecondYAxis={true}
+            />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Dettaglio Performance</CardTitle>
-                <CardDescription>Dati dettagliati delle performance per ogni cliente</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataTable 
-                  columns={performanceColumns} 
-                  data={reportData.performanceMatch || []} 
-                  searchColumn="cliente"
-                />
-              </CardContent>
-            </Card>
+            <DataTableCard
+              title="Dettaglio Performance"
+              description="Dati dettagliati delle performance per ogni cliente"
+              data={reportData.performanceMatch}
+              columns={performanceColumns}
+              searchColumn="cliente"
+            />
           </TabsContent>
         </Tabs>
       ) : (
-        <Card>
+        <Card className="bg-slate-50 border-dashed">
           <CardHeader>
-            <CardTitle>Nessun Report</CardTitle>
-            <CardDescription>Genera un report per visualizzare i dati.</CardDescription>
+            <CardTitle>Benvenuto nella pagina dei Report</CardTitle>
+            <CardDescription>Genera un report per visualizzare analisi dettagliate dei dati del sistema.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p>Seleziona un intervallo di date e clicca su "Genera Report" per visualizzare i dati.</p>
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+            <PieChartIcon className="h-16 w-16 mb-6 text-blue-500 opacity-70" />
+            <p className="mb-4 text-slate-600 max-w-md">
+              Seleziona un intervallo di date e clicca su "Genera Report" per visualizzare statistiche e analisi interattive.
+            </p>
+            <Button 
+              onClick={generateReport} 
+              disabled={isGenerating}
+              size="lg"
+              className="mt-2 bg-blue-600 hover:bg-blue-700"
+            >
+              {isGenerating ? "Generazione..." : "Genera Report"}
+            </Button>
           </CardContent>
         </Card>
       )}

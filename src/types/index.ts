@@ -1,48 +1,33 @@
-
-export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro' | 'test';
-
 export interface Bando {
   id: string;
-  titolo: string;
   fonte: string;
+  url: string;
+  titolo: string;
   descrizione?: string;
-  descrizioneCompleta?: string;
-  tipo: 'europeo' | 'statale' | 'regionale' | 'altro';
-  settori: string[];
+  tipo: string;
+  settori?: string[];
+  regioni?: string[];
   scadenza: string;
-  importoMin?: number;
-  importoMax?: number;
-  url?: string;
-  
-  dataEstrazione?: string;
-  requisiti?: string;
-  scadenzaDettagliata?: string;
-  budgetDisponibile?: string;
-  modalitaPresentazione?: string;
-  ultimiAggiornamenti?: string;
+  budget?: number;
+  dataInserimento: string;
+  modificato: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Cliente {
   id: string;
   nome: string;
-  settore: string;
-  regione: string;
-  provincia: string;
-  fatturato: number;
-  interessiSettoriali: string[];
-  dipendenti: number;
   email: string;
   telefono?: string;
-  annoFondazione?: number;
-  formaGiuridica?: string;
-  codiceATECO?: string;
-}
-
-export interface Fonte {
-  id: string;
-  nome: string;
-  url: string;
-  tipo: TipoBando;
+  settore: string;
+  interessiSettoriali: string[];
+  regione: string;
+  dataInserimento: string;
+  note?: string;
+  userId?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Match {
@@ -51,10 +36,8 @@ export interface Match {
   bandoId: string;
   compatibilita: number;
   notificato: boolean;
-  // Campi aggiunti per la visualizzazione, opzionali perché non tutti i contesti li utilizzano
-  bando_titolo?: string;
-  cliente_nome?: string;
-  data_creazione?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Statistica {
@@ -66,12 +49,14 @@ export interface Statistica {
     statali: number;
     regionali: number;
   };
-  bandoPerSettore: {
-    settore: string;
-    percentuale: number;
-  }[];
-  matchPerCliente: {
-    cliente: string;
-    percentuale: number;
-  }[];
+  bandoPerSettore: { settore: string, percentuale: number }[];
+  matchPerCliente: { cliente: string, percentuale: number }[];
+}
+
+export interface Fonte {
+  id: string;
+  nome: string;
+  url: string;
+  tipo: string;
+  stato?: string;
 }
