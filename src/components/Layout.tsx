@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import { 
   BarChart3, 
   FileText, 
@@ -13,24 +13,17 @@ import {
 } from 'lucide-react';
 
 const Header = () => {
-  // Determina il percorso base per le immagini in base all'ambiente
-  const basePath = process.env.NODE_ENV === 'production' ? '/baf31591-0e28-4267-94a8-ed6bf96b1284' : '';
-  const navigate = useNavigate();
-  
   return (
     <header className="w-full bg-white shadow-sm py-4 px-8">
       <div className="container mx-auto flex items-center justify-center">
-        <div 
-          className="flex items-center cursor-pointer" 
-          onClick={() => navigate('/')}
-        >
+        <Link to="/" className="flex items-center cursor-pointer">
           <img 
-            src={`${basePath}/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png`}
+            src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
             alt="EV-AI Technologies Logo" 
             className="h-12"
           />
           <h1 className="ml-4 text-2xl font-semibold text-gray-800">EV-AI Monitoraggio Bandi</h1>
-        </div>
+        </Link>
       </div>
     </header>
   );
@@ -143,11 +136,8 @@ const Sidebar = () => {
 };
 
 const Layout = () => {
-  const location = useLocation();
-  
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header is now always visible on all pages */}
       <Header />
       
       <div className="flex flex-1">

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -20,11 +20,8 @@ import NotFound from "./pages/NotFound";
 import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();
-
-// Determina il percorso base dal tuo ambiente
-const basename = process.env.NODE_ENV === 'production' 
-  ? '/baf31591-0e28-4267-94a8-ed6bf96b1284' 
-  : '/';
+// Determina il basename corretto a seconda dell'ambiente
+const basename = import.meta.env.MODE === 'production' ? '/evai-monitoraggio-bandi' : '';
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,7 +42,7 @@ const App = () => (
             <Route path="report" element={<Report />} />
             <Route path="fonti" element={<Fonti />} />
             <Route path="importa-bandi" element={<ImportaBandi />} />
-            <Route path="admin" element={<AdminSettings />} />
+            <Route path="/admin" element={<AdminSettings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

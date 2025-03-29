@@ -1,4 +1,3 @@
-
 export interface Bando {
   id: string;
   titolo: string;
@@ -36,7 +35,7 @@ export interface Cliente {
   email: string;
   settore: string;
   regione: string;
-  provincia?: string;
+  provincia: string;
   created_at?: string;
   interessisettoriali?: string[];
   interessiSettoriali?: string[];
@@ -60,26 +59,20 @@ export interface Cliente {
   competenzeDipendenti?: string;
   partnership?: string;
   certificazioni?: string;
-  note?: string;
-  interessi?: string[];
 }
 
 export interface Match {
   id: string;
-  cliente_id: string;
-  clienteId?: string;
-  bando_id: string;
-  bandoId?: string;
-  compatibilita?: number;
-  punteggio?: number;
-  notificato?: boolean;
+  clienteId: string;
+  bandoId: string;
+  compatibilita: number;
+  notificato: boolean;
   created_at?: string;
   updated_at?: string;
   archiviato?: boolean;
   bando_titolo?: string; 
   cliente_nome?: string;
   data_creazione?: string;
-  note?: string;
 }
 
 export interface Statistica {
@@ -103,7 +96,7 @@ export interface Fonte {
   stato?: string;
 }
 
-// Interface for data items used in charts with index signature
+// Interface for data items used in charts
 export interface DataItem {
   [key: string]: string | number | undefined;
   periodo?: string;
@@ -129,17 +122,4 @@ export interface ReportPerformanceMatch extends DataItem {
   matchAlta: number;
   matchMedia: number;
   matchBassa: number;
-}
-
-export interface ReportAvanzato {
-  bandiAttivi: number;
-  numeroClienti: number;
-  matchRecenti: number;
-  distribuzioneBandi: {
-    europei: number;
-    statali: number;
-    regionali: number;
-  };
-  bandoPerSettore: { settore: string, percentuale: number }[];
-  matchPerCliente: { cliente: string, percentuale: number }[];
 }
