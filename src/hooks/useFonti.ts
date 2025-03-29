@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -69,9 +68,24 @@ export function useFonti() {
   
   const handleDelete = async (id: string) => {
     try {
+      // Trova la fonte prima di eliminarla per poterla inviare a n8n
+      const fonteToDelete = fonti.find(fonte => fonte.id === id);
+
       const success = await SupabaseFontiService.deleteFonte(id);
       if (success) {
         setFonti(fonti.filter(fonte => fonte.id !== id));
+        
+        // Se la fonte è stata trovata e abbiamo l'URL del webhook, notifichiamo n8n
+        if (fonteToDelete && localStorage.getItem('n8nWebhookUrl')) {
+          try {
+            // Importa il servizio qui per evitare cicli di dipendenza
+            const WebhookService = (await import('@/utils/WebhookService')).default;
+            await WebhookService.sendToWebhook(fonteToDelete, 'delete');
+          } catch (webhookError) {
+            console.error("Errore durante la notifica n8n dell'eliminazione:", webhookError);
+          }
+        }
+        
         toast({
           title: "Fonte eliminata",
           description: "La fonte è stata eliminata con successo",

@@ -10,8 +10,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { FonteRow } from './fonti/FonteRow';
-import { GoogleSheetsConfigDialog } from './fonti/GoogleSheetsConfigDialog';
-import { UpdateSheetDialog } from './fonti/UpdateSheetDialog';
+import { N8nWebhookConfigDialog } from './fonti/N8nWebhookConfigDialog';
 import { FontiTableHeader } from './fonti/FontiTableHeader';
 import { useFontiUrlHandler } from '@/utils/FontiUrlHandler';
 
@@ -28,13 +27,11 @@ const FontiTable: React.FC<FontiTableProps> = ({
 }) => {
   const { toast } = useToast();
   const { handleSaveUrl } = useFontiUrlHandler();
-  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
-  const [updateSheetUrl, setUpdateSheetUrl] = useState<string>(localStorage.getItem('googleSheetUpdateUrl') || '');
-  const [googleSheetUrl, setGoogleSheetUrl] = useState<string>(localStorage.getItem('googleSheetUrl') || '');
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState<string>(localStorage.getItem('n8nWebhookUrl') || '');
 
-  const handleConfigureGoogleSheets = () => {
-    setShowImportDialog(true);
+  const handleConfigureWebhook = () => {
+    setShowConfigDialog(true);
   };
 
   const handleEditUrl = (id: string) => {
@@ -44,7 +41,7 @@ const FontiTable: React.FC<FontiTableProps> = ({
 
   return (
     <>
-      <FontiTableHeader onConfigureGoogleSheets={handleConfigureGoogleSheets} />
+      <FontiTableHeader onConfigureN8n={handleConfigureWebhook} />
       
       <div className="rounded-md border">
         <Table>
@@ -72,18 +69,11 @@ const FontiTable: React.FC<FontiTableProps> = ({
         </Table>
       </div>
 
-      <GoogleSheetsConfigDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        googleSheetUrl={googleSheetUrl}
-        setGoogleSheetUrl={setGoogleSheetUrl}
-      />
-
-      <UpdateSheetDialog
-        open={showUpdateDialog}
-        onOpenChange={setShowUpdateDialog}
-        updateSheetUrl={updateSheetUrl}
-        setUpdateSheetUrl={setUpdateSheetUrl}
+      <N8nWebhookConfigDialog
+        open={showConfigDialog}
+        onOpenChange={setShowConfigDialog}
+        webhookUrl={webhookUrl}
+        setWebhookUrl={setWebhookUrl}
       />
     </>
   );

@@ -1,6 +1,6 @@
 
 import { Fonte } from '@/types';
-import GoogleSheetsService from '@/utils/GoogleSheetsService';
+import WebhookService from '@/utils/WebhookService';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useFontiUrlHandler = () => {
@@ -10,32 +10,31 @@ export const useFontiUrlHandler = () => {
     const updatedFonte = { ...fonte, url: newUrl };
     
     try {
-      // Verifica se la configurazione è completa
-      const sheetUrl = localStorage.getItem('googleSheetUrl');
-      const updateUrl = localStorage.getItem('googleSheetUpdateUrl');
+      // Verifica se la configurazione del webhook è completa
+      const webhookUrl = localStorage.getItem('n8nWebhookUrl');
       
-      if (!sheetUrl || !updateUrl) {
+      if (!webhookUrl) {
         toast({
-          title: "Configurazione incompleta",
-          description: "Configura gli URL del foglio Google e dell'aggiornamento nelle impostazioni",
+          title: "Webhook non configurato",
+          description: "Configura l'URL del webhook n8n nelle impostazioni",
           variant: "default",
         });
         return false;
       }
       
-      console.log("Tentativo di aggiornare fonte nel foglio:", updatedFonte);
-      const updated = await GoogleSheetsService.updateFonteInSheet(updatedFonte);
+      console.log("Tentativo di aggiornare fonte tramite webhook:", updatedFonte);
+      const updated = await WebhookService.sendToWebhook(updatedFonte, 'update');
       
       if (updated) {
         toast({
           title: "URL aggiornato",
-          description: "L'URL della fonte è stato aggiornato con successo sia localmente che nel foglio Google",
+          description: "L'URL della fonte è stato aggiornato con successo e inviato a n8n",
         });
         return true;
       } else {
         toast({
           title: "URL aggiornato parzialmente",
-          description: "L'URL è stato aggiornato localmente ma c'è stato un problema con l'aggiornamento del foglio Google.",
+          description: "L'URL è stato aggiornato localmente ma c'è stato un problema con l'invio a n8n.",
           variant: "default"
         });
         return false;

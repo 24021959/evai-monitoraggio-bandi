@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fonte } from '@/types';
 import { SourceFormFields } from './SourceFormFields';
-import { GoogleSheetsToggle } from './GoogleSheetsToggle';
+import { ExternalIntegrationToggle } from './ExternalIntegrationToggle';
 import { SubmitButton } from './SubmitButton';
 import { useToast } from '@/components/ui/use-toast';
-import GoogleSheetsService from '@/utils/GoogleSheetsService';
+import WebhookService from '@/utils/WebhookService';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { GoogleSheetsConfigDialog } from '../fonti/GoogleSheetsConfigDialog';
+import N8nWebhookConfigDialog from '../fonti/N8nWebhookConfigDialog';
 
 interface AddSourceFormProps {
   onAddSource: (fonte: Omit<Fonte, 'id'>) => void;
@@ -20,12 +20,12 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [nome, setNome] = useState('');
   const [url, setUrl] = useState('');
   const [tipo, setTipo] = useState<string>('');
-  const [addToGoogleSheet, setAddToGoogleSheet] = useState(false);
+  const [syncWithN8n, setSyncWithN8n] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [googleSheetsStatus, setGoogleSheetsStatus] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
+  const [webhookStatus, setWebhookStatus] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
   const [errorDetails, setErrorDetails] = useState<string>('');
   const [showConfigDialog, setShowConfigDialog] = useState(false);
-  const [googleSheetUrl, setGoogleSheetUrl] = useState<string>(localStorage.getItem('googleSheetUrl') || '');
+  const [webhookUrl, setWebhookUrl] = useState<string>(localStorage.getItem('n8nWebhookUrl') || '');
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +53,14 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       return;
     }
 
-    // Controlla se la configurazione di Google Sheets è valida
-    if (addToGoogleSheet) {
-      const sheetUrl = localStorage.getItem('googleSheetUrl');
-      const updateUrl = localStorage.getItem('googleSheetUpdateUrl');
+    // Controlla se la configurazione del webhook è valida
+    if (syncWithN8n) {
+      const webhookUrl = localStorage.getItem('n8nWebhookUrl');
       
-      if (!sheetUrl || !updateUrl) {
+      if (!webhookUrl) {
         toast({
           title: "Configurazione incompleta",
-          description: "Configura prima l'URL del foglio Google Sheets e l'URL per l'aggiornamento",
+          description: "Configura prima l'URL del webhook n8n",
           variant: "destructive",
           duration: 3000,
         });
@@ -86,29 +85,30 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       // Add to Supabase
       await onAddSource(newFonte);
       
-      // Add to Google Sheet if enabled
-      if (addToGoogleSheet) {
-        setGoogleSheetsStatus('adding');
+      // Add to n8n if enabled
+      if (syncWithN8n) {
+        setWebhookStatus('adding');
         try {
-          console.log("Tentativo di aggiungere al foglio Google:", newFonte);
-          const sheetSuccess = await handleAddToGoogleSheet(newFonte);
-          console.log("Risultato aggiunta al foglio:", sheetSuccess);
-          setGoogleSheetsStatus(sheetSuccess ? 'success' : 'error');
+          console.log("Tentativo di sincronizzare con n8n:", newFonte);
+          const fonte = { id: 'temp-' + Date.now(), ...newFonte };
+          const webhookSuccess = await WebhookService.sendToWebhook(fonte, 'add');
+          console.log("Risultato sincronizzazione con n8n:", webhookSuccess);
+          setWebhookStatus(webhookSuccess ? 'success' : 'error');
           
-          if (!sheetSuccess) {
+          if (!webhookSuccess) {
             toast({
               title: "Attenzione",
-              description: "La fonte è stata salvata nel database ma non nel foglio Google. Controlla la configurazione del foglio.",
+              description: "La fonte è stata salvata nel database ma non è stata sincronizzata con n8n. Controlla la configurazione del webhook.",
               variant: "default",
             });
           }
-        } catch (sheetError) {
-          console.error("Errore specifico di Google Sheets:", sheetError);
-          setGoogleSheetsStatus('error');
-          setErrorDetails(sheetError instanceof Error ? sheetError.message : 'Errore durante la comunicazione con Google Sheets');
+        } catch (webhookError) {
+          console.error("Errore specifico di n8n:", webhookError);
+          setWebhookStatus('error');
+          setErrorDetails(webhookError instanceof Error ? webhookError.message : 'Errore durante la comunicazione con n8n');
           toast({
-            title: "Errore Google Sheets",
-            description: "Si è verificato un errore nell'aggiunta al foglio Google. La fonte è stata salvata solo localmente.",
+            title: "Errore n8n",
+            description: "Si è verificato un errore nella sincronizzazione con n8n. La fonte è stata salvata solo localmente.",
             variant: "destructive",
           });
         }
@@ -132,58 +132,20 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         variant: "destructive",
         duration: 3000,
       });
-      if (addToGoogleSheet) {
-        setGoogleSheetsStatus('error');
+      if (syncWithN8n) {
+        setWebhookStatus('error');
         setErrorDetails(error instanceof Error ? error.message : 'Errore sconosciuto');
       }
     } finally {
       setIsAdding(false);
-      // Reset dello stato Google Sheets dopo 30 secondi
-      if (googleSheetsStatus !== 'idle') {
+      // Reset dello stato webhook dopo 30 secondi
+      if (webhookStatus !== 'idle') {
         setTimeout(() => {
-          setGoogleSheetsStatus('idle');
+          setWebhookStatus('idle');
           setErrorDetails('');
         }, 30000);
       }
     }
-  };
-
-  const handleAddToGoogleSheet = async (newFonte: Omit<Fonte, 'id'>): Promise<boolean> => {
-    const sheetUrl = localStorage.getItem('googleSheetUrl');
-    const updateUrl = localStorage.getItem('googleSheetUpdateUrl');
-    
-    if (!sheetUrl) {
-      throw new Error("URL del foglio Google non configurato");
-    }
-    
-    if (!updateUrl) {
-      throw new Error("URL per l'aggiornamento del foglio non configurato");
-    }
-    
-    console.log("Configurazione Google Sheets:", { sheetUrl, updateUrl });
-    console.log("Aggiunta fonte al foglio Google:", newFonte);
-    
-    // We need a temporary ID here that will be replaced with a proper UUID
-    const fonte: Fonte = {
-      id: 'temp-' + Date.now(),
-      ...newFonte
-    };
-    
-    // Tentativo di aggiunta al foglio
-    console.log("Chiamata a GoogleSheetsService.addFonteToSheet con:", fonte);
-    const result = await GoogleSheetsService.addFonteToSheet(fonte);
-    
-    console.log("Risultato dell'aggiunta al foglio Google:", result);
-    
-    if (result) {
-      toast({
-        title: "Fonte aggiunta al foglio Google",
-        description: "La fonte è stata aggiunta con successo anche al foglio Google Sheets",
-      });
-      return true;
-    }
-    
-    return false;
   };
 
   const handleConfigureClick = () => {
@@ -206,47 +168,50 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
             setTipo={setTipo as (value: string) => void}
           />
           
-          <GoogleSheetsToggle
-            checked={addToGoogleSheet}
-            onCheckedChange={setAddToGoogleSheet}
+          <ExternalIntegrationToggle
+            checked={syncWithN8n}
+            onCheckedChange={setSyncWithN8n}
             onConfigureClick={handleConfigureClick}
+            integrationType="n8n"
           />
           
-          {googleSheetsStatus === 'adding' && (
+          {webhookStatus === 'adding' && (
             <div className="flex items-center space-x-2 text-yellow-600 p-2 bg-yellow-50 rounded border border-yellow-200">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Aggiunta al foglio Google in corso... (questo può richiedere fino a 30 secondi)</span>
+              <span>Sincronizzazione con n8n in corso...</span>
             </div>
           )}
           
-          {googleSheetsStatus === 'success' && (
+          {webhookStatus === 'success' && (
             <Alert variant="default" className="bg-green-50 border-green-200">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertTitle>Successo</AlertTitle>
               <AlertDescription>
-                La fonte è stata aggiunta con successo al foglio Google Sheets.
+                La fonte è stata sincronizzata con successo con n8n.
               </AlertDescription>
             </Alert>
           )}
           
-          {googleSheetsStatus === 'error' && (
+          {webhookStatus === 'error' && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Errore</AlertTitle>
               <AlertDescription className="space-y-2">
                 <p>
-                  Si è verificato un errore durante l'aggiunta della fonte al foglio Google Sheets.
-                  Verifica di aver configurato correttamente sia l'URL del foglio che l'URL di aggiornamento.
+                  Si è verificato un errore durante la sincronizzazione con n8n.
+                  Verifica che l'URL del webhook sia corretto e che n8n sia in esecuzione.
                 </p>
-                <div className="font-mono text-xs bg-red-950 text-white p-2 rounded overflow-auto max-h-24">
-                  {errorDetails || "Errore di comunicazione con il foglio Google"}
-                </div>
+                {errorDetails && (
+                  <div className="font-mono text-xs bg-red-950 text-white p-2 rounded overflow-auto max-h-24">
+                    {errorDetails}
+                  </div>
+                )}
                 <p className="text-sm font-semibold">Checklist:</p>
                 <ul className="list-disc pl-5 text-sm space-y-1">
-                  <li>Il foglio Google ha una scheda chiamata "Lista Fonti"</li>
-                  <li>La prima riga contiene le intestazioni: row_number, url, nome, tipo</li>
-                  <li>Lo script Google Apps Script è pubblicato come Web App con accesso "Anyone, even anonymous"</li>
-                  <li>Lo script può scrivere sul foglio (non è in sola lettura)</li>
+                  <li>Verifica che n8n sia in esecuzione</li>
+                  <li>Controlla che il workflow sia attivo</li>
+                  <li>Assicurati che il webhook sia configurato per accettare richieste POST</li>
+                  <li>Verifica che l'URL del webhook sia corretto</li>
                 </ul>
               </AlertDescription>
             </Alert>
@@ -255,11 +220,11 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
           <SubmitButton isAdding={isAdding} />
         </form>
 
-        <GoogleSheetsConfigDialog
+        <N8nWebhookConfigDialog
           open={showConfigDialog}
           onOpenChange={setShowConfigDialog}
-          googleSheetUrl={googleSheetUrl}
-          setGoogleSheetUrl={setGoogleSheetUrl}
+          webhookUrl={webhookUrl}
+          setWebhookUrl={setWebhookUrl}
         />
       </CardContent>
     </Card>
