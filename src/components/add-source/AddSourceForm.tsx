@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Fonte } from '@/types';
 import { GoogleSheetsToggle } from './GoogleSheetsToggle';
 import { WebhookToggle } from './WebhookToggle';
+import { N8nWebhookConfigDialog } from '../fonti/N8nWebhookConfigDialog';
 
 interface AddSourceFormProps {
   onAddSource: (newSource: Omit<Fonte, 'id'>) => Promise<boolean>;
@@ -20,6 +22,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [error, setError] = useState('');
   const [addToGoogleSheet, setAddToGoogleSheet] = useState(false);
   const [useWebhook, setUseWebhook] = useState(false);
+  const [showWebhookConfig, setShowWebhookConfig] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,59 +81,77 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     }
   };
 
+  const openWebhookConfig = () => {
+    setShowWebhookConfig(true);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="text-red-500">{error}</div>}
-      
-      <div>
-        <Label htmlFor="nome">Nome</Label>
-        <Input 
-          type="text" 
-          id="nome" 
-          value={nome} 
-          onChange={(e) => setNome(e.target.value)} 
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="url">URL</Label>
-        <Input 
-          type="text" 
-          id="url" 
-          value={url} 
-          onChange={(e) => setUrl(e.target.value)} 
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="tipo">Tipo</Label>
-        <Select value={tipo} onValueChange={setTipo}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Seleziona un tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sito_web">Sito Web</SelectItem>
-            <SelectItem value="rss">RSS Feed</SelectItem>
-            <SelectItem value="api">API</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <div className="text-red-500">{error}</div>}
+        
+        <div>
+          <Label htmlFor="nome">Nome</Label>
+          <Input 
+            type="text" 
+            id="nome" 
+            value={nome} 
+            onChange={(e) => setNome(e.target.value)} 
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="url">URL</Label>
+          <Input 
+            type="text" 
+            id="url" 
+            value={url} 
+            onChange={(e) => setUrl(e.target.value)} 
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="tipo">Tipo</Label>
+          <Select value={tipo} onValueChange={setTipo}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleziona un tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sito_web">Sito Web</SelectItem>
+              <SelectItem value="rss">RSS Feed</SelectItem>
+              <SelectItem value="api">API</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <GoogleSheetsToggle 
-        checked={addToGoogleSheet}
-        onCheckedChange={setAddToGoogleSheet}
-        onConfigureClick={() => window.open('/google-sheets-config', '_blank')}
-      />
+        <GoogleSheetsToggle 
+          checked={addToGoogleSheet}
+          onCheckedChange={setAddToGoogleSheet}
+          onConfigureClick={() => window.open('/google-sheets-config', '_blank')}
+        />
 
-      <WebhookToggle 
-        checked={useWebhook}
-        onCheckedChange={setUseWebhook}
+        <WebhookToggle 
+          checked={useWebhook}
+          onCheckedChange={setUseWebhook}
+          onConfigureClick={openWebhookConfig}
+        />
+        
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Salvataggio...' : 'Salva Fonte'}
+        </Button>
+      </form>
+
+      <N8nWebhookConfigDialog
+        open={showWebhookConfig}
+        onOpenChange={setShowWebhookConfig}
+        webhookUrl={localStorage.getItem('n8nWebhookUrl') || ''}
+        setWebhookUrl={(url) => {
+          localStorage.setItem('n8nWebhookUrl', url);
+          // Aggiorna localStorage
+          window.dispatchEvent(new Event('storage'));
+        }}
       />
-      
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Salvataggio...' : 'Salva Fonte'}
-      </Button>
-    </form>
+    </>
   );
 };
 
