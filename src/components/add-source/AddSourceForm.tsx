@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fonte, TipoBando } from '@/types';
@@ -27,7 +26,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState<string>(localStorage.getItem('n8nWebhookUrl') || '');
   
-  // Verifica la configurazione del webhook all'avvio
   useEffect(() => {
     const storedWebhookUrl = localStorage.getItem('n8nWebhookUrl');
     if (storedWebhookUrl) {
@@ -96,7 +94,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         setWebhookStatus('adding');
         try {
           console.log("Tentativo di sincronizzare con n8n:", newFonte);
-          // Crea un oggetto fonte con un ID temporaneo per il webhook
           const fonte: Fonte = { id: 'temp-' + Date.now(), ...newFonte };
           console.log("Payload completo da inviare a n8n:", fonte);
           const webhookSuccess = await WebhookService.sendToWebhook(fonte, 'add');
@@ -180,15 +177,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     
     try {
       console.log("Test webhook n8n...");
-      const testData: Fonte = {
-        id: 'test-' + Date.now(),
-        nome: 'Test Webhook',
-        url: 'https://example.com',
-        tipo: 'test',
-        stato: 'test'
-      } as Fonte;
-      
-      const success = await WebhookService.sendToWebhook(testData, 'add');
+      const success = await WebhookService.testWebhook(webhookUrl);
       setWebhookStatus(success ? 'success' : 'error');
       
       if (success) {
@@ -236,7 +225,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
             url={url}
             setUrl={setUrl}
             tipo={tipo}
-            setTipo={setTipo}
+            setTipo={(value: string) => setTipo(value as TipoBando)}
           />
           
           <ExternalIntegrationToggle
@@ -292,7 +281,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
                 <p className="text-sm font-semibold">Checklist:</p>
                 <ul className="list-disc pl-5 text-sm space-y-1">
                   <li>Verifica che n8n sia in esecuzione</li>
-                  <li>Controlla che il workflow sia attivo</li>
+                  <li>Controlla che il workflow sia attivo (interruttore in alto a destra)</li>
                   <li>Assicurati che il webhook sia configurato per accettare richieste POST</li>
                   <li>Verifica che l'URL del webhook sia corretto</li>
                 </ul>

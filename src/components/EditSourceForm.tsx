@@ -26,14 +26,16 @@ const EditSourceForm: React.FC<EditSourceFormProps> = ({ fonte, onSave, onCancel
   const [nome, setNome] = useState(fonte.nome);
   const [url, setUrl] = useState(fonte.url);
   const [tipo, setTipo] = useState<TipoBando>(fonte.tipo);
-  const [stato, setStato] = useState<'attivo' | 'inattivo'>(fonte.stato);
+  const [stato, setStato] = useState<'attivo' | 'inattivo'>(
+    fonte.stato === 'test' ? 'attivo' : fonte.stato
+  );
   
   useEffect(() => {
     // Aggiorna il form quando cambia la fonte selezionata
     setNome(fonte.nome);
     setUrl(fonte.url);
     setTipo(fonte.tipo);
-    setStato(fonte.stato);
+    setStato(fonte.stato === 'test' ? 'attivo' : fonte.stato);
   }, [fonte]);
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -109,7 +111,11 @@ const EditSourceForm: React.FC<EditSourceFormProps> = ({ fonte, onSave, onCancel
           
           <div className="space-y-2">
             <Label htmlFor="tipo-edit">Tipo Fonte</Label>
-            <Select value={tipo} onValueChange={setTipo as (value: string) => void} required>
+            <Select 
+              value={tipo} 
+              onValueChange={(value: string) => setTipo(value as TipoBando)}
+              required
+            >
               <SelectTrigger id="tipo-edit">
                 <SelectValue placeholder="Seleziona tipo fonte" />
               </SelectTrigger>
@@ -124,7 +130,11 @@ const EditSourceForm: React.FC<EditSourceFormProps> = ({ fonte, onSave, onCancel
           
           <div className="space-y-2">
             <Label htmlFor="stato-edit">Stato</Label>
-            <Select value={stato} onValueChange={setStato as (value: string) => void} required>
+            <Select 
+              value={stato} 
+              onValueChange={(value: string) => setStato(value as 'attivo' | 'inattivo')}
+              required
+            >
               <SelectTrigger id="stato-edit">
                 <SelectValue placeholder="Seleziona stato" />
               </SelectTrigger>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Webhook, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import WebhookService from '@/utils/WebhookService';
 
 interface N8nWebhookConfigDialogProps {
   open: boolean;
@@ -117,74 +118,27 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
     setTestRequested(true);
     
     try {
-      const testPayload = {
-        action: 'test',
-        message: 'Test connection from Bandi App',
-        timestamp: new Date().toISOString(),
-        fonte: {
-          id: 'test-' + Date.now(),
-          nome: 'Test Fonte',
-          url: 'https://example.com',
-          tipo: 'test',
-          stato: 'test'
-        }
-      };
-      
       console.log("Test webhook con URL:", tempUrl);
-      console.log("Payload di test:", JSON.stringify(testPayload));
+      const success = await WebhookService.testWebhook(tempUrl);
       
-      try {
-        // Prova prima con cors
-        console.log("Tentativo test con mode: cors");
-        const corsResponse = await fetch(tempUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'cors',
-          body: JSON.stringify(testPayload),
-        });
+      if (success) {
+        setTestStatus('success');
         
-        console.log('Risposta test cors:', corsResponse);
-        if (corsResponse.ok) {
-          setTestStatus('success');
-          
-          toast({
-            title: "Test completato",
-            description: "Il webhook n8n ha risposto correttamente. Workflow configurato correttamente!",
-            variant: "default",
-          });
-          return;
-        } else {
-          console.log('Risposta non ok:', corsResponse.status, corsResponse.statusText);
-          // Continua con il fallback
-        }
-      } catch (corsError) {
-        console.error("Errore test cors:", corsError);
-        // Continua con il fallback
+        toast({
+          title: "Test completato",
+          description: "Il webhook n8n ha risposto correttamente. Workflow configurato correttamente!",
+          variant: "default",
+        });
+      } else {
+        setTestStatus('error');
+        setTestError('Il webhook non ha risposto correttamente. Verifica la configurazione.');
+        
+        toast({
+          title: "Errore di test",
+          description: "Non è stato possibile connettersi al webhook. Verifica la configurazione in n8n.",
+          variant: "destructive",
+        });
       }
-      
-      console.log("Fallback test con mode: no-cors");
-      
-      // Fallback con no-cors
-      await fetch(tempUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'no-cors', 
-        body: JSON.stringify(testPayload),
-      });
-      
-      console.log("Richiesta no-cors inviata (non possiamo verificare la risposta)");
-      
-      setTestStatus('success');
-      
-      toast({
-        title: "Test inviato",
-        description: "La richiesta è stata inviata al webhook n8n. Verifica nella tua istanza n8n se è stata ricevuta.",
-        variant: "default",
-      });
     } catch (error) {
       console.error('Errore durante il test del webhook:', error);
       setTestStatus('error');
