@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Bando } from '@/types';
 import { FirecrawlService } from './FirecrawlService';
@@ -133,24 +132,23 @@ export class SupabaseBandiService {
    */
   static async saveBando(bando: Bando): Promise<boolean> {
     try {
-      // Assicuriamoci che il bando abbia un ID valido (UUID)
+      // Ensure the bando has a valid UUID ID
       let bandoId = bando.id;
-      // Verificare che l'ID sia un UUID valido o generarne uno nuovo
       if (!bandoId || !this.isValidUUID(bandoId)) {
         bandoId = uuidv4();
-        console.log(`Generato nuovo UUID per bando: ${bandoId}`);
+        console.log(`Generated new UUID for bando: ${bandoId}`);
       }
 
-      // Creiamo una copia del bando con l'ID corretto
+      // Create a copy of the bando with the correct ID
       const bandoToSave = {
         ...bando,
         id: bandoId
       };
 
-      // Convertiamo il bando nel formato del database
+      // Convert bando to database row format
       const dbBando = this.mapBandoToDbRow(bandoToSave);
 
-      // Verifichiamo se il bando esiste già in Supabase
+      // Check if bando already exists in Supabase
       const { data: existingBando } = await supabase
         .from('bandi')
         .select('id')
@@ -158,7 +156,7 @@ export class SupabaseBandiService {
         .maybeSingle();
 
       if (existingBando) {
-        console.log(`Bando con ID ${bandoId} già presente in Supabase, aggiornamento...`);
+        console.log(`Bando with ID ${bandoId} already exists in Supabase, updating...`);
       }
 
       const { error } = await supabase
@@ -166,14 +164,14 @@ export class SupabaseBandiService {
         .upsert(dbBando, { onConflict: 'id' });
 
       if (error) {
-        console.error('Errore nel salvataggio del bando:', error);
+        console.error('Error saving bando:', error);
         return false;
       }
 
-      console.log('Bando salvato con successo in Supabase:', bandoToSave.id);
+      console.log('Bando saved successfully to Supabase:', bandoToSave.id);
       return true;
     } catch (error) {
-      console.error('Errore durante il salvataggio del bando:', error);
+      console.error('Error during bando save:', error);
       return false;
     }
   }
@@ -335,7 +333,7 @@ export class SupabaseBandiService {
       return 0;
     }
   }
-  
+
   /**
    * Verifica se una stringa è un UUID valido
    */
@@ -351,7 +349,7 @@ export class SupabaseBandiService {
     return {
       id: row.id,
       titolo: row.titolo,
-      descrizione: row.descrizione,
+      descrizione: row.descrizione || '',
       descrizioneCompleta: row.descrizione_completa,
       fonte: row.fonte,
       url: row.url,

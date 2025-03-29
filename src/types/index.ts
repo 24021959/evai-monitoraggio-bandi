@@ -6,7 +6,7 @@ export interface Bando {
   descrizione_completa?: string;
   descrizioneCompleta?: string;
   fonte: string;
-  scadenza: string;  // Change to only allow string type
+  scadenza: string;
   scadenza_dettagliata?: string;
   scadenzaDettagliata?: string;
   tipo: string;
