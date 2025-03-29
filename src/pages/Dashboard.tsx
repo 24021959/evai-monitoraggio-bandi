@@ -12,6 +12,7 @@ import { Bando, Cliente } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
 import { useToast } from '@/components/ui/use-toast';
+import StatisticheCard from '@/components/StatisticheCard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -119,6 +120,13 @@ const Dashboard = () => {
     );
   };
 
+  // Preparazione dati per il grafico settoriale
+  const bandoPerSettoreData = stats.bandoPerSettore.map((item, index) => ({
+    name: item.settore,
+    value: item.percentuale,
+    color: ['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc'][index % 5]
+  }));
+
   const ultimiBandi = [...allBandi]
     .sort((a, b) => new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime())
     .slice(0, 5);
@@ -127,6 +135,7 @@ const Dashboard = () => {
     <div className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold text-gray-800 pb-2 border-b border-gray-200">Dashboard</h1>
       
+      {/* Statistiche principali */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard 
           title="Bandi Attivi" 
@@ -151,6 +160,7 @@ const Dashboard = () => {
         />
       </div>
       
+      {/* Grafici principali */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartContainer title="Distribuzione Bandi" bgColor="bg-gradient-to-br from-blue-50 to-white">
           <div className="h-64">
@@ -216,7 +226,7 @@ const Dashboard = () => {
                         </a>
                       </td>
                       <td className="py-2 text-right text-gray-600">
-                        {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
+                        {bando.scadenza ? new Date(bando.scadenza).toLocaleDateString('it-IT') : 'N/D'}
                       </td>
                     </tr>
                   ))}
@@ -237,36 +247,14 @@ const Dashboard = () => {
         </ChartContainer>
       </div>
       
+      {/* Grafico settoriale a tutta larghezza */}
       <div className="grid grid-cols-1 gap-6">
-        <ChartContainer title="Match per Cliente" bgColor="bg-gradient-to-br from-green-50 to-white">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={mockStatistiche.matchPerCliente}
-                  nameKey="cliente"
-                  dataKey="percentuale"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                >
-                  {mockStatistiche.matchPerCliente.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={['#0066cc', '#ff9900', '#00cc44', '#cc3300'][index % 4]} />
-                  ))}
-                </Pie>
-                <Legend 
-                  formatter={(value) => <span style={{ color: '#000000', fontWeight: 500 }}>{value}</span>}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${value}%`, 'Percentuale']}
-                  contentStyle={{ backgroundColor: 'white', borderColor: '#cccccc' }}
-                  labelStyle={{ fontWeight: 'bold', color: '#333333' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartContainer>
+        <StatisticheCard
+          title="Bandi per Settore"
+          description="Distribuzione percentuale per settore"
+          data={bandoPerSettoreData}
+          colors={['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc']}
+        />
       </div>
     </div>
   );
