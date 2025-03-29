@@ -137,13 +137,13 @@ const Sidebar = () => {
 
 const Layout = () => {
   const location = useLocation();
-  const isHomePage = location.pathname === "/";
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      {isHomePage && <Header />}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header is now always visible on all pages */}
+      <Header />
       
-      <div className="flex min-h-[calc(100vh-80px)]">
+      <div className="flex flex-1">
         <div className="w-1/5">
           <Sidebar />
         </div>

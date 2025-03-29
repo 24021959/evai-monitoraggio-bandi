@@ -49,7 +49,7 @@ const Index = () => {
           Gestione Completa dei Bandi
         </h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Monitora, analizza e trova i bandi più adatti alle tue esigenze aziendali
+          Monitora, analizza e trova i bandi più adatti ai tuoi clienti
         </p>
       </div>
       
