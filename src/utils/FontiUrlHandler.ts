@@ -23,6 +23,7 @@ export const useFontiUrlHandler = () => {
         return false;
       }
       
+      console.log("Tentativo di aggiornare fonte nel foglio:", updatedFonte);
       const updated = await GoogleSheetsService.updateFonteInSheet(updatedFonte);
       
       if (updated) {
@@ -40,13 +41,13 @@ export const useFontiUrlHandler = () => {
         return false;
       }
     } catch (error) {
+      console.error("Errore completo durante l'aggiornamento:", error);
       toast({
         title: "Errore",
         description: "Si è verificato un errore durante l'aggiornamento dell'URL: " + 
           (error instanceof Error ? error.message : "Errore di comunicazione"),
         variant: "destructive"
       });
-      console.error("Errore durante l'aggiornamento:", error);
       return false;
     }
   };

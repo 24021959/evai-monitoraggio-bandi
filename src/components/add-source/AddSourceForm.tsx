@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { GoogleSheetsConfigDialog } from '../fonti/GoogleSheetsConfigDialog';
 
 interface AddSourceFormProps {
   onAddSource: (fonte: Omit<Fonte, 'id'>) => void;
@@ -23,6 +24,8 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [googleSheetsStatus, setGoogleSheetsStatus] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [googleSheetUrl, setGoogleSheetUrl] = useState<string>(localStorage.getItem('googleSheetUrl') || '');
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +65,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
           variant: "destructive",
           duration: 3000,
         });
+        setShowConfigDialog(true);
         return;
       }
     }
@@ -86,7 +90,9 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       if (addToGoogleSheet) {
         setGoogleSheetsStatus('adding');
         try {
+          console.log("Tentativo di aggiungere al foglio Google:", newFonte);
           const sheetSuccess = await handleAddToGoogleSheet(newFonte);
+          console.log("Risultato aggiunta al foglio:", sheetSuccess);
           setGoogleSheetsStatus(sheetSuccess ? 'success' : 'error');
           
           if (!sheetSuccess) {
@@ -164,8 +170,8 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     };
     
     // Tentativo di aggiunta al foglio
-    console.log("Chiamata a GoogleSheetsService.updateFonteInSheet con:", fonte);
-    const result = await GoogleSheetsService.updateFonteInSheet(fonte);
+    console.log("Chiamata a GoogleSheetsService.addFonteToSheet con:", fonte);
+    const result = await GoogleSheetsService.addFonteToSheet(fonte);
     
     console.log("Risultato dell'aggiunta al foglio Google:", result);
     
@@ -178,6 +184,10 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     }
     
     return false;
+  };
+
+  const handleConfigureClick = () => {
+    setShowConfigDialog(true);
   };
   
   return (
@@ -199,6 +209,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
           <GoogleSheetsToggle
             checked={addToGoogleSheet}
             onCheckedChange={setAddToGoogleSheet}
+            onConfigureClick={handleConfigureClick}
           />
           
           {googleSheetsStatus === 'adding' && (
@@ -243,6 +254,13 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
           
           <SubmitButton isAdding={isAdding} />
         </form>
+
+        <GoogleSheetsConfigDialog
+          open={showConfigDialog}
+          onOpenChange={setShowConfigDialog}
+          googleSheetUrl={googleSheetUrl}
+          setGoogleSheetUrl={setGoogleSheetUrl}
+        />
       </CardContent>
     </Card>
   );
