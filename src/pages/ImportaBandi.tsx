@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -54,16 +53,13 @@ const ImportaBandi = () => {
         return;
       }
       
-      // Retrieve existing bandi from Supabase to avoid duplicates
       const bandiEsistenti = await SupabaseBandiService.getBandi();
       console.log('Bandi già esistenti in Supabase:', bandiEsistenti.length);
       
-      // Create a set of existing titles+sources to identify duplicates
       const titoliFonteEsistenti = new Set(
         bandiEsistenti.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
       );
       
-      // Filter out duplicates (based on title and source)
       const bandiUnici = bandi.filter(bando => {
         if (!bando.titolo || !bando.fonte) return false;
         const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
@@ -73,15 +69,12 @@ const ImportaBandi = () => {
       console.log(`Filtrati ${bandi.length - bandiUnici.length} bandi duplicati`);
       console.log(`Bandi unici da importare: ${bandiUnici.length}`);
       
-      // Save unique bandi in sessionStorage
       if (bandiUnici.length > 0) {
         sessionStorage.setItem('bandiImportati', JSON.stringify(bandiUnici));
         console.log('Bandi salvati in sessionStorage:', bandiUnici.length);
         
-        // Save to Supabase
         let contatoreSalvati = 0;
         for (const bando of bandiUnici) {
-          // Verify required fields are present
           if (!bando.titolo || !bando.fonte) {
             console.warn('Bando senza titolo o fonte, saltato:', bando);
             continue;
@@ -95,9 +88,7 @@ const ImportaBandi = () => {
           }
         }
         
-        // Set flag to indicate bandi have been imported
         sessionStorage.setItem('bandiImportatiFlag', 'true');
-        
         console.log(`Bandi salvati in Supabase: ${contatoreSalvati}/${bandiUnici.length}`);
         
         setImportStats({
@@ -106,7 +97,6 @@ const ImportaBandi = () => {
           saved: contatoreSalvati
         });
         
-        // For preview, show up to 20 bandi
         const anteprima = bandiUnici.slice(0, 20);
         setBandiAnteprima(anteprima);
         
@@ -120,7 +110,6 @@ const ImportaBandi = () => {
           description: "Tutti i bandi dal foglio sono già presenti nel database.",
         });
         
-        // Show some bandi from the sheet as preview
         const anteprima = bandi.slice(0, 20);
         setBandiAnteprima(anteprima);
         
@@ -164,7 +153,6 @@ const ImportaBandi = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-blue-500" />
-            <CardTitle>Importa Bandi da Google Sheets</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
