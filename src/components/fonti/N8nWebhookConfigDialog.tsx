@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from "@/components/ui/use-toast";
-import { Webhook, Info, Link, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Webhook, CheckCircle2 } from 'lucide-react';
 
 interface N8nWebhookConfigDialogProps {
   open: boolean;
@@ -21,181 +21,127 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
   setWebhookUrl
 }) => {
   const { toast } = useToast();
-  const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [tempUrl, setTempUrl] = useState(webhookUrl);
+  const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  const saveWebhookUrl = () => {
-    if (!webhookUrl) {
+  const handleSave = () => {
+    if (!tempUrl.trim()) {
       toast({
-        title: "URL mancante",
-        description: "Inserisci l'URL del webhook n8n",
+        title: "URL non valido",
+        description: "Inserisci un URL webhook valido",
         variant: "destructive",
       });
       return;
     }
 
-    // Salva l'URL nel localStorage
-    localStorage.setItem('n8nWebhookUrl', webhookUrl);
+    // Save the webhook URL to localStorage
+    localStorage.setItem('n8nWebhookUrl', tempUrl);
+    setWebhookUrl(tempUrl);
     
     toast({
-      title: "URL salvato",
+      title: "Configurazione salvata",
       description: "L'URL del webhook n8n è stato salvato con successo",
     });
     
     onOpenChange(false);
   };
 
-  const testConnection = async () => {
-    if (!webhookUrl) {
-      setConnectionStatus('error');
+  const handleTest = async () => {
+    if (!tempUrl.trim()) {
+      toast({
+        title: "URL non valido",
+        description: "Inserisci un URL webhook valido",
+        variant: "destructive",
+      });
       return;
     }
-    
-    setTestingConnection(true);
-    setConnectionStatus('idle');
+
+    setTestStatus('loading');
     
     try {
       const testPayload = {
         action: 'test',
-        message: 'Test di connessione',
+        message: 'Test connection from Bandi App',
         timestamp: new Date().toISOString()
       };
       
-      // Usa 'no-cors' per evitare problemi CORS
-      await fetch(webhookUrl, {
+      await fetch(tempUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
+        mode: 'no-cors', // Necessario per webhook esterni
         body: JSON.stringify(testPayload),
       });
       
-      // Non possiamo leggere la risposta con no-cors, quindi assumiamo successo se non ci sono errori
-      setConnectionStatus('success');
+      // Non possiamo verificare la risposta a causa di 'no-cors',
+      // quindi assumiamo che il test sia riuscito
+      setTestStatus('success');
       
       toast({
         title: "Test completato",
-        description: "La connessione con il webhook n8n è stata stabilita con successo",
+        description: "La richiesta è stata inviata al webhook n8n. Verifica nella tua istanza n8n se è stata ricevuta.",
       });
     } catch (error) {
-      console.error("Errore nel test di connessione:", error);
-      setConnectionStatus('error');
+      console.error('Errore durante il test del webhook:', error);
+      setTestStatus('error');
       
       toast({
         title: "Errore di connessione",
-        description: "Impossibile connettersi al webhook n8n. Verifica l'URL.",
+        description: "Non è stato possibile inviare la richiesta al webhook. Verifica l'URL e riprova.",
         variant: "destructive",
       });
-    } finally {
-      setTestingConnection(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Configura Webhook n8n</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Webhook className="h-5 w-5" />
+            Configura Webhook n8n
+          </DialogTitle>
           <DialogDescription>
-            Inserisci l'URL del webhook n8n per sincronizzare le fonti con n8n.
+            Inserisci l'URL del webhook n8n che riceverà le notifiche di aggiunta, modifica e cancellazione delle fonti.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <label htmlFor="webhookUrl" className="flex items-center text-sm font-medium">
-              <Webhook className="h-4 w-4 mr-1" />
-              URL del webhook n8n
-            </label>
-            <div className="flex space-x-2">
+            <Label htmlFor="webhook-url">URL Webhook</Label>
+            <div className="flex gap-2">
               <Input
-                id="webhookUrl"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://n8n.tuo-dominio.com/webhook/..."
+                id="webhook-url"
+                value={tempUrl}
+                onChange={(e) => setTempUrl(e.target.value)}
+                placeholder="https://n8n.tuodominio.it/webhook/..."
                 className="flex-1"
               />
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={testConnection}
-                disabled={testingConnection}
-                className="whitespace-nowrap"
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleTest}
+                disabled={testStatus === 'loading'}
               >
-                {testingConnection ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Test
-                  </span>
+                {testStatus === 'success' ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
                 ) : (
-                  <span>Test Connessione</span>
+                  <Webhook className="h-4 w-4" />
                 )}
               </Button>
             </div>
-            <p className="text-xs text-gray-500">
-              L'URL del webhook deve essere creato su n8n e configurato per ricevere i dati delle fonti.
+            <p className="text-xs text-muted-foreground mt-1">
+              L'URL del webhook deve essere pubblicamente accessibile e configurato per ricevere richieste JSON.
             </p>
           </div>
-
-          {connectionStatus === 'success' && (
-            <Alert variant="default" className="bg-green-50 border-green-200">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertTitle>Connessione stabilita</AlertTitle>
-              <AlertDescription>La connessione con il webhook n8n è stata stabilita con successo.</AlertDescription>
-            </Alert>
-          )}
-
-          {connectionStatus === 'error' && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Errore di connessione</AlertTitle>
-              <AlertDescription>Impossibile connettersi al webhook. Verifica l'URL e assicurati che n8n sia in esecuzione.</AlertDescription>
-            </Alert>
-          )}
-
-          <Alert variant="default" className="bg-blue-50 border-blue-200">
-            <AlertTitle className="flex items-center">
-              <Info className="h-4 w-4 mr-1" />
-              Come configurare n8n
-            </AlertTitle>
-            <AlertDescription className="text-xs space-y-2">
-              <ol className="list-decimal pl-5 space-y-1">
-                <li>Accedi alla tua istanza n8n</li>
-                <li>Crea un nuovo workflow</li>
-                <li>Aggiungi un nodo "Webhook" come trigger</li>
-                <li>Configura il webhook per accettare richieste POST</li>
-                <li>Aggiungi i nodi necessari per gestire le azioni (add, update, delete) sulle fonti</li>
-                <li>Attiva il workflow e copia l'URL del webhook</li>
-                <li>Incolla l'URL qui sopra e salvalo</li>
-              </ol>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2 text-xs flex items-center"
-                onClick={() => window.open('https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/', '_blank')}
-              >
-                <Link className="h-3 w-3 mr-1" />
-                Documentazione Webhook n8n
-              </Button>
-            </AlertDescription>
-          </Alert>
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annulla
-          </Button>
-          <Button onClick={saveWebhookUrl}>
-            Salva Configurazione
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Annulla</Button>
+          <Button onClick={handleSave}>Salva configurazione</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
-
-export default N8nWebhookConfigDialog;
