@@ -94,33 +94,7 @@ const Dashboard = () => {
     { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#5A6474' },
   ].filter(item => item.value > 0); // Show only non-zero values
 
-  // Updated label renderer with red text color
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: any) => {
-    if (percent === 0) return null;
-    
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="#ea384c" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        fontWeight="bold"
-        stroke="#ffffff"
-        strokeWidth="0.5"
-        fontSize="12"
-      >
-        {`${value} (${(percent * 100).toFixed(0)}%)`}
-      </text>
-    );
-  };
-
-  // Preparazione dati per il grafico settoriale - mostra solo se ci sono dati
+  // Preparazione dati per il grafico settoriale con colori migliorati
   const bandoPerSettoreData = stats.bandoPerSettore
     .filter(item => item.percentuale > 0)
     .map((item, index) => ({
@@ -178,7 +152,7 @@ const Dashboard = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={renderCustomizedLabel}
+                    label={({ name, percent }) => percent > 0.05 ? `${name}: ${(percent * 100).toFixed(0)}%` : null}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
@@ -249,15 +223,23 @@ const Dashboard = () => {
         </ChartContainer>
       </div>
       
-      {/* Grafico settoriale a tutta larghezza, spostato in fondo come richiesto */}
-      {bandoPerSettoreData.length > 0 && (
+      {/* Grafico settoriale a tutta larghezza, migliorato per la leggibilità */}
+      {!isLoading && (
         <div className="mt-8">
-          <StatisticheCard
-            title="Bandi per Settore"
-            description="Distribuzione percentuale per settore di attività"
-            data={bandoPerSettoreData}
-            colors={['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc']}
-          />
+          {bandoPerSettoreData.length > 0 ? (
+            <StatisticheCard
+              title="Bandi per Settore"
+              description="Distribuzione percentuale per settore di attività"
+              data={bandoPerSettoreData}
+              colors={['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc']}
+              height={500}
+            />
+          ) : (
+            <div className="border rounded-lg p-6 bg-slate-50 text-center">
+              <h3 className="text-lg font-medium mb-2">Bandi per Settore</h3>
+              <p className="text-gray-500">Nessun dato disponibile sui settori dei bandi</p>
+            </div>
+          )}
         </div>
       )}
     </div>
