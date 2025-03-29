@@ -21,12 +21,17 @@ import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();
 
+// Determina il percorso base dal tuo ambiente
+const basename = process.env.NODE_ENV === 'production' 
+  ? '/baf31591-0e28-4267-94a8-ed6bf96b1284' 
+  : '/';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Index />} />
