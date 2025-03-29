@@ -34,11 +34,11 @@ export interface Cliente {
   email: string;
   settore: string;
   regione: string;
+  provincia: string;
   created_at?: string;
   interessisettoriali?: string[];
   interessiSettoriali?: string[];
   telefono?: string;
-  provincia?: string;
   fatturato?: number;
   dipendenti?: number;
   annofondazione?: number;

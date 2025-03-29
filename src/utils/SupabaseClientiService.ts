@@ -119,7 +119,17 @@ export class SupabaseClientiService {
       telefono: row.telefono,
       annoFondazione: row.annofondazione,
       formaGiuridica: row.formagiuridica,
-      codiceATECO: row.codiceateco
+      codiceATECO: row.codiceateco,
+      esperienzaFinanziamenti: row.esperienzafinanziamenti,
+      tecnologieSpecifiche: row.tecnologiespecifiche,
+      criteriESG: row.criteriESG,
+      capacitaRD: row.capacitaRD,
+      presenzaInternazionale: row.presenzainternazionale,
+      faseDiCrescita: row.fasedicrescita,
+      stabilitaFinanziaria: row.stabilitafinanziaria,
+      competenzeDipendenti: row.competenzedipendenti,
+      partnership: row.partnership,
+      certificazioni: row.certificazioni
     };
   }
 
@@ -140,7 +150,17 @@ export class SupabaseClientiService {
       telefono: cliente.telefono,
       annofondazione: cliente.annoFondazione,
       formagiuridica: cliente.formaGiuridica,
-      codiceateco: cliente.codiceATECO
+      codiceateco: cliente.codiceATECO,
+      esperienzafinanziamenti: cliente.esperienzaFinanziamenti,
+      tecnologiespecifiche: cliente.tecnologieSpecifiche,
+      criteriESG: cliente.criteriESG,
+      capacitaRD: cliente.capacitaRD,
+      presenzainternazionale: cliente.presenzaInternazionale,
+      fasedicrescita: cliente.faseDiCrescita,
+      stabilitafinanziaria: cliente.stabilitaFinanziaria,
+      competenzedipendenti: cliente.competenzeDipendenti,
+      partnership: cliente.partnership,
+      certificazioni: cliente.certificazioni
     };
   }
 }
