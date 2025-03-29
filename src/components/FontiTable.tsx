@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Fonte } from '../types';
 import { 
   Table, 
@@ -8,9 +8,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { useToast } from '@/components/ui/use-toast';
 import { FonteRow } from './fonti/FonteRow';
-import { N8nWebhookConfigDialog } from './fonti/N8nWebhookConfigDialog';
 import { FontiTableHeader } from './fonti/FontiTableHeader';
 import { useFontiUrlHandler } from '@/utils/FontiUrlHandler';
 
@@ -23,14 +21,7 @@ const FontiTable: React.FC<FontiTableProps> = ({
   fonti, 
   onDelete
 }) => {
-  const { toast } = useToast();
   const { handleSaveUrl } = useFontiUrlHandler();
-  const [showConfigDialog, setShowConfigDialog] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState<string>(localStorage.getItem('n8nWebhookUrl') || '');
-
-  const handleConfigureWebhook = () => {
-    setShowConfigDialog(true);
-  };
 
   const handleEditUrl = (id: string) => {
     // This is a placeholder function as the actual URL editing
@@ -39,7 +30,7 @@ const FontiTable: React.FC<FontiTableProps> = ({
 
   return (
     <>
-      <FontiTableHeader onConfigureN8n={handleConfigureWebhook} />
+      <FontiTableHeader />
       
       <div className="rounded-md border">
         <Table>
@@ -64,13 +55,6 @@ const FontiTable: React.FC<FontiTableProps> = ({
           </TableBody>
         </Table>
       </div>
-
-      <N8nWebhookConfigDialog
-        open={showConfigDialog}
-        onOpenChange={setShowConfigDialog}
-        webhookUrl={webhookUrl}
-        setWebhookUrl={setWebhookUrl}
-      />
     </>
   );
 };

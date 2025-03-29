@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
@@ -7,7 +8,8 @@ import {
   GitCompare, 
   FileBarChart, 
   FileSpreadsheet,
-  Database
+  Database,
+  Settings
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -101,6 +103,20 @@ const Sidebar = () => {
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-5 h-5" />
               Importa Bandi
+            </div>
+          </NavLink>
+          
+          <div className="mt-auto"></div>
+          
+          <NavLink
+            to="/admin"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5" />
+              Configurazioni
             </div>
           </NavLink>
         </nav>

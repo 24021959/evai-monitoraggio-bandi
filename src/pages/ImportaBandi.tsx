@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileSpreadsheet, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
@@ -15,8 +13,7 @@ import SupabaseBandiService from '@/utils/SupabaseBandiService';
 const ImportaBandi = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [googleSheetUrl, setGoogleSheetUrl] = useState(GoogleSheetsService.getSheetUrl() || '');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [bandiAnteprima, setBandiAnteprima] = useState<Bando[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [importStats, setImportStats] = useState<{
@@ -26,10 +23,11 @@ const ImportaBandi = () => {
   } | null>(null);
   
   const handleImportBandi = async () => {
+    const googleSheetUrl = localStorage.getItem('googleSheetUrl');
     if (!googleSheetUrl) {
       toast({
-        title: "URL mancante",
-        description: "Inserisci l'URL del foglio Google Sheets",
+        title: "Configurazione mancante",
+        description: "L'URL del foglio Google non è stato configurato. Contattare l'amministratore.",
         variant: "destructive",
       });
       return;
@@ -41,7 +39,6 @@ const ImportaBandi = () => {
     
     try {
       console.log('Iniziando importazione da:', googleSheetUrl);
-      GoogleSheetsService.setSheetUrl(googleSheetUrl);
       
       const bandi = await GoogleSheetsService.fetchBandiFromSheet(googleSheetUrl);
       console.log('Bandi ottenuti dal foglio:', bandi?.length);
@@ -172,23 +169,10 @@ const ImportaBandi = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="googleSheetUrl">URL Foglio Google</Label>
-              <Input
-                id="googleSheetUrl"
-                placeholder="Es. https://docs.google.com/spreadsheets/d/..."
-                value={googleSheetUrl}
-                onChange={(e) => setGoogleSheetUrl(e.target.value)}
-              />
-              <p className="text-sm text-gray-500">
-                Inserisci l'URL completo del foglio Google Sheets contenente i bandi da importare.
-              </p>
-            </div>
-            
             <div className="flex flex-col sm:flex-row gap-2">
               <Button 
                 onClick={handleImportBandi} 
-                disabled={isLoading || !googleSheetUrl} 
+                disabled={isLoading} 
                 className="w-full md:w-auto md:px-8 bg-blue-500 hover:bg-blue-600 text-white"
                 variant="secondary"
               >

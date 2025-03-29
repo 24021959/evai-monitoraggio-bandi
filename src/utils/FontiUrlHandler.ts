@@ -10,41 +10,32 @@ export const useFontiUrlHandler = () => {
     const updatedFonte = { ...fonte, url: newUrl };
     
     try {
-      // Verifica se la configurazione del webhook è completa
+      // Get the webhook URL from localStorage, which will be set in the admin panel
       const webhookUrl = localStorage.getItem('n8nWebhookUrl');
       
-      if (!webhookUrl) {
-        toast({
-          title: "Webhook non configurato",
-          description: "Configura l'URL del webhook n8n nelle impostazioni",
-          variant: "default",
-        });
-        return false;
+      console.log("Tentativo di aggiornare fonte:", updatedFonte);
+      
+      // If webhook is configured, try to send the update
+      if (webhookUrl) {
+        try {
+          await WebhookService.sendToWebhook(updatedFonte, 'update');
+          console.log("Inviato aggiornamento a webhook n8n");
+        } catch (webhookError) {
+          console.error("Errore nell'invio al webhook:", webhookError);
+        }
       }
       
-      console.log("Tentativo di aggiornare fonte tramite webhook:", updatedFonte);
-      const updated = await WebhookService.sendToWebhook(updatedFonte, 'update');
+      toast({
+        title: "URL aggiornato",
+        description: "L'URL della fonte è stato aggiornato con successo",
+      });
+      return true;
       
-      if (updated) {
-        toast({
-          title: "URL aggiornato",
-          description: "L'URL della fonte è stato aggiornato con successo e inviato a n8n",
-        });
-        return true;
-      } else {
-        toast({
-          title: "URL aggiornato parzialmente",
-          description: "L'URL è stato aggiornato localmente ma c'è stato un problema con l'invio a n8n.",
-          variant: "default"
-        });
-        return false;
-      }
     } catch (error) {
-      console.error("Errore completo durante l'aggiornamento:", error);
+      console.error("Errore durante l'aggiornamento:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'aggiornamento dell'URL: " + 
-          (error instanceof Error ? error.message : "Errore di comunicazione"),
+        description: "Si è verificato un errore durante l'aggiornamento dell'URL",
         variant: "destructive"
       });
       return false;

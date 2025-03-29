@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import Report from "./pages/Report";
 import Fonti from "./pages/Fonti";
 import ImportaBandi from './pages/ImportaBandi';
 import NotFound from "./pages/NotFound";
+import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +37,7 @@ const App = () => (
             <Route path="report" element={<Report />} />
             <Route path="fonti" element={<Fonti />} />
             <Route path="importa-bandi" element={<ImportaBandi />} />
+            <Route path="/admin" element={<AdminSettings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
