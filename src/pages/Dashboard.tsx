@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
 import { mockStatistiche } from '@/data/mockData';
 import StatCard from '@/components/StatCard';
@@ -120,12 +120,14 @@ const Dashboard = () => {
     );
   };
 
-  // Preparazione dati per il grafico settoriale
-  const bandoPerSettoreData = stats.bandoPerSettore.map((item, index) => ({
-    name: item.settore,
-    value: item.percentuale,
-    color: ['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc'][index % 5]
-  }));
+  // Preparazione dati per il grafico settoriale - mostra solo se ci sono dati
+  const bandoPerSettoreData = stats.bandoPerSettore
+    .filter(item => item.percentuale > 0)
+    .map((item, index) => ({
+      name: item.settore,
+      value: item.percentuale,
+      color: ['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc'][index % 5]
+    }));
 
   const ultimiBandi = [...allBandi]
     .sort((a, b) => new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime())
@@ -247,15 +249,17 @@ const Dashboard = () => {
         </ChartContainer>
       </div>
       
-      {/* Grafico settoriale a tutta larghezza */}
-      <div className="grid grid-cols-1 gap-6">
-        <StatisticheCard
-          title="Bandi per Settore"
-          description="Distribuzione percentuale per settore"
-          data={bandoPerSettoreData}
-          colors={['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc']}
-        />
-      </div>
+      {/* Grafico settoriale a tutta larghezza, spostato in fondo come richiesto */}
+      {bandoPerSettoreData.length > 0 && (
+        <div className="mt-8">
+          <StatisticheCard
+            title="Bandi per Settore"
+            description="Distribuzione percentuale per settore di attività"
+            data={bandoPerSettoreData}
+            colors={['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc']}
+          />
+        </div>
+      )}
     </div>
   );
 };

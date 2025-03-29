@@ -36,6 +36,11 @@ const StatisticheCard: React.FC<StatisticheCardProps> = ({
     );
   }
 
+  // Formatter per le etichette del grafico
+  const renderCustomLabel = ({ name, percent }: { name: string, percent: number }) => {
+    return `${name}: ${(percent * 100).toFixed(0)}%`;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -43,18 +48,18 @@ const StatisticheCard: React.FC<StatisticheCardProps> = ({
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={400}>
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
               labelLine={true}
-              outerRadius={100}
+              outerRadius={160}
               fill="#8884d8"
               dataKey="value"
               nameKey="name"
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              label={renderCustomLabel}
             >
               {data.map((entry, index) => (
                 <Cell 
@@ -63,8 +68,17 @@ const StatisticheCard: React.FC<StatisticheCardProps> = ({
                 />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => value} />
-            <Legend />
+            <Tooltip 
+              formatter={(value) => [`${value}%`, 'Percentuale']}
+              contentStyle={{ backgroundColor: 'white', borderColor: '#cccccc' }}
+              labelStyle={{ fontWeight: 'bold', color: '#333333' }}
+            />
+            <Legend 
+              layout="horizontal" 
+              verticalAlign="bottom"
+              align="center"
+              formatter={(value) => <span style={{ color: '#333333', fontSize: '14px', fontWeight: 500 }}>{value}</span>}
+            />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>
