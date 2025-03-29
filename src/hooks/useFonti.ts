@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { Fonte } from '@/types';
 import SupabaseFontiService from '@/utils/SupabaseFontiService';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
+import WebhookService from '@/utils/WebhookService';
 
 export function useFonti() {
   const { toast } = useToast();
@@ -34,9 +36,13 @@ export function useFonti() {
   };
   
   const handleSaveEdit = async (updatedFonte: Fonte) => {
-    setFonti(fonti.map(f => f.id === updatedFonte.id ? updatedFonte : f));
     try {
+      // Aggiorniamo prima la fonte localmente
+      setFonti(fonti.map(f => f.id === updatedFonte.id ? updatedFonte : f));
+      
+      // Salviamo la fonte su Supabase
       const success = await SupabaseFontiService.saveFonte(updatedFonte);
+      
       if (success) {
         toast({
           title: "Fonte aggiornata",
@@ -46,7 +52,7 @@ export function useFonti() {
       } else {
         toast({
           title: "Errore",
-          description: "Si è verificato un errore durante l'aggiornamento della fonte",
+          description: "Si è verificato un errore durante l'aggiornamento della fonte su Supabase",
           variant: "destructive",
           duration: 3000,
         });
@@ -70,21 +76,35 @@ export function useFonti() {
     try {
       // Trova la fonte prima di eliminarla per poterla inviare a n8n
       const fonteToDelete = fonti.find(fonte => fonte.id === id);
+      
+      if (!fonteToDelete) {
+        toast({
+          title: "Errore",
+          description: "Fonte non trovata",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
 
-      const success = await SupabaseFontiService.deleteFonte(id);
-      if (success) {
-        setFonti(fonti.filter(fonte => fonte.id !== id));
-        
-        // Se la fonte è stata trovata e abbiamo l'URL del webhook, notifichiamo n8n
-        if (fonteToDelete && localStorage.getItem('n8nWebhookUrl')) {
-          try {
-            // Importa il servizio qui per evitare cicli di dipendenza
-            const WebhookService = (await import('@/utils/WebhookService')).default;
-            await WebhookService.sendToWebhook(fonteToDelete, 'delete');
-          } catch (webhookError) {
-            console.error("Errore durante la notifica n8n dell'eliminazione:", webhookError);
-          }
+      // Prima notifichiamo n8n dell'eliminazione
+      const webhookUrl = localStorage.getItem('n8nWebhookUrl');
+      if (webhookUrl) {
+        try {
+          console.log("Notifica n8n dell'eliminazione della fonte:", fonteToDelete);
+          await WebhookService.sendToWebhook(fonteToDelete, 'delete');
+        } catch (webhookError) {
+          console.error("Errore durante la notifica n8n dell'eliminazione:", webhookError);
+          // Continuiamo con l'eliminazione locale anche se l'invio a n8n fallisce
         }
+      }
+      
+      // Poi eliminiamo la fonte da Supabase
+      const success = await SupabaseFontiService.deleteFonte(id);
+      
+      if (success) {
+        // Aggiorniamo l'elenco locale delle fonti
+        setFonti(fonti.filter(fonte => fonte.id !== id));
         
         toast({
           title: "Fonte eliminata",
@@ -118,6 +138,18 @@ export function useFonti() {
         id: `temp-${Date.now()}`, 
         ...newSource 
       };
+      
+      // Notifichiamo n8n dell'aggiunta della fonte
+      const webhookUrl = localStorage.getItem('n8nWebhookUrl');
+      if (webhookUrl) {
+        try {
+          console.log("Tentativo di sincronizzare con n8n:", newFonte);
+          await WebhookService.sendToWebhook(newFonte, 'add');
+        } catch (webhookError) {
+          console.error("Errore durante la sincronizzazione con n8n:", webhookError);
+          // Continuiamo con l'aggiunta locale anche se l'invio a n8n fallisce
+        }
+      }
       
       const success = await SupabaseFontiService.saveFonte(newFonte);
       if (success) {

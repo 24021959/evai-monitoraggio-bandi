@@ -1,5 +1,5 @@
 
-import { Fonte } from '@/types';
+import { Fonte, TipoBando } from '@/types';
 
 /**
  * Servizio che gestisce le chiamate ai webhook per l'integrazione con n8n o altre piattaforme
@@ -22,10 +22,20 @@ export class WebhookService {
       console.log(`Invio dati a webhook n8n (${action}):`, fonte);
       console.log(`URL webhook: ${webhookUrl}`);
       
-      // Prepara i dati da inviare
+      // Adattiamo i dati per allinearli con le intestazioni del foglio Google Sheets
+      const fonteAdattata = {
+        id: fonte.id,
+        nome: fonte.nome,
+        url: fonte.url,
+        tipo: fonte.tipo,
+        stato_elaborazione: fonte.stato === 'attivo' ? 'Elaborazione attiva' : 'Elaborazione sospesa',
+        data_ultimo_aggiornamento: new Date().toISOString().split('T')[0] // formato YYYY-MM-DD
+      };
+      
+      // Prepara i dati da inviare in formato compatibile con n8n
       const payload = {
         action,
-        fonte,
+        fonte: fonteAdattata,
         timestamp: new Date().toISOString()
       };
       
@@ -120,7 +130,9 @@ export class WebhookService {
           nome: 'Test WebhookConnectivity',
           url: 'https://example.com/test',
           tipo: 'test' as TipoBando,
-          stato: 'test'
+          stato: 'test',
+          stato_elaborazione: 'Test',
+          data_ultimo_aggiornamento: new Date().toISOString().split('T')[0]
         },
         timestamp: new Date().toISOString()
       };

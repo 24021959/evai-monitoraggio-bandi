@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Fonte, TipoBando } from "@/types";
 import { Save } from 'lucide-react';
+import WebhookService from '@/utils/WebhookService';
 
 interface EditSourceFormProps {
   fonte: Fonte;
@@ -29,6 +30,7 @@ const EditSourceForm: React.FC<EditSourceFormProps> = ({ fonte, onSave, onCancel
   const [stato, setStato] = useState<'attivo' | 'inattivo'>(
     fonte.stato === 'test' ? 'attivo' : fonte.stato
   );
+  const [isSaving, setIsSaving] = useState(false);
   
   useEffect(() => {
     // Aggiorna il form quando cambia la fonte selezionata
@@ -38,45 +40,88 @@ const EditSourceForm: React.FC<EditSourceFormProps> = ({ fonte, onSave, onCancel
     setStato(fonte.stato === 'test' ? 'attivo' : fonte.stato);
   }, [fonte]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     
-    if (!nome || !url || !tipo) {
-      toast({
-        title: "Errore",
-        description: "Compila tutti i campi richiesti",
-        variant: "destructive",
-        duration: 3000,
-      });
-      return;
-    }
-    
-    // Validazione URL
     try {
-      new URL(url);
-    } catch (err) {
+      if (!nome || !url || !tipo) {
+        toast({
+          title: "Errore",
+          description: "Compila tutti i campi richiesti",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+      
+      // Validazione URL
+      try {
+        new URL(url);
+      } catch (err) {
+        toast({
+          title: "URL non valido",
+          description: "Inserisci un URL nel formato corretto",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+      
+      const updatedFonte: Fonte = {
+        ...fonte,
+        nome,
+        url,
+        tipo,
+        stato
+      };
+      
+      // Verifica se l'integrazione n8n è configurata
+      const webhookUrl = localStorage.getItem('n8nWebhookUrl');
+      
+      if (webhookUrl) {
+        try {
+          console.log("Tentativo di aggiornare fonte tramite webhook:", updatedFonte);
+          const webhookSuccess = await WebhookService.sendToWebhook(updatedFonte, 'update');
+          
+          if (!webhookSuccess) {
+            console.warn("L'aggiornamento è stato eseguito localmente ma l'invio a n8n potrebbe non essere riuscito");
+            toast({
+              title: "Attenzione",
+              description: "La fonte è stata aggiornata ma potrebbero esserci problemi con la sincronizzazione n8n",
+              variant: "default",
+              duration: 5000,
+            });
+          }
+        } catch (webhookError) {
+          console.error("Errore durante la notifica n8n:", webhookError);
+          toast({
+            title: "Attenzione",
+            description: "Fonte aggiornata localmente ma si è verificato un errore nella sincronizzazione con n8n",
+            variant: "default",
+            duration: 5000,
+          });
+        }
+      }
+      
+      onSave(updatedFonte);
+      
       toast({
-        title: "URL non valido",
-        description: "Inserisci un URL nel formato corretto",
+        title: "Fonte aggiornata",
+        description: "La fonte è stata aggiornata con successo",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Errore durante l'aggiornamento:", error);
+      toast({
+        title: "Errore di sistema",
+        description: "Si è verificato un errore durante l'aggiornamento",
         variant: "destructive",
         duration: 3000,
       });
-      return;
+    } finally {
+      setIsSaving(false);
     }
-    
-    onSave({
-      ...fonte,
-      nome,
-      url,
-      tipo,
-      stato
-    });
-    
-    toast({
-      title: "Fonte aggiornata",
-      description: "La fonte è stata aggiornata con successo",
-      duration: 3000,
-    });
   };
   
   return (
@@ -146,12 +191,12 @@ const EditSourceForm: React.FC<EditSourceFormProps> = ({ fonte, onSave, onCancel
           </div>
           
           <div className="flex justify-between gap-4 mt-6">
-            <Button type="button" variant="outline" onClick={onCancel} className="w-1/2">
+            <Button type="button" variant="outline" onClick={onCancel} className="w-1/2" disabled={isSaving}>
               Annulla
             </Button>
-            <Button type="submit" className="w-1/2 flex items-center justify-center gap-2">
+            <Button type="submit" className="w-1/2 flex items-center justify-center gap-2" disabled={isSaving}>
               <Save className="w-4 h-4" />
-              Salva Modifiche
+              {isSaving ? 'Salvataggio...' : 'Salva Modifiche'}
             </Button>
           </div>
         </form>
