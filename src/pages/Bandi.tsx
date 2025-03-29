@@ -242,12 +242,14 @@ const Bandi = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {bandiFiltrati.map((bando, index) => (
-                <div key={bando.id} className={index % 2 === 0 ? "" : "bg-[#FEF7CD] rounded-lg"}>
+                <div 
+                  key={bando.id} 
+                  className={index % 2 === 1 ? "bg-[#FEF7CD] rounded-lg" : ""}
+                >
                   <BandoCard 
                     bando={bando} 
                     onViewDetails={handleViewDetail}
                     onDelete={handleDeleteBando}
-                    showFullDetails={true}
                   />
                 </div>
               ))}
