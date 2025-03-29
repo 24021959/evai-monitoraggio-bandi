@@ -60,29 +60,9 @@ const Dashboard = () => {
     const regionali = allBandi.filter(b => b.tipo === 'regionale').length;
     const altri = allBandi.filter(b => b.tipo !== 'europeo' && b.tipo !== 'statale' && b.tipo !== 'regionale').length;
     
-    const settoriCount: Record<string, number> = {};
-    allBandi.forEach(bando => {
-      if (bando.settori && Array.isArray(bando.settori)) {
-        bando.settori.forEach(settore => {
-          // Simplify long sector names for better display
-          const simplifiedSector = settore.split(' ')[0];
-          settoriCount[simplifiedSector] = (settoriCount[simplifiedSector] || 0) + 1;
-        });
-      }
-    });
-    
-    const bandoPerSettore = Object.entries(settoriCount)
-      .map(([settore, count]) => ({
-        settore,
-        percentuale: allBandi.length > 0 ? Math.round((count / allBandi.length) * 100) : 0
-      }))
-      .sort((a, b) => b.percentuale - a.percentuale)
-      .slice(0, 5);
-    
     return {
       bandiAttivi: allBandi.length,
-      distribuzioneBandi: { europei, statali, regionali, altri },
-      bandoPerSettore
+      distribuzioneBandi: { europei, statali, regionali, altri }
     };
   };
   
@@ -95,15 +75,6 @@ const Dashboard = () => {
     { name: 'Regionali', value: stats.distribuzioneBandi.regionali, color: '#ff9900' },
     { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#5A6474' },
   ].filter(item => item.value > 0); // Show only non-zero values
-
-  // Preparazione dati per il grafico settoriale con colori migliorati e nomi semplificati
-  const bandoPerSettoreData = stats.bandoPerSettore
-    .filter(item => item.percentuale > 0)
-    .map((item, index) => ({
-      name: item.settore,
-      value: item.percentuale,
-      color: ['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc'][index % 5]
-    }));
 
   const ultimiBandi = [...allBandi]
     .sort((a, b) => new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime())
@@ -224,27 +195,6 @@ const Dashboard = () => {
           </div>
         </ChartContainer>
       </div>
-      
-      {/* Grafico settoriale a tutta larghezza, con testo semplificato */}
-      {!isLoading && (
-        <div className="mt-8">
-          {bandoPerSettoreData.length > 0 ? (
-            <StatisticheCard
-              title="Bandi per Settore"
-              description="Distribuzione per settore (valori percentuali)"
-              data={bandoPerSettoreData}
-              colors={['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc']}
-              height={500}
-              simplifiedLabels={true}
-            />
-          ) : (
-            <div className="border rounded-lg p-6 bg-slate-50 text-center">
-              <h3 className="text-lg font-medium mb-2">Bandi per Settore</h3>
-              <p className="text-gray-500">Nessun dato disponibile sui settori dei bandi</p>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };
