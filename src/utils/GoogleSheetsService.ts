@@ -1,3 +1,4 @@
+
 import { Bando, Fonte } from '@/types';
 
 // This service handles the Google Sheets integration
@@ -41,69 +42,52 @@ export class GoogleSheetsService {
       }
 
       // Use Google Sheets API to get published CSV
-      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
-      
-      console.log('Recupero dati da Google Sheets:', apiUrl);
-      
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`Errore nel recupero dei dati: ${response.statusText}`);
-      }
-      
-      const csvData = await response.text();
-      
-      // Parse CSV to get bandi
-      const parsedBandi = this.parseCsvToBandi(csvData);
-      
-      // Get existing bandi from session storage to check for duplicates
-      const existingBandiStr = sessionStorage.getItem('bandiImportati');
-      let existingBandi: Bando[] = [];
-      
-      if (existingBandiStr) {
-        try {
-          existingBandi = JSON.parse(existingBandiStr);
-        } catch (error) {
-          console.error('Errore nel parsing dei bandi esistenti:', error);
-        }
-      }
-      
-      // Filter out duplicates based on ID or matching title and fonte
-      const existingIds = new Set(existingBandi.map(b => b.id));
-      const existingTitleSourcePairs = new Set(
-        existingBandi.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
-      );
-      
-      const uniqueNewBandi = parsedBandi.filter(bando => {
-        // Check if the ID already exists
-        if (existingIds.has(bando.id)) return false;
+      // If a specific sheet is specified in the URL, try to use that
+      let sheetName = '';
+      const gidMatch = url.match(/[#&]gid=(\d+)/);
+      if (gidMatch && gidMatch[1]) {
+        // We'll use the gid parameter directly in the API URL
+        const gid = gidMatch[1];
+        const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+        console.log('Recupero dati da Google Sheets con GID specifico:', apiUrl);
         
-        // Check if the title and source combination already exists
-        const titleSourcePair = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
-        return !existingTitleSourcePairs.has(titleSourcePair);
-      });
-      
-      // Set the current date for all newly imported bandi if not already set
-      const today = new Date().toISOString().split('T')[0];
-      uniqueNewBandi.forEach(bando => {
-        if (!bando.dataEstrazione) {
-          bando.dataEstrazione = today;
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`Errore nel recupero dei dati: ${response.statusText}`);
         }
-      });
-      
-      // Combine new bandi with existing ones, prioritizing the newest ones
-      const allBandi = [...uniqueNewBandi, ...existingBandi];
-      
-      // Sort by extraction date (newest first)
-      allBandi.sort((a, b) => {
-        const dateA = a.dataEstrazione ? new Date(a.dataEstrazione).getTime() : 0;
-        const dateB = b.dataEstrazione ? new Date(b.dataEstrazione).getTime() : 0;
-        return dateB - dateA;
-      });
-      
-      // Save the combined list back to session storage
-      sessionStorage.setItem('bandiImportati', JSON.stringify(allBandi));
-      
-      return allBandi;
+        
+        const csvData = await response.text();
+        if (csvData.trim().length === 0) {
+          throw new Error('Il foglio Google Sheets è vuoto o non accessibile');
+        }
+        
+        // Parse CSV to get bandi
+        const parsedBandi = this.parseCsvToBandi(csvData);
+        console.log(`Parsed ${parsedBandi.length} bandi from CSV with specific GID`);
+        
+        return parsedBandi;
+      } else {
+        // Default behavior - try to fetch the first sheet
+        const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+        
+        console.log('Recupero dati da Google Sheets:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`Errore nel recupero dei dati: ${response.statusText}`);
+        }
+        
+        const csvData = await response.text();
+        if (csvData.trim().length === 0) {
+          throw new Error('Il foglio Google Sheets è vuoto o non accessibile');
+        }
+        
+        // Parse CSV to get bandi
+        const parsedBandi = this.parseCsvToBandi(csvData);
+        console.log(`Parsed ${parsedBandi.length} bandi from CSV with default sheet`);
+        
+        return parsedBandi;
+      }
     } catch (error) {
       console.error('Errore durante il recupero dei bandi dal foglio Google:', error);
       throw error;
@@ -268,28 +252,57 @@ export class GoogleSheetsService {
   }
 
   private extractSheetId(url: string): string | null {
-    // Extract sheet ID from various Google Sheets URL formats
+    // More robust extraction of the sheet ID from various Google Sheets URL formats
     const regex = /\/d\/([a-zA-Z0-9-_]+)/;
     const match = url.match(regex);
-    return match ? match[1] : null;
+    
+    if (match && match[1]) {
+      console.log('Extracted sheet ID:', match[1]);
+      return match[1];
+    }
+    
+    // Try alternative format
+    const altRegex = /spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
+    const altMatch = url.match(altRegex);
+    
+    if (altMatch && altMatch[1]) {
+      console.log('Extracted sheet ID (alt format):', altMatch[1]);
+      return altMatch[1];
+    }
+    
+    console.error('Failed to extract sheet ID from URL:', url);
+    return null;
   }
 
   private parseCsvToBandi(csvData: string): Bando[] {
+    console.log('Parsing CSV data...');
     const lines = csvData.split('\n');
     if (lines.length <= 1) {
+      console.warn('CSV data has no content or only headers');
       return [];
     }
 
     // Assumiamo che la prima riga contenga le intestazioni
     const headers = this.parseCsvLine(lines[0]);
+    console.log('CSV headers:', headers);
     
     const bandi: Bando[] = [];
+    let skippedRows = 0;
     
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (!line) continue;
+      if (!line) {
+        skippedRows++;
+        continue;
+      }
       
       const values = this.parseCsvLine(line);
+      // Skip obviously empty rows (all values are empty)
+      if (values.every(v => !v || v.trim() === '')) {
+        skippedRows++;
+        continue;
+      }
+      
       const bando: any = {};
       
       // Mappatura delle colonne del CSV alle proprietà di Bando in base al nuovo formato
@@ -302,9 +315,12 @@ export class GoogleSheetsService {
               bando.id = value || `imported-${Date.now()}-${i}`;
               break;
             case 'data_scraping': // Nuova colonna
+            case 'data_estrazione':
+              bando.data_estrazione = value;
               bando.dataEstrazione = value;
               break;
             case 'titolo_incentivo': // Nuova colonna per il titolo
+            case 'titolo':
               bando.titolo = value;
               break;
             case 'fonte':
@@ -314,12 +330,15 @@ export class GoogleSheetsService {
               bando.descrizione = value;
               break;
             case 'descrizione_dettagliata': // Nuova colonna
+            case 'descrizione_completa':
+              bando.descrizione_completa = value;
               bando.descrizioneCompleta = value;
               if (!bando.descrizione) {
                 bando.descrizione = value?.substring(0, 150) + "...";
               }
               break;
             case 'url_dettaglio': // URL del bando
+            case 'url':
               bando.url = value;
               break;
             case 'tipo':
@@ -335,10 +354,12 @@ export class GoogleSheetsService {
                 }
               }
               break;
-            case 'modalita_presentazione': // Nuova colonna
+            case 'modalita_presentazione':
+              bando.modalita_presentazione = value;
               bando.modalitaPresentazione = value;
               break;
             case 'scadenza_dettagliata': // Nuova colonna per la scadenza
+            case 'scadenza':
               if (value) {
                 // Prova a estrarre una data dalla stringa
                 const dateMatch = value.match(/(\d{1,2})[\s\/\-\.]+(\d{1,2})[\s\/\-\.]+(\d{4})/);
@@ -348,9 +369,13 @@ export class GoogleSheetsService {
                   const month = dateMatch[2].padStart(2, '0');
                   const year = dateMatch[3];
                   bando.scadenza = `${year}-${month}-${day}`;
+                } else if (value.match(/\d{4}-\d{2}-\d{2}/)) {
+                  // Already in YYYY-MM-DD format
+                  bando.scadenza = value;
                 } else {
                   bando.scadenza = new Date().toISOString().split('T')[0]; // Data di oggi come fallback
                 }
+                bando.scadenza_dettagliata = value;
                 bando.scadenzaDettagliata = value;
               } else {
                 bando.scadenza = new Date().toISOString().split('T')[0];
@@ -363,20 +388,41 @@ export class GoogleSheetsService {
                 if (importMatch) {
                   const importoValue = parseFloat(importMatch[1].replace(',', '.'));
                   if (!isNaN(importoValue)) {
-                    bando.importoMax = importoValue * 1000000; // Converti in euro da milioni
+                    bando.importo_max = importoValue * 1000000; // Converti in euro da milioni
+                    bando.importoMax = importoValue * 1000000;
                   }
                 }
+                bando.budget_disponibile = value;
                 bando.budgetDisponibile = value;
               }
               break;
+            case 'importo_min':
+              if (value && !isNaN(parseFloat(value))) {
+                bando.importo_min = parseFloat(value);
+                bando.importoMin = parseFloat(value);
+              }
+              break;
+            case 'importo_max':
+              if (value && !isNaN(parseFloat(value))) {
+                bando.importo_max = parseFloat(value);
+                bando.importoMax = parseFloat(value);
+              }
+              break;
             case 'settori':
-              bando.settori = value.split(',').map((s: string) => s.trim());
+              if (value) {
+                bando.settori = value.split(',').map((s: string) => s.trim());
+              }
               break;
             case 'ultimi_aggiornamenti': // Nuova colonna
+              bando.ultimi_aggiornamenti = value;
               bando.ultimiAggiornamenti = value;
               break;
             default:
               // Gestisce campi addizionali
+              // Converti snake_case a camelCase per compatibilità
+              const camelCaseHeader = header.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+              bando[camelCaseHeader] = value;
+              // Memorizza anche la versione originale
               bando[header] = value;
           }
         }
@@ -387,19 +433,35 @@ export class GoogleSheetsService {
         if (!bando.id) {
           bando.id = `imported-${Date.now()}-${i}`;
         }
-        if (!bando.settori || !Array.isArray(bando.settori)) {
+        if (!bando.settori || !Array.isArray(bando.settori) || bando.settori.length === 0) {
           bando.settori = ["Generico"];
         }
         if (!bando.tipo) {
           bando.tipo = 'altro';
         }
-        if (!bando.importoMin && !bando.importoMax) {
-          bando.importoMax = 0; // Valore di default
+        
+        // Aggiungi campi mancanti ma richiesti
+        if (!bando.data_estrazione) {
+          const today = new Date().toISOString().split('T')[0];
+          bando.data_estrazione = today;
+          bando.dataEstrazione = today;
+        }
+        
+        // Standardizza il formato della scadenza se non è già impostato
+        if (!bando.scadenza) {
+          const oneMonthLater = new Date();
+          oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+          bando.scadenza = oneMonthLater.toISOString().split('T')[0];
         }
         
         bandi.push(bando as Bando);
+      } else {
+        skippedRows++;
+        console.warn(`Row ${i} skipped due to missing required fields (titolo or fonte):`, values);
       }
     }
+    
+    console.log(`Parsed ${bandi.length} valid bandi from CSV (skipped ${skippedRows} rows)`);
     
     return bandi;
   }
@@ -413,7 +475,13 @@ export class GoogleSheetsService {
       const char = line[i];
       
       if (char === '"') {
-        inQuotes = !inQuotes;
+        if (i < line.length - 1 && line[i+1] === '"' && inQuotes) {
+          // Handle escaped quotes inside quoted strings
+          currentValue += '"';
+          i++; // Skip the next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
       } else if (char === ',' && !inQuotes) {
         result.push(currentValue.trim());
         currentValue = '';

@@ -1,22 +1,31 @@
+
 export interface Bando {
   id: string;
   titolo: string;
   descrizione: string;
+  descrizione_completa?: string;
+  descrizioneCompleta?: string;
   fonte: string;
   scadenza: string | Date;
+  scadenza_dettagliata?: string;
+  scadenzaDettagliata?: string;
   tipo: string;
   url?: string;
   settori?: string[];
   created_at?: string;
   importo_min?: number;
+  importoMin?: number;
   importo_max?: number;
+  importoMax?: number;
   budget_disponibile?: string;
+  budgetDisponibile?: string;
   data_estrazione?: string | Date;
-  descrizione_completa?: string;
-  scadenza_dettagliata?: string;
+  dataEstrazione?: string | Date;
   requisiti?: string;
   modalita_presentazione?: string;
+  modalitaPresentazione?: string;
   ultimi_aggiornamenti?: string;
+  ultimiAggiornamenti?: string;
 }
 
 export interface Cliente {
@@ -27,13 +36,17 @@ export interface Cliente {
   regione: string;
   created_at?: string;
   interessisettoriali?: string[];
+  interessiSettoriali?: string[];
   telefono?: string;
   provincia?: string;
   fatturato?: number;
   dipendenti?: number;
   annofondazione?: number;
+  annoFondazione?: number;
   formagiuridica?: string;
+  formaGiuridica?: string;
   codiceateco?: string;
+  codiceATECO?: string;
 }
 
 export interface Match {
@@ -44,6 +57,10 @@ export interface Match {
   notificato: boolean;
   created_at?: string;
   updated_at?: string;
+  archiviato?: boolean;
+  bando_titolo?: string; 
+  cliente_nome?: string;
+  data_creazione?: string;
 }
 
 export interface Statistica {
