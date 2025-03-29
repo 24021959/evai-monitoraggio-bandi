@@ -136,11 +136,8 @@ const Sidebar = () => {
 };
 
 const Layout = () => {
-  const location = useLocation();
-  
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header is now always visible on all pages */}
       <Header />
       
       <div className="flex flex-1">
