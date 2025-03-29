@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
@@ -14,13 +15,15 @@ import {
 const Header = () => {
   return (
     <header className="w-full bg-white shadow-sm py-4 px-8">
-      <div className="container mx-auto flex items-center">
-        <img 
-          src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
-          alt="EV-AI Technologies Logo" 
-          className="h-12"
-        />
-        <h1 className="ml-4 text-2xl font-semibold text-gray-800">EV-AI Monitoraggio Bandi</h1>
+      <div className="container mx-auto flex items-center justify-center">
+        <div className="flex items-center">
+          <img 
+            src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
+            alt="EV-AI Technologies Logo" 
+            className="h-12"
+          />
+          <h1 className="ml-4 text-2xl font-semibold text-gray-800">EV-AI Monitoraggio Bandi</h1>
+        </div>
       </div>
     </header>
   );
@@ -31,17 +34,10 @@ const Sidebar = () => {
   
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white flex justify-center items-center p-4">
-        <img 
-          src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
-          alt="EV-AI Technologies Logo" 
-          className="h-16 w-auto"
-        />
-      </div>
       <div className="bg-gray-100 flex-grow">
         <nav className="flex flex-col">          
           <NavLink
-            to="/"
+            to="/dashboard"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }

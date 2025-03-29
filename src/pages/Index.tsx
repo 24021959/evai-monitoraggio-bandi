@@ -43,7 +43,7 @@ const FeatureCard = ({
 
 const Index = () => {
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold text-gray-800 mb-2">
           Gestione Completa dei Bandi
@@ -58,7 +58,7 @@ const Index = () => {
           icon={<BarChart3 size={24} />}
           title="Dashboard"
           description="Visualizza statistiche e monitoraggio in tempo reale dei bandi attivi"
-          linkTo="/"
+          linkTo="/dashboard"
         />
         
         <FeatureCard
@@ -105,7 +105,7 @@ const Index = () => {
           </div>
           <Button 
             className="bg-blue-600 hover:bg-blue-700" 
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = '/dashboard'}
           >
             Vai alla Dashboard
           </Button>
