@@ -20,13 +20,14 @@ import NotFound from "./pages/NotFound";
 import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();
+const basename = import.meta.env.MODE === 'production' ? '/evai-monitoraggio-bandi' : '/';
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Index />} />
