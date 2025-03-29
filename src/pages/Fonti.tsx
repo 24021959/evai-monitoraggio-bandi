@@ -13,10 +13,8 @@ const Fonti = () => {
   const {
     fonti,
     isLoading,
-    importingFromSheets,
     handleDelete,
     handleAddSource,
-    importFromGoogleSheets
   } = useFonti();
 
   // Add source handler also changes the active tab
@@ -30,10 +28,7 @@ const Fonti = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <FontiHeader 
-        importingFromSheets={importingFromSheets}
-        onImportFromGoogleSheets={importFromGoogleSheets}
-      />
+      <FontiHeader />
       
       {isLoading && <FontiLoadingState />}
       
