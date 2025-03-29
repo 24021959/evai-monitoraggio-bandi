@@ -20,6 +20,33 @@ interface CrawlStatusResponse {
 
 type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 
+// Helper function to determine fonte type based on URL patterns
+function determineFonteType(url: string): TipoBando {
+  if (url.includes('europa.eu') || url.includes('ec.europa.eu')) {
+    return 'europeo';
+  } else if (
+    url.includes('gov.it') || 
+    url.includes('mise.gov.it') || 
+    url.includes('mimit') || 
+    url.includes('simest') || 
+    url.includes('invitalia')
+  ) {
+    return 'statale';
+  } else if (
+    url.includes('regione') || 
+    url.includes('lombardia') || 
+    url.includes('lazio') || 
+    url.includes('toscana') || 
+    url.includes('veneto') ||
+    url.includes('campania') ||
+    url.includes('piemonte')
+  ) {
+    return 'regionale';
+  } else {
+    return 'altro';
+  }
+}
+
 export class FirecrawlService {
   private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
   private static SAVED_BANDI_STORAGE_KEY = 'saved_bandi';
@@ -631,36 +658,11 @@ export class FirecrawlService {
       id: uuidv4(),
       nome: data.nome || 'Fonte senza nome',
       url: data.url || '',
-      tipo: this.determineFonteType(data.nome || '')
+      tipo: determineFonteType(data.nome || '')
     };
   }
 
-  static determineFonteType(url: string): TipoBando {
-    // Determine the type based on URL patterns
-    if (url.includes('europa.eu') || url.includes('ec.europa.eu')) {
-      return 'europeo';
-    } else if (
-      url.includes('gov.it') || 
-      url.includes('mise.gov.it') || 
-      url.includes('mimit') || 
-      url.includes('simest') || 
-      url.includes('invitalia')
-    ) {
-      return 'statale';
-    } else if (
-      url.includes('regione') || 
-      url.includes('lombardia') || 
-      url.includes('lazio') || 
-      url.includes('toscana') || 
-      url.includes('veneto') ||
-      url.includes('campania') ||
-      url.includes('piemonte')
-    ) {
-      return 'regionale';
-    } else {
-      return 'altro';
-    }
-  }
+  static determineFonteType = determineFonteType;
 }
 
 function isBandoPage(content: string, url: string, isMimitPage: boolean = false): boolean {

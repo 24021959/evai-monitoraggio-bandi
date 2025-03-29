@@ -1,22 +1,20 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Download, CalendarIcon, AlertCircle } from 'lucide-react';
+import { FileText, Download, AlertCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseMatchService from '@/utils/SupabaseMatchService';
 import SupabaseReportService from '@/utils/SupabaseReportService';
 import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
 
 const Report = () => {
   const { toast } = useToast();
-  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setMonth(new Date().getMonth() - 1)));
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date(new Date().setMonth(new Date().getMonth() - 1)));
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isDownloadingBandi, setIsDownloadingBandi] = useState(false);
   const [isDownloadingMatch, setIsDownloadingMatch] = useState(false);
@@ -215,7 +213,7 @@ const Report = () => {
                   <label className="text-sm font-medium">Data Inizio</label>
                   <DatePicker 
                     date={startDate} 
-                    onDateChange={setStartDate} 
+                    setDate={setStartDate} 
                     className="w-full" 
                   />
                 </div>
@@ -224,7 +222,7 @@ const Report = () => {
                   <label className="text-sm font-medium">Data Fine</label>
                   <DatePicker 
                     date={endDate} 
-                    onDateChange={setEndDate} 
+                    setDate={setEndDate} 
                     className="w-full" 
                   />
                 </div>
