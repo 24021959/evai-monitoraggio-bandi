@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Download } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -162,12 +161,12 @@ const Report = () => {
           </div>
           <div>
             <Label htmlFor="cliente">Cliente (opzionale)</Label>
-            <Select onValueChange={(value) => setClienteId(value === "" ? undefined : value)}>
+            <Select onValueChange={(value) => setClienteId(value === "tutti" ? undefined : value)}>
               <SelectTrigger id="cliente">
                 <SelectValue placeholder="Tutti i clienti" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti i clienti</SelectItem>
+                <SelectItem value="tutti">Tutti i clienti</SelectItem>
                 {clienti.map((cliente) => (
                   <SelectItem key={cliente.id} value={cliente.id}>{cliente.nome}</SelectItem>
                 ))}
