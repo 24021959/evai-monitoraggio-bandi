@@ -43,12 +43,12 @@ const ClientiTable: React.FC<ClientiTableProps> = ({ clienti, onViewDetails, onD
             >
               <TableCell className="font-medium">{cliente.nome}</TableCell>
               <TableCell>{cliente.settore}</TableCell>
-              <TableCell>{cliente.fatturato.toLocaleString('it-IT')}</TableCell>
-              <TableCell>{cliente.dipendenti}</TableCell>
+              <TableCell>{cliente.fatturato ? cliente.fatturato.toLocaleString('it-IT') : '-'}</TableCell>
+              <TableCell>{cliente.dipendenti || '-'}</TableCell>
               <TableCell>{cliente.regione}</TableCell>
               <TableCell>{cliente.email}</TableCell>
               <TableCell>{cliente.telefono || '-'}</TableCell>
-              <TableCell>{cliente.codiceATECO || '-'}</TableCell>
+              <TableCell>{cliente.codiceATECO || cliente.codiceateco || '-'}</TableCell>
               <TableCell>
                 <div className="flex justify-center space-x-4">
                   {onViewDetails && (

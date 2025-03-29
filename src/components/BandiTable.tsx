@@ -31,6 +31,9 @@ const BandiTable: React.FC<BandiTableProps> = ({
       return budgetDisponibile;
     }
     
+    min = min || 0;
+    max = max || 0;
+    
     if (min && max) {
       return `${min / 1000}K - ${max / 1000}K`;
     } else if (min) {
@@ -42,7 +45,7 @@ const BandiTable: React.FC<BandiTableProps> = ({
   };
 
   const getTipoClass = (tipo: string) => {
-    switch (tipo) {
+    switch (tipo?.toLowerCase()) {
       case 'statale':
         return 'bg-green-500';
       case 'europeo':
@@ -117,9 +120,15 @@ const BandiTable: React.FC<BandiTableProps> = ({
                   {(bando.settori && bando.settori.join(', ')) || 'Generico'}
                 </div>
               </TableCell>
-              <TableCell>{formatImporto(bando.importoMin, bando.importoMax, bando.budgetDisponibile)}</TableCell>
               <TableCell>
-                {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
+                {formatImporto(
+                  bando.importoMin || bando.importo_min, 
+                  bando.importoMax || bando.importo_max, 
+                  bando.budgetDisponibile || bando.budget_disponibile
+                )}
+              </TableCell>
+              <TableCell>
+                {bando.scadenzaDettagliata || bando.scadenza_dettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
               </TableCell>
               {showFullDetails && (
                 <TableCell onClick={(e) => e.stopPropagation()} className="text-center">
@@ -137,7 +146,7 @@ const BandiTable: React.FC<BandiTableProps> = ({
               )}
               {showFullDetails && (
                 <TableCell>
-                  {bando.dataEstrazione || 'N/D'}
+                  {bando.dataEstrazione || bando.data_estrazione || 'N/D'}
                 </TableCell>
               )}
               <TableCell onClick={(e) => e.stopPropagation()}>

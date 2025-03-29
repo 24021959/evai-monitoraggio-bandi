@@ -2,15 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
-import { mockStatistiche } from '@/data/mockData';
 import StatCard from '@/components/StatCard';
 import ChartContainer from '@/components/ChartContainer';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
-import { FirecrawlService } from '@/utils/FirecrawlService';
 import { Bando, Cliente } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
+import SupabaseMatchService from '@/utils/SupabaseMatchService';
 import { useToast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
@@ -19,6 +18,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [allBandi, setAllBandi] = useState<Bando[]>([]);
   const [clientiCount, setClientiCount] = useState<number>(0);
+  const [matchCount, setMatchCount] = useState<number>(0);
   
   useEffect(() => {
     const loadAllData = async () => {
@@ -38,6 +38,11 @@ const Dashboard = () => {
         const clienti = await SupabaseClientiService.getClienti();
         setClientiCount(clienti.length);
         console.log("Dashboard: Clienti count:", clienti.length);
+
+        // Carica il numero di match
+        const matches = await SupabaseMatchService.getMatches();
+        setMatchCount(matches.length);
+        console.log("Dashboard: Match count:", matches.length);
       } catch (error) {
         console.error('Error loading data:', error);
         toast({
@@ -101,7 +106,7 @@ const Dashboard = () => {
         />
         <StatCard 
           title="Match Recenti" 
-          value={mockStatistiche.matchRecenti} 
+          value={isLoading ? '...' : matchCount} 
           color="yellow" 
           icon={<GitCompare className="w-8 h-8 text-yellow-500" />}
           bgColor="bg-amber-50"

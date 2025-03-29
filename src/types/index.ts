@@ -1,4 +1,5 @@
 
+
 export interface Bando {
   id: string;
   titolo: string;
@@ -27,6 +28,8 @@ export interface Bando {
   ultimi_aggiornamenti?: string;
   ultimiAggiornamenti?: string;
 }
+
+export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro';
 
 export interface Cliente {
   id: string;
@@ -94,3 +97,23 @@ export interface Fonte {
   tipo: string;
   stato?: string;
 }
+
+// Interface for data items used in charts
+export interface DataItem {
+  [key: string]: string | number;
+}
+
+export interface ReportAnalisiTemporale extends DataItem {
+  periodo: string;
+  matchGenerati: number;
+  bandiScaduti: number;
+}
+
+export interface ReportPerformanceMatch extends DataItem {
+  cliente: string;
+  matchGenerati: number;
+  matchAlta: number;
+  matchMedia: number;
+  matchBassa: number;
+}
+
