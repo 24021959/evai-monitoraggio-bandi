@@ -12,7 +12,6 @@ import { Bando, Cliente } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
 import { useToast } from '@/components/ui/use-toast';
-import StatisticheCard from '@/components/StatisticheCard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
