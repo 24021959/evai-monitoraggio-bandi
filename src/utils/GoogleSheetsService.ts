@@ -43,7 +43,6 @@ export class GoogleSheetsService {
 
       // Use Google Sheets API to get published CSV
       // If a specific sheet is specified in the URL, try to use that
-      let sheetName = '';
       const gidMatch = url.match(/[#&]gid=(\d+)/);
       if (gidMatch && gidMatch[1]) {
         // We'll use the gid parameter directly in the API URL
@@ -276,7 +275,15 @@ export class GoogleSheetsService {
 
   private parseCsvToBandi(csvData: string): Bando[] {
     console.log('Parsing CSV data...');
-    const lines = csvData.split('\n');
+    
+    // Log the first 200 characters to debug
+    console.log('CSV data preview:', csvData.substring(0, 200) + '...');
+    
+    // Split by newline, handling both \r\n and \n
+    const lines = csvData.split(/\r?\n/);
+    
+    console.log(`CSV has ${lines.length} lines`);
+    
     if (lines.length <= 1) {
       console.warn('CSV data has no content or only headers');
       return [];
@@ -289,6 +296,11 @@ export class GoogleSheetsService {
     const bandi: Bando[] = [];
     let skippedRows = 0;
     
+    // Debug: Log a few sample rows
+    for (let i = 1; i < Math.min(5, lines.length); i++) {
+      console.log(`Sample row ${i}:`, lines[i]);
+    }
+    
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) {
@@ -297,6 +309,12 @@ export class GoogleSheetsService {
       }
       
       const values = this.parseCsvLine(line);
+      
+      // Debug line parsing
+      if (i < 5) {
+        console.log(`Row ${i} parsed values:`, values);
+      }
+      
       // Skip obviously empty rows (all values are empty)
       if (values.every(v => !v || v.trim() === '')) {
         skippedRows++;
@@ -309,6 +327,11 @@ export class GoogleSheetsService {
       headers.forEach((header, index) => {
         if (index < values.length) {
           const value = values[index];
+          
+          // Skip empty values
+          if (!value || value.trim() === '') {
+            return;
+          }
           
           switch(header.toLowerCase()) {
             case 'id':
@@ -457,7 +480,9 @@ export class GoogleSheetsService {
         bandi.push(bando as Bando);
       } else {
         skippedRows++;
-        console.warn(`Row ${i} skipped due to missing required fields (titolo or fonte):`, values);
+        if (i < 10) {  // Only log the first few skipped rows to avoid flooding the console
+          console.warn(`Row ${i} skipped due to missing required fields (titolo or fonte):`, values);
+        }
       }
     }
     
@@ -497,6 +522,8 @@ export class GoogleSheetsService {
   }
 
   private mapTipoBando(tipo: string): 'europeo' | 'statale' | 'regionale' | 'altro' {
+    if (!tipo) return 'altro';
+    
     const tipoLower = tipo.toLowerCase();
     
     if (tipoLower.includes('europe') || tipoLower.includes('ue') || tipoLower.includes('eu')) {

@@ -6,7 +6,7 @@ export interface Bando {
   descrizione_completa?: string;
   descrizioneCompleta?: string;
   fonte: string;
-  scadenza: string | Date;
+  scadenza: string;  // Change to only allow string type
   scadenza_dettagliata?: string;
   scadenzaDettagliata?: string;
   tipo: string;
@@ -19,8 +19,8 @@ export interface Bando {
   importoMax?: number;
   budget_disponibile?: string;
   budgetDisponibile?: string;
-  data_estrazione?: string | Date;
-  dataEstrazione?: string | Date;
+  data_estrazione?: string;
+  dataEstrazione?: string;
   requisiti?: string;
   modalita_presentazione?: string;
   modalitaPresentazione?: string;

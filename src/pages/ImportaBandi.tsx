@@ -53,6 +53,7 @@ const ImportaBandi = () => {
           description: "Nessun bando trovato nel foglio. Verifica che il formato sia corretto.",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
       
@@ -66,6 +67,7 @@ const ImportaBandi = () => {
       );
       
       const bandiUnici = bandi.filter(bando => {
+        if (!bando.titolo || !bando.fonte) return false;
         const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
         return !titoliFonteEsistenti.has(chiave);
       });
@@ -107,8 +109,9 @@ const ImportaBandi = () => {
           saved: contatoreSalvati
         });
         
-        // Mostra anteprima dei primi 5 bandi
-        setBandiAnteprima(bandiUnici.slice(0, 5));
+        // Per l'anteprima, mostriamo i primi 10 bandi (o meno se ce ne sono di meno)
+        const anteprima = bandiUnici.slice(0, 10);
+        setBandiAnteprima(anteprima);
         
         toast({
           title: "Importazione completata",
@@ -121,7 +124,8 @@ const ImportaBandi = () => {
         });
         
         // Anche se non ci sono bandi unici, mostriamo comunque qualche bando come anteprima
-        setBandiAnteprima(bandi.slice(0, 5));
+        const anteprima = bandi.slice(0, 10);
+        setBandiAnteprima(anteprima);
         
         setImportStats({
           total: bandi.length,
@@ -252,7 +256,8 @@ const ImportaBandi = () => {
                   </table>
                 </div>
                 <p className="text-sm text-gray-500 italic">
-                  Visualizzazione dei primi 5 record {importStats?.unique === 0 ? "dal foglio" : "importati"}.
+                  Visualizzazione dei primi {bandiAnteprima.length} record {importStats?.unique === 0 ? "dal foglio" : "importati"}.
+                  {bandiAnteprima.length < importStats?.total! && ` (su ${importStats?.total} totali)`}
                 </p>
               </div>
             )}
