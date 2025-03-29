@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -18,7 +17,6 @@ import LineChartCard from "@/components/LineChartCard";
 import BarChartCard from "@/components/BarChartCard";
 import DataTableCard from "@/components/DataTableCard";
 
-// Colonne per la tabella dei settori
 const sectorColumns = [
   {
     accessorKey: "settore",
@@ -38,7 +36,6 @@ const sectorColumns = [
   },
 ];
 
-// Colonne per la tabella di performance
 const performanceColumns = [
   {
     accessorKey: "cliente",
@@ -58,7 +55,6 @@ const performanceColumns = [
   },
 ];
 
-// Colonne per la tabella geografica
 const geographicColumns = [
   {
     accessorKey: "regione",
@@ -78,7 +74,6 @@ const geographicColumns = [
   },
 ];
 
-// Colonne per dettaglio mensile
 const monthlyColumns = [
   {
     accessorKey: "periodo",
@@ -108,7 +103,7 @@ const Report = () => {
   const { data: reportData, isLoading: isReportLoading, refetch } = useQuery({
     queryKey: ['advancedReport'],
     queryFn: () => SupabaseReportService.generateAdvancedReport(startDate, endDate),
-    enabled: false, // Non eseguire la query automaticamente
+    enabled: false,
   });
 
   const generateReport = async () => {
@@ -385,17 +380,6 @@ const Report = () => {
                 xAxisDataKey="name"
               />
 
-              <StatisticheCard
-                title="Bandi per Settore"
-                description="Distribuzione percentuale"
-                data={reportData.bandoPerSettore.map(item => ({
-                  name: item.settore,
-                  value: item.percentuale
-                }))}
-              />
-            </div>
-
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
               <LineChartCard
                 title="Trend Ultimi 6 Mesi"
                 description="Andamento di bandi, clienti e match"
@@ -407,7 +391,9 @@ const Report = () => {
                 ]}
                 xAxisDataKey="periodo"
               />
+            </div>
 
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
               <DataTableCard
                 title="Top Clienti per Match"
                 description="Clienti con maggior compatibilità"
