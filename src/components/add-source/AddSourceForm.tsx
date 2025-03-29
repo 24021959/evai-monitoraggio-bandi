@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fonte } from '@/types';
 import { SourceFormFields } from './SourceFormFields';
@@ -25,6 +26,14 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [errorDetails, setErrorDetails] = useState<string>('');
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState<string>(localStorage.getItem('n8nWebhookUrl') || '');
+  
+  // Verifica la configurazione del webhook all'avvio
+  useEffect(() => {
+    const storedWebhookUrl = localStorage.getItem('n8nWebhookUrl');
+    if (storedWebhookUrl) {
+      setWebhookUrl(storedWebhookUrl);
+    }
+  }, []);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +73,8 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         setShowConfigDialog(true);
         return;
       }
+      
+      console.log("Webhook URL configurato:", webhookUrl);
     }
 
     const newFonte: Omit<Fonte, 'id'> = {
@@ -85,6 +96,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         setWebhookStatus('adding');
         try {
           console.log("Tentativo di sincronizzare con n8n:", newFonte);
+          // Crea un oggetto fonte con un ID temporaneo per il webhook
           const fonte = { id: 'temp-' + Date.now(), ...newFonte };
           const webhookSuccess = await WebhookService.sendToWebhook(fonte, 'add');
           console.log("Risultato sincronizzazione con n8n:", webhookSuccess);
@@ -95,6 +107,12 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
               title: "Attenzione",
               description: "La fonte è stata salvata nel database ma non è stata sincronizzata con n8n. Controlla la configurazione del webhook.",
               variant: "default",
+            });
+          } else {
+            toast({
+              title: "Sincronizzazione completata",
+              description: "La fonte è stata sincronizzata con successo con n8n.",
+              duration: 3000,
             });
           }
         } catch (webhookError) {
@@ -144,6 +162,65 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const handleConfigureClick = () => {
     setShowConfigDialog(true);
   };
+
+  const handleTestWebhook = async () => {
+    if (!webhookUrl) {
+      toast({
+        title: "URL non configurato",
+        description: "Configura prima l'URL del webhook n8n",
+        variant: "destructive",
+        duration: 3000,
+      });
+      setShowConfigDialog(true);
+      return;
+    }
+
+    setWebhookStatus('adding');
+    
+    try {
+      console.log("Test webhook n8n...");
+      const testData = {
+        id: 'test-' + Date.now(),
+        nome: 'Test Webhook',
+        url: 'https://example.com',
+        tipo: 'test',
+        stato: 'test'
+      };
+      
+      const success = await WebhookService.sendToWebhook(testData, 'add');
+      setWebhookStatus(success ? 'success' : 'error');
+      
+      if (success) {
+        toast({
+          title: "Test completato",
+          description: "Il test con n8n è stato completato con successo.",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "Errore test",
+          description: "Il test con n8n ha riscontrato problemi. Verifica la configurazione.",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Errore durante il test webhook:", error);
+      setWebhookStatus('error');
+      setErrorDetails(error instanceof Error ? error.message : 'Errore durante il test');
+      toast({
+        title: "Errore test",
+        description: "Si è verificato un errore durante il test con n8n",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setTimeout(() => {
+        setWebhookStatus('idle');
+        setErrorDetails('');
+      }, 10000);
+    }
+  };
   
   return (
     <Card>
@@ -167,6 +244,18 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
             onConfigureClick={handleConfigureClick}
             integrationType="n8n"
           />
+          
+          {syncWithN8n && webhookUrl && (
+            <div className="flex justify-end">
+              <button 
+                type="button" 
+                onClick={handleTestWebhook}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+              >
+                Testa connessione n8n
+              </button>
+            </div>
+          )}
           
           {webhookStatus === 'adding' && (
             <div className="flex items-center space-x-2 text-yellow-600 p-2 bg-yellow-50 rounded border border-yellow-200">

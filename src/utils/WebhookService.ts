@@ -20,6 +20,7 @@ export class WebhookService {
       }
       
       console.log(`Invio dati a webhook n8n (${action}):`, fonte);
+      console.log(`URL webhook: ${webhookUrl}`);
       
       // Prepara i dati da inviare
       const payload = {
@@ -28,19 +29,20 @@ export class WebhookService {
         timestamp: new Date().toISOString()
       };
       
+      console.log('Payload completo:', JSON.stringify(payload));
+      
       // Invia la richiesta al webhook
       const response = await fetch(webhookUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        mode: 'no-cors', // Necessario per evitare problemi CORS
+        mode: "cors", // Cambiato da no-cors a cors per ricevere una risposta
         body: JSON.stringify(payload),
       });
       
-      // Con mode: 'no-cors' non possiamo leggere la risposta
-      // Assumiamo che l'operazione sia andata a buon fine
-      console.log('Richiesta webhook inviata con successo');
+      console.log('Risposta dal webhook:', response);
+      
       return true;
     } catch (error) {
       console.error('Errore durante l\'invio al webhook:', error);
