@@ -1,6 +1,7 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { Bando, Fonte } from '@/types';
 import { mockBandi } from '@/data/mockData';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ErrorResponse {
   success: false;
@@ -624,6 +625,15 @@ export class FirecrawlService {
       return [];
     }
   }
+
+  static generateFonteFromRawData(data: any): Fonte {
+    return {
+      id: uuidv4(),
+      nome: data.nome || 'Fonte senza nome',
+      url: data.url || '',
+      tipo: this.determineFonteType(data.nome || '')
+    };
+  }
 }
 
 function isBandoPage(content: string, url: string, isMimitPage: boolean = false): boolean {
@@ -814,7 +824,7 @@ function extractScadenza(content: string, isMimitPage: boolean = false): string 
   // Parole chiave che indicano una scadenza
   const scadenzaKeywords = ['scadenza', 'termine', 'entro il', 'fino al', 'data limite', 'chiusura'];
   
-  // Cerca date vicine alle parole chiave di scadenza
+  // Cerca date vicino alle parole chiave di scadenza
   for (const keyword of scadenzaKeywords) {
     const keywordIndex = contentLower.indexOf(keyword);
     if (keywordIndex >= 0) {

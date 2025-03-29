@@ -1,4 +1,3 @@
-
 export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro' | 'test';
 
 export interface Bando {
@@ -55,6 +54,7 @@ export interface Match {
   bando_titolo?: string;
   cliente_nome?: string;
   data_creazione?: string;
+  archiviato?: boolean;
 }
 
 export interface Statistica {

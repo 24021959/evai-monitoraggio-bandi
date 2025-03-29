@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Match, Bando, Cliente } from '@/types';
 import MatchService, { MatchResult } from './MatchService';
@@ -25,7 +26,9 @@ export class SupabaseMatchService {
         clienteId: row.clienteid,
         bandoId: row.bandoid,
         compatibilita: row.compatibilita,
-        notificato: row.notificato || false
+        notificato: row.notificato || false,
+        data_creazione: row.created_at,
+        archiviato: row.archiviato || false
       }));
     } catch (error) {
       console.error('Errore durante il recupero dei match:', error);
@@ -50,7 +53,8 @@ export class SupabaseMatchService {
         clienteid: match.clienteId,
         bandoid: match.bandoId,
         compatibilita: match.compatibilita,
-        notificato: match.notificato || false
+        notificato: match.notificato || false,
+        archiviato: match.archiviato || false
       };
 
       const { error } = await supabase
@@ -66,6 +70,29 @@ export class SupabaseMatchService {
       return true;
     } catch (error) {
       console.error('Errore durante il salvataggio del match:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Aggiorna lo stato di archiviazione di un match
+   */
+  static async updateMatchArchiveStatus(matchId: string, archived: boolean): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('match')
+        .update({ archiviato: archived })
+        .eq('id', matchId);
+
+      if (error) {
+        console.error('Errore nell\'aggiornamento dello stato di archiviazione:', error);
+        return false;
+      }
+
+      console.log(`Match ${archived ? 'archiviato' : 'ripristinato'} con successo:`, matchId);
+      return true;
+    } catch (error) {
+      console.error('Errore durante l\'aggiornamento dello stato di archiviazione:', error);
       return false;
     }
   }
@@ -92,7 +119,9 @@ export class SupabaseMatchService {
         clienteId: row.clienteid,
         bandoId: row.bandoid,
         compatibilita: row.compatibilita,
-        notificato: row.notificato || false
+        notificato: row.notificato || false,
+        data_creazione: row.created_at,
+        archiviato: row.archiviato || false
       }));
     } catch (error) {
       console.error('Errore durante il recupero dei match per cliente:', error);
@@ -122,7 +151,9 @@ export class SupabaseMatchService {
         clienteId: row.clienteid,
         bandoId: row.bandoid,
         compatibilita: row.compatibilita,
-        notificato: row.notificato || false
+        notificato: row.notificato || false,
+        data_creazione: row.created_at,
+        archiviato: row.archiviato || false
       }));
     } catch (error) {
       console.error('Errore durante il recupero dei match per bando:', error);
@@ -168,7 +199,9 @@ export class SupabaseMatchService {
           clienteId: match.cliente.id,
           bandoId: match.bando.id,
           compatibilita: match.punteggio,
-          notificato: false
+          notificato: false,
+          data_creazione: new Date().toISOString(),
+          archiviato: false
         });
       }
       
@@ -193,7 +226,7 @@ export class SupabaseMatchService {
     
     // Converti i match in MatchResult
     const results: MatchResult[] = [];
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString();
     
     for (const match of matches) {
       const cliente = clientMap.get(match.clienteId);
@@ -214,7 +247,7 @@ export class SupabaseMatchService {
             scadenza: bando.scadenza
           },
           punteggio: match.compatibilita,
-          dataMatch: today // Utilizziamo la data di oggi come approssimazione
+          dataMatch: match.data_creazione || today
         });
       }
     }
@@ -257,7 +290,8 @@ export class SupabaseMatchService {
         // Aggiungiamo i campi per la visualizzazione nella tabella
         bando_titolo: row.bandi?.titolo || 'Bando non disponibile',
         cliente_nome: row.clienti?.nome || 'Cliente non disponibile',
-        data_creazione: row.created_at
+        data_creazione: row.created_at,
+        archiviato: row.archiviato || false
       }));
     } catch (error) {
       console.error('Errore durante il recupero dei match per intervallo di date:', error);
@@ -322,7 +356,8 @@ export class SupabaseMatchService {
       'Nome Cliente',
       'Compatibilità',
       'Data Creazione',
-      'Notificato'
+      'Notificato',
+      'Archiviato'
     ].join(',');
 
     // Creiamo le righe del CSV
@@ -335,12 +370,88 @@ export class SupabaseMatchService {
         match.cliente_nome ? `"${match.cliente_nome.replace(/"/g, '""')}"` : '',
         match.compatibilita,
         match.data_creazione ? new Date(match.data_creazione).toISOString() : '',
-        match.notificato ? 'Sì' : 'No'
+        match.notificato ? 'Sì' : 'No',
+        match.archiviato ? 'Sì' : 'No'
       ].join(',');
     });
 
     // Uniamo headers e rows
     return [headers, ...rows].join('\n');
+  }
+
+  /**
+   * Verifica se un bando ha già match salvati
+   */
+  static async hasBandoMatches(bandoId: string): Promise<boolean> {
+    try {
+      const { count, error } = await supabase
+        .from('match')
+        .select('*', { count: 'exact', head: true })
+        .eq('bandoid', bandoId);
+
+      if (error) {
+        console.error('Errore nella verifica dei match per il bando:', error);
+        return false;
+      }
+
+      return (count || 0) > 0;
+    } catch (error) {
+      console.error('Errore durante la verifica dei match per il bando:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Genera automaticamente match per un nuovo bando
+   */
+  static async generateMatchesForBando(bando: Bando): Promise<number> {
+    try {
+      // Verifica se esistono già match per questo bando
+      const hasMatches = await this.hasBandoMatches(bando.id);
+      if (hasMatches) {
+        console.log('Match già esistenti per il bando:', bando.id);
+        return 0;
+      }
+
+      // Recupera tutti i clienti
+      const { data: clientiData, error: clientiError } = await supabase
+        .from('clienti')
+        .select('*');
+
+      if (clientiError || !clientiData) {
+        console.error('Errore nel recupero dei clienti:', clientiError);
+        return 0;
+      }
+
+      // Genera match per ogni cliente
+      let matchCount = 0;
+      for (const cliente of clientiData) {
+        const punteggio = MatchService.calculateMatch(bando, cliente);
+        
+        // Salva solo i match con punteggio > 0
+        if (punteggio > 0) {
+          const success = await this.saveMatch({
+            id: uuidv4(),
+            clienteId: cliente.id,
+            bandoId: bando.id,
+            compatibilita: punteggio,
+            notificato: false,
+            data_creazione: new Date().toISOString(),
+            archiviato: false
+          });
+          
+          if (success) {
+            matchCount++;
+          }
+        }
+      }
+
+      console.log(`Generati ${matchCount} match per il bando ${bando.id}`);
+      return matchCount;
+    } catch (error) {
+      console.error('Errore durante la generazione dei match per il bando:', error);
+      return 0;
+    }
   }
 }
 

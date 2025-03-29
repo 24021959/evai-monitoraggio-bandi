@@ -1,8 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Bando } from '@/types';
 import { FirecrawlService } from './FirecrawlService';
 import { v4 as uuidv4 } from 'uuid';
+import SupabaseMatchService from './SupabaseMatchService';
 
 export class SupabaseBandiService {
   /**
@@ -335,7 +335,96 @@ export class SupabaseBandiService {
       return 0;
     }
   }
-  
+
+  /**
+   * Importa bandi da dati esterni e genera automaticamente match
+   */
+  static async importBandi(bandi: Bando[]): Promise<{success: boolean, count: number, matchCount: number}> {
+    try {
+      let importCount = 0;
+      let matchCount = 0;
+
+      for (const bando of bandi) {
+        // Verifica se il bando esiste già
+        const exists = await this.bandoExists(bando);
+        
+        if (!exists) {
+          // Importa solo se non esiste
+          const { error } = await supabase
+            .from('bandi')
+            .insert({
+              titolo: bando.titolo,
+              descrizione: bando.descrizione || '',
+              descrizione_completa: bando.descrizioneCompleta || '',
+              fonte: bando.fonte,
+              tipo: bando.tipo,
+              settori: bando.settori || [],
+              scadenza: bando.scadenza,
+              importo_min: bando.importoMin,
+              importo_max: bando.importoMax,
+              url: bando.url || '',
+              data_estrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0],
+              requisiti: bando.requisiti || '',
+              scadenza_dettagliata: bando.scadenzaDettagliata || '',
+              budget_disponibile: bando.budgetDisponibile || '',
+              modalita_presentazione: bando.modalitaPresentazione || '',
+              ultimi_aggiornamenti: bando.ultimiAggiornamenti || ''
+            });
+          
+          if (error) {
+            console.error('Errore nell\'importazione del bando:', error);
+            continue;
+          }
+          
+          // Incrementa contatore
+          importCount++;
+          
+          // Genera match automaticamente per il nuovo bando
+          const { data: newBandoData } = await supabase
+            .from('bandi')
+            .select('*')
+            .eq('titolo', bando.titolo)
+            .eq('fonte', bando.fonte)
+            .single();
+            
+          if (newBandoData) {
+            const newMatchCount = await SupabaseMatchService.generateMatchesForBando(newBandoData);
+            matchCount += newMatchCount;
+          }
+        }
+      }
+      
+      console.log(`Importati ${importCount} nuovi bandi con ${matchCount} nuovi match`);
+      return { success: true, count: importCount, matchCount };
+    } catch (error) {
+      console.error('Errore durante l\'importazione dei bandi:', error);
+      return { success: false, count: 0, matchCount: 0 };
+    }
+  }
+
+  /**
+   * Verifica se un bando esiste già nel database
+   */
+  static async bandoExists(bando: Bando): Promise<boolean> {
+    try {
+      const { data, error, count } = await supabase
+        .from('bandi')
+        .select('*', { count: 'exact', head: true })
+        .eq('titolo', bando.titolo)
+        .eq('fonte', bando.fonte);
+
+      if (error) {
+        console.error('Errore nella verifica dell\'esistenza del bando:', error);
+        return false;
+      }
+
+      return (count || 0) > 0;
+    } catch (error) {
+      console.error('Errore durante la verifica dell\'esistenza del bando:', error);
+      return false;
+    }
+  }
+
   /**
    * Verifica se una stringa è un UUID valido
    */

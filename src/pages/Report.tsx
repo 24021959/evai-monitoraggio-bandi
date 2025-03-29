@@ -174,7 +174,7 @@ const Report = () => {
             </Select>
           </div>
           <div className="flex justify-end gap-2">
-            <Button onClick={generateReport} disabled={loading}>
+            <Button onClick={generateReport} disabled={loading} className="bg-blue-500 hover:bg-blue-600 text-white">
               {loading ? (
                 <>
                   Caricamento...
@@ -184,7 +184,7 @@ const Report = () => {
               )}
             </Button>
             <Button 
-              variant="secondary" 
+              variant="outline" 
               onClick={downloadReport} 
               disabled={loading || (bandi.length === 0 && matches.length === 0)}
               className="bg-blue-500 hover:bg-blue-600 text-white"
