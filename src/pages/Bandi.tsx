@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,7 +38,6 @@ const Bandi = () => {
     const fetchBandi = async () => {
       setLoading(true);
       try {
-        // Ora utilizziamo getBandiCombinati per avere tutti i bandi senza duplicati
         const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
         setBandi(bandiCombinati);
         console.log("Bandi page: Caricati bandi combinati:", bandiCombinati.length);
@@ -63,14 +61,12 @@ const Bandi = () => {
     const fonti = new Set<string>();
     
     bandi.forEach(bando => {
-      // Raccogliamo i settori
       if (bando.settori && Array.isArray(bando.settori)) {
         bando.settori.forEach(settore => {
           settori.add(settore);
         });
       }
       
-      // Raccogliamo le fonti
       if (bando.fonte) {
         fonti.add(bando.fonte);
       }
@@ -139,7 +135,7 @@ const Bandi = () => {
         <h1 className="text-2xl font-bold">Elenco Bandi</h1>
       </div>
       
-      <Card className="bg-green-50">
+      <Card className="bg-blue-50 border-blue-200">
         <CardHeader className="pb-4">
           <CardTitle>Filtra Bandi</CardTitle>
           <CardDescription>Ricerca e filtra i bandi in base ai tuoi criteri</CardDescription>
@@ -224,7 +220,7 @@ const Bandi = () => {
       <div>
         {loading ? (
           <div className="flex items-center justify-center p-12">
-            <div className="animate-spin h-12 w-12 border-4 border-green-500 rounded-full border-t-transparent"></div>
+            <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
           </div>
         ) : bandiFiltrati.length === 0 ? (
           <Card className="bg-gray-50">

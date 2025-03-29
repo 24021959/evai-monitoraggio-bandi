@@ -100,16 +100,23 @@ export interface Fonte {
 // Interface for data items used in charts
 export interface DataItem {
   [key: string]: string | number;
+  periodo?: string;
+  matchGenerati?: number;
+  bandiScaduti?: number;
+  cliente?: string;
+  matchAlta?: number;
+  matchMedia?: number;
+  matchBassa?: number;
 }
 
-// Extending DataItem to fix TypeScript errors
+// Extending DataItem for specific chart types
 export interface ReportAnalisiTemporale extends DataItem {
   periodo: string;
   matchGenerati: number;
   bandiScaduti: number;
 }
 
-// Extending DataItem to fix TypeScript errors
+// Extending DataItem for specific chart types
 export interface ReportPerformanceMatch extends DataItem {
   cliente: string;
   matchGenerati: number;

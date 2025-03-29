@@ -213,7 +213,7 @@ const BandoCard: React.FC<BandoCardProps> = ({
           <Button 
             variant="default" 
             size="sm"
-            className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600" 
+            className="w-full flex items-center justify-center gap-2" 
             onClick={() => onViewDetails(bando.id)}
           >
             <Info className="h-4 w-4" />
