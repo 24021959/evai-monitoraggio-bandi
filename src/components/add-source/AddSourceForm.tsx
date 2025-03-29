@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fonte } from '@/types';
@@ -9,7 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import WebhookService from '@/utils/WebhookService';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import N8nWebhookConfigDialog from '../fonti/N8nWebhookConfigDialog';
+import { N8nWebhookConfigDialog } from '../fonti/N8nWebhookConfigDialog';
 
 interface AddSourceFormProps {
   onAddSource: (fonte: Omit<Fonte, 'id'>) => void;
@@ -40,7 +39,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       return;
     }
     
-    // Validazione URL
     try {
       new URL(url);
     } catch (err) {
@@ -53,7 +51,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       return;
     }
 
-    // Controlla se la configurazione del webhook è valida
     if (syncWithN8n) {
       const webhookUrl = localStorage.getItem('n8nWebhookUrl');
       
@@ -82,10 +79,8 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     try {
       console.log("Aggiunta fonte a Supabase:", newFonte);
       
-      // Add to Supabase
       await onAddSource(newFonte);
       
-      // Add to n8n if enabled
       if (syncWithN8n) {
         setWebhookStatus('adding');
         try {
@@ -114,7 +109,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         }
       }
       
-      // Reset form only on success
       setNome('');
       setUrl('');
       setTipo('');
@@ -138,7 +132,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       }
     } finally {
       setIsAdding(false);
-      // Reset dello stato webhook dopo 30 secondi
       if (webhookStatus !== 'idle') {
         setTimeout(() => {
           setWebhookStatus('idle');
