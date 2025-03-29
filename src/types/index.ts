@@ -1,5 +1,4 @@
 
-
 export interface Bando {
   id: string;
   titolo: string;
@@ -103,12 +102,14 @@ export interface DataItem {
   [key: string]: string | number;
 }
 
+// Extending DataItem to fix TypeScript errors
 export interface ReportAnalisiTemporale extends DataItem {
   periodo: string;
   matchGenerati: number;
   bandiScaduti: number;
 }
 
+// Extending DataItem to fix TypeScript errors
 export interface ReportPerformanceMatch extends DataItem {
   cliente: string;
   matchGenerati: number;
@@ -116,4 +117,3 @@ export interface ReportPerformanceMatch extends DataItem {
   matchMedia: number;
   matchBassa: number;
 }
-

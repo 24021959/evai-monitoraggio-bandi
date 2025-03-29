@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,13 @@ const MatchPage = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Effect to initialize searchResults with all bandi when component mounts
+  useEffect(() => {
+    if (bandi.length > 0) {
+      setSearchResults(bandi);
+    }
+  }, [bandi]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -120,7 +128,12 @@ const MatchPage = () => {
   const clearSearch = () => {
     setSearchTerm('');
     setSelectedBando('');
-    setSearchResults([]);
+    setSearchResults(bandi); // Show all bandi when cleared
+  };
+
+  const handleBandoInputFocus = () => {
+    setIsBandoDropdownOpen(true);
+    setSearchResults(bandi); // Show all bandi when input is focused
   };
 
   const handleMatch = async () => {
@@ -298,7 +311,8 @@ const MatchPage = () => {
                       placeholder="Cerca bando per titolo..."
                       value={searchTerm}
                       onChange={handleSearch}
-                      onFocus={() => setIsBandoDropdownOpen(true)}
+                      onFocus={handleBandoInputFocus}
+                      onClick={handleBandoInputFocus}
                       className="pl-10 pr-10"
                       autoComplete="off"
                     />
@@ -316,7 +330,7 @@ const MatchPage = () => {
                   </div>
                   
                   {isBandoDropdownOpen && (
-                    <div ref={dropdownRef} className="absolute z-10 w-full max-w-md">
+                    <div ref={dropdownRef} className="absolute z-50 w-full max-w-md">
                       <Card className="mt-1 shadow-lg">
                         <CardContent className="p-1">
                           <div className="max-h-60 overflow-y-auto">
