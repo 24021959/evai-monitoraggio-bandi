@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
@@ -12,16 +11,31 @@ import {
   Settings
 } from 'lucide-react';
 
+const Header = () => {
+  return (
+    <header className="w-full bg-white shadow-sm py-4 px-8">
+      <div className="container mx-auto flex items-center">
+        <img 
+          src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
+          alt="EV-AI Technologies Logo" 
+          className="h-12"
+        />
+        <h1 className="ml-4 text-2xl font-semibold text-gray-800">EV-AI Monitoraggio Bandi</h1>
+      </div>
+    </header>
+  );
+};
+
 const Sidebar = () => {
   const location = useLocation();
   
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white text-white p-4 flex justify-center items-center">
+      <div className="bg-white flex justify-center items-center p-4">
         <img 
           src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
           alt="EV-AI Technologies Logo" 
-          className="h-16 max-w-full"
+          className="h-16 w-auto"
         />
       </div>
       <div className="bg-gray-100 flex-grow">
@@ -126,13 +140,20 @@ const Sidebar = () => {
 };
 
 const Layout = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
+  
   return (
-    <div className="flex h-screen bg-gray-100">
-      <div className="w-1/5 h-full">
-        <Sidebar />
-      </div>
-      <div className="w-4/5 p-8 overflow-auto">
-        <Outlet />
+    <div className="min-h-screen bg-gray-50">
+      {isHomePage && <Header />}
+      
+      <div className="flex min-h-[calc(100vh-80px)]">
+        <div className="w-1/5">
+          <Sidebar />
+        </div>
+        <div className="w-4/5 p-8 overflow-auto">
+          <Outlet />
+        </div>
       </div>
     </div>
   );
