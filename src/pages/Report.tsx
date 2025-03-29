@@ -1,225 +1,248 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
-import { 
-  SelectValue, 
-  SelectTrigger, 
-  SelectItem, 
-  SelectContent, 
-  Select 
-} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DatePicker } from "@/components/ui/date-picker";
-import { 
-  DownloadCloud, 
-  BarChart4, 
-  PieChart 
-} from "lucide-react";
-import SupabaseBandiService from "@/utils/SupabaseBandiService";
-import SupabaseMatchService from "@/utils/SupabaseMatchService";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Download, CalendarIcon, AlertCircle } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import SupabaseMatchService from '@/utils/SupabaseMatchService';
+import SupabaseReportService from '@/utils/SupabaseReportService';
 import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
-const ReportPage = () => {
+const Report = () => {
   const { toast } = useToast();
-  const [reportType, setReportType] = useState<string>("bandi");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  
-  const handleGenerateReport = async () => {
-    if (!dateFrom || !dateTo) {
+  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setMonth(new Date().getMonth() - 1)));
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isDownloadingBandi, setIsDownloadingBandi] = useState(false);
+  const [isDownloadingMatch, setIsDownloadingMatch] = useState(false);
+
+  const generateReport = async () => {
+    if (!startDate || !endDate) {
       toast({
-        title: "Date mancanti",
-        description: "Per favore seleziona sia una data di inizio che una data di fine",
+        title: "Date non valide",
+        description: "Seleziona un intervallo di date valido",
         variant: "destructive",
       });
       return;
     }
-    
-    // Ensure dateTo is greater than or equal to dateFrom
-    if (dateFrom > dateTo) {
+
+    if (startDate > endDate) {
       toast({
         title: "Intervallo non valido",
-        description: "La data di fine deve essere successiva o uguale alla data di inizio",
+        description: "La data di inizio deve essere precedente alla data di fine",
         variant: "destructive",
       });
       return;
     }
-    
-    setIsGenerating(true);
-    
+
+    setIsGeneratingReport(true);
+
     try {
-      let csvContent = "";
-      
-      if (reportType === "bandi") {
-        // Get all bandi
-        const bandi = await SupabaseBandiService.getBandi();
-        
-        // Filter by date range if needed
-        const filteredBandi = bandi.filter(bando => {
-          const bandiDate = bando.dataEstrazione 
-            ? new Date(bando.dataEstrazione) 
-            : new Date(bando.scadenza);
-          
-          return bandiDate >= dateFrom && bandiDate <= dateTo;
-        });
-        
-        // Generate CSV
-        csvContent = SupabaseBandiService.generateBandiCSV(filteredBandi);
-        
-        // Download
-        downloadCSV(csvContent, `report_bandi_${format(dateFrom, 'yyyy-MM-dd')}_${format(dateTo, 'yyyy-MM-dd')}.csv`);
-      } else if (reportType === "match") {
-        // Get matches in date range
-        const matches = await SupabaseMatchService.getMatchesByDateRange(
-          dateFrom.toISOString(),
-          dateTo.toISOString()
-        );
-        
-        // Generate CSV
-        csvContent = SupabaseMatchService.generateMatchesCSV(matches);
-        
-        // Download
-        downloadCSV(csvContent, `report_match_${format(dateFrom, 'yyyy-MM-dd')}_${format(dateTo, 'yyyy-MM-dd')}.csv`);
-      }
+      // Call Supabase report generation
+      await SupabaseReportService.generateReport(startDate, endDate);
       
       toast({
         title: "Report generato",
-        description: "Il report è stato generato e scaricato con successo",
+        description: "Il report è stato generato con successo",
       });
     } catch (error) {
-      console.error("Error generating report:", error);
+      console.error("Errore nella generazione del report:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore nella generazione del report",
+        description: "Si è verificato un errore durante la generazione del report",
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingReport(false);
     }
   };
-  
-  const downloadCSV = (csvContent: string, filename: string) => {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+  const downloadBandiCSV = async () => {
+    setIsDownloadingBandi(true);
+    
+    try {
+      const csvContent = await SupabaseBandiService.generateBandiCSV();
+      
+      if (!csvContent) {
+        throw new Error("Non è stato possibile generare il CSV dei bandi");
+      }
+      
+      // Create and download the CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `bandi_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download completato",
+        description: "Il file CSV dei bandi è stato scaricato con successo",
+      });
+    } catch (error) {
+      console.error("Errore nel download del CSV dei bandi:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il download del CSV dei bandi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingBandi(false);
+    }
   };
-  
+
+  const downloadMatchCSV = async () => {
+    setIsDownloadingMatch(true);
+    
+    try {
+      const csvContent = await SupabaseMatchService.generateMatchCSV();
+      
+      if (!csvContent) {
+        throw new Error("Non è stato possibile generare il CSV dei match");
+      }
+      
+      // Create and download the CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `match_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download completato",
+        description: "Il file CSV dei match è stato scaricato con successo",
+      });
+    } catch (error) {
+      console.error("Errore nel download del CSV dei match:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il download del CSV dei match",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingMatch(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Report</h1>
-        <p className="text-gray-500">Genera report personalizzati sui dati del sistema</p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Report e Statistiche</h1>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Genera Nuovo Report</CardTitle>
-          <CardDescription>Seleziona i parametri per generare un report</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="reportType">Tipo di Report</Label>
-              <Select value={reportType} onValueChange={setReportType}>
-                <SelectTrigger id="reportType">
-                  <SelectValue placeholder="Seleziona tipo di report" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bandi">Report Bandi</SelectItem>
-                  <SelectItem value="match">Report Match</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="dateFrom">Data Inizio</Label>
-              <DatePicker
-                id="dateFrom"
-                date={dateFrom}
-                onDateChange={setDateFrom}
-                className="w-full"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="dateTo">Data Fine</Label>
-              <DatePicker
-                id="dateTo"
-                date={dateTo}
-                onDateChange={setDateTo}
-                className="w-full"
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleGenerateReport} 
-              disabled={isGenerating || !dateFrom || !dateTo}
-              className="bg-blue-500 hover:bg-blue-600"
-            >
-              {isGenerating ? (
-                <>Generazione in corso...</>
-              ) : (
-                <>
-                  <DownloadCloud className="mr-2 h-4 w-4" />
-                  Genera e Scarica
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart4 className="mr-2 h-5 w-5 text-blue-500" />
-              Report Bandi
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-500 mb-4">
-              Genera un report sui bandi disponibili in un determinato periodo. Il report includerà:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-gray-500">
-              <li>Elenco completo dei bandi nel periodo selezionato</li>
-              <li>Dettagli su importi, scadenze e settori</li>
-              <li>Statistiche sui tipi di bandi disponibili</li>
-            </ul>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="download" className="w-full">
+        <TabsList className="grid grid-cols-2 w-60">
+          <TabsTrigger value="download">Download Dati</TabsTrigger>
+          <TabsTrigger value="report">Reportistica</TabsTrigger>
+        </TabsList>
         
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <PieChart className="mr-2 h-5 w-5 text-green-500" />
-              Report Match
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-500 mb-4">
-              Genera un report sui match tra bandi e clienti in un determinato periodo. Il report includerà:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-gray-500">
-              <li>Elenco completo dei match generati nel periodo</li>
-              <li>Percentuali di compatibilità per ogni match</li>
-              <li>Dettagli su clienti e bandi corrispondenti</li>
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="download" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Esporta Dati</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="p-4 border border-gray-200">
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <h3 className="text-lg font-medium">Bandi</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Scarica tutti i bandi presenti nel sistema in formato CSV
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center gap-2"
+                      onClick={downloadBandiCSV}
+                      disabled={isDownloadingBandi}
+                    >
+                      <Download className="h-4 w-4" />
+                      {isDownloadingBandi ? 'Download in corso...' : 'Scarica CSV Bandi'}
+                    </Button>
+                  </div>
+                </Card>
+                
+                <Card className="p-4 border border-gray-200">
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-5 w-5 text-green-600" />
+                      <h3 className="text-lg font-medium">Match</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Scarica tutti i match tra bandi e clienti in formato CSV
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center gap-2"
+                      onClick={downloadMatchCSV}
+                      disabled={isDownloadingMatch}
+                    >
+                      <Download className="h-4 w-4" />
+                      {isDownloadingMatch ? 'Download in corso...' : 'Scarica CSV Match'}
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="report" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Genera Report</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Seleziona un intervallo di date per generare un report dettagliato su bandi e match
+                </AlertDescription>
+              </Alert>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Data Inizio</label>
+                  <DatePicker 
+                    date={startDate} 
+                    onDateChange={setStartDate} 
+                    className="w-full" 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Data Fine</label>
+                  <DatePicker 
+                    date={endDate} 
+                    onDateChange={setEndDate} 
+                    className="w-full" 
+                  />
+                </div>
+              </div>
+              
+              <Button 
+                className="w-full" 
+                onClick={generateReport}
+                disabled={isGeneratingReport}
+              >
+                {isGeneratingReport ? 'Generazione in corso...' : 'Genera Report'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
 
-export default ReportPage;
+export default Report;

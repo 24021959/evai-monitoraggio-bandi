@@ -134,6 +134,38 @@ class SupabaseBandiService {
       return false;
     }
   }
+
+  // Add generateBandiCSV method to fix Report.tsx error
+  static async generateBandiCSV(): Promise<string> {
+    try {
+      const bandi = await this.getBandi();
+      
+      // Define CSV header
+      const header = ['ID', 'Titolo', 'Fonte', 'Tipo', 'Settori', 'Importo Min', 'Importo Max', 'Scadenza', 'URL'];
+      
+      // Format bandi data as CSV rows
+      const rows = bandi.map(bando => {
+        return [
+          bando.id,
+          `"${(bando.titolo || '').replace(/"/g, '""')}"`, // Escape quotes
+          `"${(bando.fonte || '').replace(/"/g, '""')}"`,
+          bando.tipo || '',
+          `"${Array.isArray(bando.settori) ? bando.settori.join('; ') : ''}"`,
+          bando.importoMin || '',
+          bando.importoMax || '',
+          bando.scadenza || '',
+          `"${(bando.url || '').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+      
+      // Combine header and rows
+      const csvContent = [header.join(','), ...rows].join('\n');
+      return csvContent;
+    } catch (error) {
+      console.error('Error generating CSV for bandi:', error);
+      return '';
+    }
+  }
 }
 
 export default SupabaseBandiService;
