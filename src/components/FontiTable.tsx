@@ -38,7 +38,6 @@ const FontiTable: React.FC<FontiTableProps> = ({
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>URL</TableHead>
-              <TableHead>Tipo</TableHead>
               <TableHead>Azioni</TableHead>
             </TableRow>
           </TableHeader>

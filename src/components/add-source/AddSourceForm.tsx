@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Fonte } from '@/types';
+import { SourceFormFields } from './SourceFormFields';
 
 interface AddSourceFormProps {
   onAddSource: (newSource: Omit<Fonte, 'id'>) => Promise<boolean>;
@@ -14,7 +14,6 @@ interface AddSourceFormProps {
 const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [nome, setNome] = useState('');
   const [url, setUrl] = useState('');
-  const [tipo, setTipo] = useState('sito_web');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { toast } = useToast();
@@ -26,7 +25,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
 
     try {
       // Assicurati che tutti i campi obbligatori siano compilati
-      if (!nome || !url || !tipo) {
+      if (!nome || !url) {
         setError('Tutti i campi obbligatori devono essere compilati');
         setIsSubmitting(false);
         return;
@@ -41,11 +40,11 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         return;
       }
 
-      // Crea l'oggetto fonte
+      // Crea l'oggetto fonte con tipo predefinito
       const newSource: Omit<Fonte, 'id'> = {
         nome,
         url,
-        tipo
+        tipo: 'sito_web'  // Valore predefinito, non più selezionabile
       };
 
       // Aggiungi la fonte
@@ -55,7 +54,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         // Reset del form se il salvataggio è andato a buon fine
         setNome('');
         setUrl('');
-        setTipo('sito_web');
         setIsSubmitting(false);
         
         // Mostra un messaggio di successo
@@ -77,39 +75,12 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && <div className="text-red-500">{error}</div>}
       
-      <div>
-        <Label htmlFor="nome">Nome</Label>
-        <Input 
-          type="text" 
-          id="nome" 
-          value={nome} 
-          onChange={(e) => setNome(e.target.value)} 
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="url">URL</Label>
-        <Input 
-          type="text" 
-          id="url" 
-          value={url} 
-          onChange={(e) => setUrl(e.target.value)} 
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="tipo">Tipo</Label>
-        <Select value={tipo} onValueChange={setTipo}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Seleziona un tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sito_web">Sito Web</SelectItem>
-            <SelectItem value="rss">RSS Feed</SelectItem>
-            <SelectItem value="api">API</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <SourceFormFields
+        nome={nome}
+        setNome={setNome}
+        url={url}
+        setUrl={setUrl}
+      />
       
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? 'Salvataggio...' : 'Salva Fonte'}

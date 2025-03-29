@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Fonte } from '@/types';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Trash2, Link } from 'lucide-react';
 import {
   AlertDialog,
@@ -40,19 +39,6 @@ export const FonteRow: React.FC<FonteRowProps> = ({
     setShowDeleteDialog(false);
   };
   
-  const getTipoBadge = (tipo: string) => {
-    switch(tipo) {
-      case 'europeo':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Europeo</Badge>;
-      case 'statale':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Statale</Badge>;
-      case 'regionale':
-        return <Badge className="bg-teal-100 text-teal-800 hover:bg-teal-100">Regionale</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Altro</Badge>;
-    }
-  };
-
   const handleSaveUrl = async (newUrl: string) => {
     const success = await onSaveUrl(fonte, newUrl);
     if (success) {
@@ -85,7 +71,6 @@ export const FonteRow: React.FC<FonteRowProps> = ({
             </Button>
           </div>
         </TableCell>
-        <TableCell>{getTipoBadge(fonte.tipo)}</TableCell>
         <TableCell>
           <div className="flex space-x-1">
             {onDelete && (
