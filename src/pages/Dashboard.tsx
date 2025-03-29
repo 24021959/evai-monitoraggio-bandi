@@ -1,19 +1,18 @@
+
 import React, { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { FileText, Users, GitCompare } from 'lucide-react';
 import { mockStatistiche } from '@/data/mockData';
-import StatCard from '@/components/StatCard';
-import ChartContainer from '@/components/ChartContainer';
-import { Button } from "@/components/ui/button";
-import { useNavigate } from 'react-router-dom';
-import { FirecrawlService } from '@/utils/FirecrawlService';
-import { Bando, Cliente, Statistica } from '@/types';
+import { Bando } from '@/types';
+import { useToast } from '@/components/ui/use-toast';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
-import { useToast } from '@/components/ui/use-toast';
+
+// Import refactored components
+import StatCardsSection from '@/components/dashboard/StatCardsSection';
+import BandiDistributionChart from '@/components/dashboard/BandiDistributionChart';
+import UltimiBandiList from '@/components/dashboard/UltimiBandiList';
+import MatchPerClienteChart from '@/components/dashboard/MatchPerClienteChart';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [allBandi, setAllBandi] = useState<Bando[]>([]);
@@ -84,7 +83,7 @@ const Dashboard = () => {
   
   const stats = calcStatistiche();
   
-  // Updated colors for better visibility
+  // Prepare data for BandiDistributionChart
   const distribuzioneBandiData = [
     { name: 'Europei', value: stats.distribuzioneBandi.europei, color: '#0066cc' },
     { name: 'Statali', value: stats.distribuzioneBandi.statali, color: '#00cc44' },
@@ -92,32 +91,7 @@ const Dashboard = () => {
     { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#5A6474' },
   ].filter(item => item.value > 0); // Show only non-zero values
 
-  // Updated label renderer with red text color
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: any) => {
-    if (percent === 0) return null;
-    
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="#ea384c" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        fontWeight="bold"
-        stroke="#ffffff"
-        strokeWidth="0.5"
-        fontSize="12"
-      >
-        {`${value} (${(percent * 100).toFixed(0)}%)`}
-      </text>
-    );
-  };
-
+  // Prepare data for UltimiBandiList
   const ultimiBandi = [...allBandi]
     .sort((a, b) => new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime())
     .slice(0, 5);
@@ -126,146 +100,30 @@ const Dashboard = () => {
     <div className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold text-gray-800 pb-2 border-b border-gray-200">Dashboard</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard 
-          title="Bandi Attivi" 
-          value={stats.bandiAttivi} 
-          color="blue" 
-          icon={<FileText className="w-8 h-8 text-blue-500" />}
-          bgColor="bg-blue-50" 
-        />
-        <StatCard 
-          title="Clienti" 
-          value={isLoading ? '...' : clientiCount} 
-          color="green" 
-          icon={<Users className="w-8 h-8 text-green-500" />}
-          bgColor="bg-green-50"
-        />
-        <StatCard 
-          title="Match Recenti" 
-          value={mockStatistiche.matchRecenti} 
-          color="yellow" 
-          icon={<GitCompare className="w-8 h-8 text-yellow-500" />}
-          bgColor="bg-amber-50"
-        />
-      </div>
+      {/* Stats Cards Section */}
+      <StatCardsSection 
+        bandiCount={stats.bandiAttivi}
+        clientiCount={clientiCount}
+        matchCount={mockStatistiche.matchRecenti}
+        isLoading={isLoading}
+      />
       
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartContainer title="Distribuzione Bandi" bgColor="bg-gradient-to-br from-blue-50 to-white">
-          <div className="h-64">
-            {isLoading ? (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Caricamento in corso...
-              </div>
-            ) : distribuzioneBandiData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={distribuzioneBandiData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {distribuzioneBandiData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Legend 
-                    formatter={(value) => <span style={{ color: '#000000', fontWeight: 500 }}>{value}</span>} 
-                  />
-                  <Tooltip 
-                    formatter={(value) => [value, 'Quantità']} 
-                    contentStyle={{ backgroundColor: 'white', borderColor: '#cccccc' }}
-                    labelStyle={{ fontWeight: 'bold', color: '#333333' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Nessun dato disponibile
-              </div>
-            )}
-          </div>
-        </ChartContainer>
+        <BandiDistributionChart 
+          distributionData={distribuzioneBandiData}
+          isLoading={isLoading}
+        />
         
-        <ChartContainer title="Ultimi Bandi" bgColor="bg-gradient-to-br from-amber-50 to-white">
-          <div className="overflow-y-auto max-h-64">
-            {isLoading ? (
-              <div className="h-32 flex items-center justify-center text-gray-400">
-                Caricamento in corso...
-              </div>
-            ) : ultimiBandi.length > 0 ? (
-              <table className="min-w-full">
-                <thead>
-                  <tr className="text-sm text-gray-600">
-                    <th className="text-left py-2 font-medium">Titolo</th>
-                    <th className="text-right py-2 font-medium">Scadenza</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {ultimiBandi.map((bando) => (
-                    <tr key={bando.id} className="border-t">
-                      <td className="py-2 text-blue-500 hover:underline">
-                        <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/bandi/${bando.id}`); }}>
-                          {bando.titolo}
-                        </a>
-                      </td>
-                      <td className="py-2 text-right text-gray-600">
-                        {bando.scadenzaDettagliata || new Date(bando.scadenza).toLocaleDateString('it-IT')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="h-32 flex items-center justify-center text-gray-400">
-                Nessun bando disponibile
-              </div>
-            )}
-          </div>
-          <div className="mt-4 text-right">
-            <Button variant="outline" size="sm" onClick={() => navigate('/bandi')}
-                   className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-              Vedi tutti i bandi
-            </Button>
-          </div>
-        </ChartContainer>
+        <UltimiBandiList 
+          bandi={ultimiBandi}
+          isLoading={isLoading}
+        />
       </div>
       
+      {/* Match per Cliente Section */}
       <div className="grid grid-cols-1 gap-6">
-        <ChartContainer title="Match per Cliente" bgColor="bg-gradient-to-br from-green-50 to-white">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={mockStatistiche.matchPerCliente}
-                  nameKey="cliente"
-                  dataKey="percentuale"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                >
-                  {mockStatistiche.matchPerCliente.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={['#0066cc', '#ff9900', '#00cc44', '#cc3300'][index % 4]} />
-                  ))}
-                </Pie>
-                <Legend 
-                  formatter={(value) => <span style={{ color: '#000000', fontWeight: 500 }}>{value}</span>}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${value}%`, 'Percentuale']}
-                  contentStyle={{ backgroundColor: 'white', borderColor: '#cccccc' }}
-                  labelStyle={{ fontWeight: 'bold', color: '#333333' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartContainer>
+        <MatchPerClienteChart matchData={mockStatistiche.matchPerCliente} />
       </div>
     </div>
   );
