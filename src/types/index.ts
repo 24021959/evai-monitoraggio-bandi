@@ -2,63 +2,124 @@ export interface Bando {
   id: string;
   titolo: string;
   descrizione: string;
-  ente: string;
-  scadenza: string;
-  url: string;
-  tipo: string;
-  settori: string[];
-  regioni: string[];
-  destinatari: string[];
+  descrizione_completa?: string;
+  descrizioneCompleta?: string;
   fonte: string;
-  stato: string;
-  importo: number;
-  note?: string;
-  allegati?: string[];
-  data_inserimento?: string;
-  data_aggiornamento?: string;
+  scadenza: string;
+  scadenza_dettagliata?: string;
+  scadenzaDettagliata?: string;
+  tipo: string;
+  url?: string;
+  settori?: string[];
+  created_at?: string;
+  importo_min?: number;
+  importoMin?: number;
+  importo_max?: number;
+  importoMax?: number;
+  budget_disponibile?: string;
+  budgetDisponibile?: string;
+  data_estrazione?: string;
+  dataEstrazione?: string;
+  requisiti?: string;
+  modalita_presentazione?: string;
+  modalitaPresentazione?: string;
+  ultimi_aggiornamenti?: string;
+  ultimiAggiornamenti?: string;
 }
+
+export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro';
 
 export interface Cliente {
   id: string;
   nome: string;
   email: string;
-  telefono: string;
   settore: string;
   regione: string;
-  note: string;
-  interessi: string[];
-  bandi_interesse?: string[];
-  data_inserimento?: string;
-  data_aggiornamento?: string;
+  provincia: string;
+  created_at?: string;
+  interessisettoriali?: string[];
+  interessiSettoriali?: string[];
+  telefono?: string;
+  fatturato?: number;
+  dipendenti?: number;
+  annofondazione?: number;
+  annoFondazione?: number;
+  formagiuridica?: string;
+  formaGiuridica?: string;
+  codiceateco?: string;
+  codiceATECO?: string;
+  // Nuovi campi per il matching avanzato
+  esperienzaFinanziamenti?: string;
+  tecnologieSpecifiche?: string;
+  criteriESG?: string;
+  capacitaRD?: string;
+  presenzaInternazionale?: string;
+  faseDiCrescita?: 'startup' | 'scaleup' | 'matura' | 'consolidata';
+  stabilitaFinanziaria?: string;
+  competenzeDipendenti?: string;
+  partnership?: string;
+  certificazioni?: string;
 }
 
 export interface Match {
   id: string;
-  bando_id: string;
-  cliente_id: string;
-  punteggio: number;
-  note: string;
-  data_inserimento?: string;
+  clienteId: string;
+  bandoId: string;
+  compatibilita: number;
+  notificato: boolean;
+  created_at?: string;
+  updated_at?: string;
+  archiviato?: boolean;
+  bando_titolo?: string; 
+  cliente_nome?: string;
+  data_creazione?: string;
+}
+
+export interface Statistica {
+  bandiAttivi: number;
+  numeroClienti: number;
+  matchRecenti: number;
+  distribuzioneBandi: {
+    europei: number;
+    statali: number;
+    regionali: number;
+  };
+  bandoPerSettore: { settore: string, percentuale: number }[];
+  matchPerCliente: { cliente: string, percentuale: number }[];
 }
 
 export interface Fonte {
   id: string;
   nome: string;
   url: string;
-  tipo?: string;
+  tipo: string;
+  stato?: string;
 }
 
-// Add these interfaces for the Report.tsx file
+// Interface for data items used in charts
 export interface DataItem {
-  [key: string]: string | number;
+  [key: string]: string | number | undefined;
+  periodo?: string;
+  matchGenerati?: number;
+  bandiScaduti?: number;
+  cliente?: string;
+  matchAlta?: number;
+  matchMedia?: number;
+  matchBassa?: number;
 }
 
+// Extending DataItem for specific chart types
 export interface ReportAnalisiTemporale extends DataItem {
-  name: string;
-  count: number;
+  periodo: string;
+  matchGenerati: number;
+  bandiScaduti: number;
 }
 
+// Extending DataItem for specific chart types
 export interface ReportPerformanceMatch extends DataItem {
-  name: string;
-  value: number;
+  cliente: string;
+  matchGenerati: number;
+  matchAlta: number;
+  matchMedia: number;
+  matchBassa: number;
 }
