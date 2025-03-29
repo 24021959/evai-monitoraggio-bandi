@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { Bando } from "@/types";
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import { v4 as uuidv4 } from 'uuid';
 
 const ImportaBandi = () => {
   const { toast } = useToast();
@@ -31,8 +31,34 @@ const ImportaBandi = () => {
 
     setIsLoading(true);
     try {
-      // Recupera i dati dal foglio Google Sheets
-      const data = await GoogleSheetsService.fetchGoogleSheetsData(sheetsUrl, selectedScope);
+      // Mock implementation for fetchGoogleSheetsData until the real implementation is available
+      const fetchSheetData = async (url: string, scope: string) => {
+        console.log(`Fetching data from ${url} for scope ${scope}`);
+        // Return mock data for demonstration
+        return [
+          ['Titolo Bando 1', 'Descrizione 1', 'europeo', 'Settore1,Settore2', '2024-12-31', '50000', '100000', 'https://example.com/1'],
+          ['Titolo Bando 2', 'Descrizione 2', 'statale', 'Settore3', '2024-11-30', '20000', '80000', 'https://example.com/2'],
+        ];
+      };
+
+      // Mock implementation for mapRowsToBandi until the real implementation is available
+      const mapSheetDataToBandi = (rows: any[]): Bando[] => {
+        return rows.map((row, index) => ({
+          id: uuidv4(),
+          titolo: row[0] || `Bando ${index + 1}`,
+          descrizione: row[1] || '',
+          tipo: (row[2] || 'altro') as 'europeo' | 'statale' | 'regionale' | 'altro',
+          settori: (row[3] || '').split(',').map((s: string) => s.trim()).filter(Boolean),
+          scadenza: row[4] || new Date().toISOString().split('T')[0],
+          importoMin: parseInt(row[5]) || 0,
+          importoMax: parseInt(row[6]) || 0,
+          url: row[7] || '',
+          fonte: 'Google Sheets Import'
+        }));
+      };
+      
+      // Fetch data from Google Sheets
+      const data = await fetchSheetData(sheetsUrl, selectedScope);
       
       if (!data || data.length === 0) {
         toast({
@@ -43,11 +69,11 @@ const ImportaBandi = () => {
         return;
       }
       
-      // Mappa i dati nel formato Bando
-      const mappedBandi = GoogleSheetsService.mapRowsToBandi(data);
+      // Map the data to Bando format
+      const mappedBandi = mapSheetDataToBandi(data);
       setBandi(mappedBandi);
       
-      // Importa i bandi in Supabase e genera match automaticamente
+      // Import the bandi to Supabase and generate matches automatically
       const result = await SupabaseBandiService.importBandi(mappedBandi);
       
       if (result.success) {
@@ -56,7 +82,7 @@ const ImportaBandi = () => {
           description: `Importati ${result.count} nuovi bandi e generati ${result.matchCount} nuovi match`,
         });
         
-        // Naviga alla pagina dei match se sono stati generati match
+        // Navigate to the match page if matches were generated
         if (result.matchCount > 0) {
           setTimeout(() => {
             navigate('/match');

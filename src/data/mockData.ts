@@ -151,3 +151,28 @@ export const mockFonti: Fonte[] = [
     tipo: 'statale'
   }
 ];
+
+export const mockStatistiche: Statistica = {
+  bandiAttivi: 5,
+  numeroClienti: 5,
+  matchRecenti: 8,
+  distribuzioneBandi: {
+    europei: 1,
+    statali: 2,
+    regionali: 2
+  },
+  bandoPerSettore: [
+    { settore: 'Agricoltura', percentuale: 20 },
+    { settore: 'Energia Rinnovabile', percentuale: 20 },
+    { settore: 'Digitalizzazione', percentuale: 20 },
+    { settore: 'Ricerca e Sviluppo', percentuale: 20 },
+    { settore: 'Export', percentuale: 20 }
+  ],
+  matchPerCliente: [
+    { cliente: 'Azienda Agricola Rossi', percentuale: 30 },
+    { cliente: 'GreenTech Solutions Srl', percentuale: 25 },
+    { cliente: 'Fashion Style Spa', percentuale: 20 },
+    { cliente: 'Innovative Food Srl', percentuale: 15 },
+    { cliente: 'Digital Services Srl', percentuale: 10 }
+  ]
+};

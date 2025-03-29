@@ -7,7 +7,7 @@ export interface Bando {
   fonte: string;
   descrizione?: string;
   descrizioneCompleta?: string;
-  tipo: 'europeo' | 'statale' | 'regionale' | 'altro';
+  tipo: TipoBando;  // Updated to use TipoBando type
   settori: string[];
   scadenza: string;
   importoMin?: number;
@@ -43,6 +43,7 @@ export interface Fonte {
   nome: string;
   url: string;
   tipo: TipoBando;
+  stato?: string;  // Added the stato property
 }
 
 export interface Match {
@@ -66,6 +67,7 @@ export interface Statistica {
     europei: number;
     statali: number;
     regionali: number;
+    altri?: number;
   };
   bandoPerSettore: {
     settore: string;

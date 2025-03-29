@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -8,7 +7,7 @@ import ChartContainer from '@/components/ChartContainer';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { FirecrawlService } from '@/utils/FirecrawlService';
-import { Bando, Cliente } from '@/types';
+import { Bando, Cliente, Statistica } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,13 +23,13 @@ const Dashboard = () => {
     const loadAllData = async () => {
       setIsLoading(true);
       try {
-        console.log('Dashboard: Loading combined bandi...');
-        // Carica bandi combinati (da Supabase, localStorage e sessionStorage) senza duplicati
-        const combinedBandi = await SupabaseBandiService.getBandiCombinati();
-        setAllBandi(combinedBandi);
-        console.log("Dashboard: Unique bandi count:", combinedBandi.length);
+        console.log('Dashboard: Loading bandi...');
+        // Get bandi from Supabase
+        const bandiFromDB = await SupabaseBandiService.getBandi();
+        setAllBandi(bandiFromDB);
+        console.log("Dashboard: Bandi count:", bandiFromDB.length);
         
-        if (combinedBandi.length === 0) {
+        if (bandiFromDB.length === 0) {
           console.log("Dashboard: No bandi found in any source");
         }
         
