@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fonte, TipoBando } from '@/types';
@@ -19,7 +20,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const [nome, setNome] = useState('');
   const [url, setUrl] = useState('');
   const [tipo, setTipo] = useState<TipoBando>('altro');
-  const [syncWithN8n, setSyncWithN8n] = useState(false);
+  const [syncWithN8n, setSyncWithN8n] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
   const [errorDetails, setErrorDetails] = useState<string>('');
@@ -30,6 +31,9 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     const storedWebhookUrl = localStorage.getItem('n8nWebhookUrl');
     if (storedWebhookUrl) {
       setWebhookUrl(storedWebhookUrl);
+    } else {
+      // If no webhook URL is configured, show the config dialog
+      setShowConfigDialog(true);
     }
   }, []);
   
@@ -78,8 +82,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     const newFonte: Omit<Fonte, 'id'> = {
       nome,
       url,
-      tipo,
-      stato: 'attivo'
+      tipo
     };
     
     setIsAdding(true);

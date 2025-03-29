@@ -9,14 +9,12 @@ import { Fonte } from '@/types';
 interface FontiTabContentProps {
   fonti: Fonte[];
   isLoading: boolean;
-  onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
 export const FontiTabContent: React.FC<FontiTabContentProps> = ({ 
   fonti, 
   isLoading, 
-  onEdit, 
   onDelete 
 }) => {
   return (
@@ -41,7 +39,6 @@ export const FontiTabContent: React.FC<FontiTabContentProps> = ({
         ) : (
           <FontiTable 
             fonti={fonti} 
-            onEdit={onEdit}
             onDelete={onDelete}
           />
         )}

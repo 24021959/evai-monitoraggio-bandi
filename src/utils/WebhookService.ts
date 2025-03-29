@@ -16,7 +16,7 @@ class WebhookService {
     
     console.log(`Invio richiesta webhook per azione "${action}" a ${webhookUrl}`);
     
-    // Prepara il payload da inviare al webhook
+    // Prepara il payload da inviare al webhook, adattato per il foglio Google Sheets
     const payload = {
       action,
       fonte: {

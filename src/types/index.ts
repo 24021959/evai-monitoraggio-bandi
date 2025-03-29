@@ -1,3 +1,4 @@
+
 export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro' | 'test';
 
 export interface Bando {

@@ -38,8 +38,8 @@ const Fonti = () => {
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 mb-6">
-          <TabsTrigger value="fonti">Fonti Configurate</TabsTrigger>
-          <TabsTrigger value="aggiungi">Aggiungi Fonte</TabsTrigger>
+          <TabsTrigger value="fonti" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Fonti Configurate</TabsTrigger>
+          <TabsTrigger value="aggiungi" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Aggiungi Fonte</TabsTrigger>
         </TabsList>
         
         <TabsContent value="fonti">

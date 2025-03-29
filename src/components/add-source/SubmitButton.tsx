@@ -11,7 +11,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({ isAdding }) => {
   return (
     <Button 
       type="submit" 
-      className="w-full flex items-center justify-center gap-2"
+      className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600"
       disabled={isAdding}
     >
       {isAdding ? (
