@@ -1,173 +1,207 @@
 
-import { Match, Bando, Cliente } from '@/types';
+import { Bando, Cliente, Match } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-import SupabaseClientiService from './SupabaseClientiService';
 
 // Mock implementation of a Supabase match service
 class SupabaseMatchService {
   // Storage for mock matches
-  private static matchStorage: Match[] = [
-    {
-      id: 'match-1',
-      clienteId: 'cliente-1',
-      bandoId: 'bando-1',
-      compatibilita: 85,
-      notificato: true,
-      bando_titolo: 'Bando per l\'innovazione nel settore agricolo',
-      cliente_nome: 'Azienda Agricola Rossi',
-      data_creazione: '2024-01-15',
-      archiviato: false
-    },
-    {
-      id: 'match-2',
-      clienteId: 'cliente-2',
-      bandoId: 'bando-2',
-      compatibilita: 75,
-      notificato: true,
-      bando_titolo: 'Incentivi per l\'efficienza energetica nelle PMI',
-      cliente_nome: 'GreenTech Solutions Srl',
-      data_creazione: '2024-01-20',
-      archiviato: false
-    }
-  ];
+  private static matchesStorage: Match[] = [];
 
   // Get all matches
   static async getMatches(): Promise<Match[]> {
     // In a real implementation, this would fetch from Supabase
     console.log('Fetching all matches');
-    return this.matchStorage;
+    return this.matchesStorage;
   }
 
-  // Get non-archived matches
-  static async getActiveMatches(): Promise<Match[]> {
-    // In a real implementation, this would filter in the Supabase query
-    return this.matchStorage.filter(match => !match.archiviato);
+  // Get matches by cliente ID
+  static async getMatchesByClienteId(clienteId: string): Promise<Match[]> {
+    // In a real implementation, this would fetch from Supabase
+    console.log(`Fetching matches for cliente: ${clienteId}`);
+    return this.matchesStorage.filter(match => match.clienteId === clienteId);
   }
 
-  // Get archived matches
-  static async getArchivedMatches(): Promise<Match[]> {
-    // In a real implementation, this would filter in the Supabase query
-    return this.matchStorage.filter(match => match.archiviato);
+  // Get matches by bando ID
+  static async getMatchesByBandoId(bandoId: string): Promise<Match[]> {
+    // In a real implementation, this would fetch from Supabase
+    console.log(`Fetching matches for bando: ${bandoId}`);
+    return this.matchesStorage.filter(match => match.bandoId === bandoId);
+  }
+  
+  // Get matches by date range
+  static async getMatchesByDateRange(startDate: string, endDate: string): Promise<Match[]> {
+    // Convert dates to timestamps for comparison
+    const start = new Date(startDate).getTime();
+    const end = new Date(endDate).getTime();
+    
+    return this.matchesStorage.filter(match => {
+      if (match.data_creazione) {
+        const matchDate = new Date(match.data_creazione).getTime();
+        return matchDate >= start && matchDate <= end;
+      }
+      return false;
+    });
   }
 
-  // Archive a match
-  static async archiveMatch(matchId: string): Promise<boolean> {
-    const matchIndex = this.matchStorage.findIndex(m => m.id === matchId);
+  // Update match archive status
+  static async updateMatchArchiveStatus(matchId: string, archiviato: boolean): Promise<boolean> {
+    const matchIndex = this.matchesStorage.findIndex(match => match.id === matchId);
     if (matchIndex !== -1) {
-      this.matchStorage[matchIndex].archiviato = true;
+      this.matchesStorage[matchIndex].archiviato = archiviato;
       return true;
     }
     return false;
   }
 
-  // Restore a match from archive
-  static async restoreMatch(matchId: string): Promise<boolean> {
-    const matchIndex = this.matchStorage.findIndex(m => m.id === matchId);
-    if (matchIndex !== -1) {
-      this.matchStorage[matchIndex].archiviato = false;
-      return true;
-    }
-    return false;
-  }
-
-  // Generate matches for a list of bandi
+  // Generate matches for bandi
   static async generateMatchesForBandi(bandi: Bando[]): Promise<number> {
-    try {
-      const clienti = await SupabaseClientiService.getClienti();
-      let matchCount = 0;
-
-      for (const bando of bandi) {
-        for (const cliente of clienti) {
-          // Convert database field names to match Cliente interface
-          const clienteFormatted: Cliente = {
-            id: cliente.id,
-            nome: cliente.nome,
-            settore: cliente.settore,
-            regione: cliente.regione,
-            provincia: cliente.provincia,
-            fatturato: cliente.fatturato,
-            // Map interessisettoriali to interessiSettoriali (camel case)
-            interessiSettoriali: Array.isArray(cliente.interessisettoriali) ? 
-              cliente.interessisettoriali : 
-              (typeof cliente.interessisettoriali === 'string' ? 
-                [cliente.interessisettoriali] : []),
-            dipendenti: cliente.dipendenti,
-            email: cliente.email,
-            telefono: cliente.telefono,
-            annoFondazione: cliente.annofondazione,
-            formaGiuridica: cliente.formagiuridica,
-            codiceATECO: cliente.codiceateco
+    let matchCount = 0;
+    
+    // Get all clients (In a real implementation, this would fetch from Supabase)
+    const clienti: Cliente[] = [
+      {
+        id: 'cliente-1',
+        nome: 'Azienda Agricola Rossi',
+        settore: 'Agricoltura',
+        regione: 'Lombardia',
+        provincia: 'Milano',
+        fatturato: 500000,
+        interessiSettoriali: ['Agricoltura', 'Innovazione Agricola'],
+        dipendenti: 15,
+        email: 'info@rossiagricola.it'
+      },
+      {
+        id: 'cliente-2',
+        nome: 'GreenTech Solutions Srl',
+        settore: 'Energia Rinnovabile',
+        regione: 'Lazio',
+        provincia: 'Roma',
+        fatturato: 1200000,
+        interessiSettoriali: ['Energia Solare', 'Eolico', 'Sostenibilità'],
+        dipendenti: 40,
+        email: 'info@greentech.it'
+      }
+    ];
+    
+    // For each bando, find matching clienti
+    for (const bando of bandi) {
+      for (const cliente of clienti) {
+        // Simple matching algorithm (in a real implementation, this would be more sophisticated)
+        let compatibilita = 0;
+        
+        // Match based on sectors of interest
+        if (bando.settori && cliente.interessiSettoriali) {
+          for (const settore of bando.settori) {
+            if (cliente.interessiSettoriali.some(s => s.toLowerCase().includes(settore.toLowerCase()) || 
+                                                  settore.toLowerCase().includes(s.toLowerCase()))) {
+              compatibilita += 25; // 25% match per sector
+            }
+          }
+        }
+        
+        // Additional matching criteria could be added here
+        // For example, match based on region, company size, etc.
+        if (compatibilita > 0) {
+          // Create a match
+          const match: Match = {
+            id: uuidv4(),
+            clienteId: cliente.id,
+            bandoId: bando.id,
+            compatibilita,
+            notificato: false,
+            bando_titolo: bando.titolo,
+            cliente_nome: cliente.nome,
+            data_creazione: new Date().toISOString(),
+            archiviato: false
           };
-
-          // Calculate compatibility
-          const compatibility = this.calculateCompatibility(bando, clienteFormatted);
           
-          if (compatibility > 40) { // Only create matches with compatibility > 40%
-            const newMatch: Match = {
-              id: uuidv4(),
-              clienteId: cliente.id,
-              bandoId: bando.id,
-              compatibilita: compatibility,
-              notificato: false,
-              bando_titolo: bando.titolo,
-              cliente_nome: cliente.nome,
-              data_creazione: new Date().toISOString(),
-              archiviato: false
-            };
-            
-            this.matchStorage.push(newMatch);
+          // Check if match already exists
+          const existingMatch = this.matchesStorage.find(m => m.clienteId === match.clienteId && m.bandoId === match.bandoId);
+          if (!existingMatch) {
+            this.matchesStorage.push(match);
             matchCount++;
           }
         }
       }
-      
-      return matchCount;
-    } catch (error) {
-      console.error('Error generating matches:', error);
-      return 0;
     }
+    
+    console.log(`Generated ${matchCount} new matches`);
+    return matchCount;
   }
-
-  // Calculate compatibility between a bando and a cliente
-  private static calculateCompatibility(bando: Bando, cliente: Cliente): number {
-    let score = 0;
+  
+  // Generate and save matches for clients and bandi
+  static async generateAndSaveMatches(clienti: Cliente[], bandi: Bando[]): Promise<number> {
+    let matchCount = 0;
     
-    // Check sectoral interests match
-    const clienteInterests = cliente.interessiSettoriali.map(s => s.toLowerCase());
-    const bandoSectors = bando.settori.map(s => s.toLowerCase());
-    
-    // For each matching sector, add 20 points (max 60)
-    let sectorMatchCount = 0;
-    for (const sector of bandoSectors) {
-      if (clienteInterests.some(interest => sector.includes(interest) || interest.includes(sector))) {
-        sectorMatchCount++;
+    // For each bando, find matching clienti
+    for (const bando of bandi) {
+      for (const cliente of clienti) {
+        // Simple matching algorithm
+        let compatibilita = 0;
+        
+        // Match based on sectors of interest
+        if (bando.settori && cliente.interessiSettoriali) {
+          for (const settore of bando.settori) {
+            if (cliente.interessiSettoriali.some(s => s.toLowerCase().includes(settore.toLowerCase()) || 
+                                                  settore.toLowerCase().includes(s.toLowerCase()))) {
+              compatibilita += 25; // 25% match per sector
+            }
+          }
+        }
+        
+        // Additional matching criteria
+        if (compatibilita > 0) {
+          // Create a match
+          const match: Match = {
+            id: uuidv4(),
+            clienteId: cliente.id,
+            bandoId: bando.id,
+            compatibilita,
+            notificato: false,
+            bando_titolo: bando.titolo,
+            cliente_nome: cliente.nome,
+            data_creazione: new Date().toISOString(),
+            archiviato: false
+          };
+          
+          // Check if match already exists
+          const existingMatch = this.matchesStorage.find(m => m.clienteId === match.clienteId && m.bandoId === match.bandoId);
+          if (!existingMatch) {
+            this.matchesStorage.push(match);
+            matchCount++;
+          }
+        }
       }
     }
-    score += Math.min(sectorMatchCount * 20, 60);
     
-    // Region match gives 20 points
-    if (bando.tipo === 'regionale') {
-      // For regional bandi, check if the region matches
-      const regionMatch = bando.fonte.toLowerCase().includes(cliente.regione.toLowerCase());
-      if (regionMatch) {
-        score += 20;
-      }
-    } else {
-      // For non-regional bandi, automatically give 10 points
-      score += 10;
+    console.log(`Generated ${matchCount} new matches`);
+    return matchCount;
+  }
+  
+  // Generate matches CSV content
+  static async generateMatchesCSV(): Promise<string> {
+    // Generate CSV header
+    let csv = "ID,Cliente,Bando,Compatibilità,Data Creazione,Archiviato\n";
+    
+    // Add each match as a row
+    for (const match of this.matchesStorage) {
+      csv += `${match.id},${match.cliente_nome || ''},${match.bando_titolo || ''},${match.compatibilita}%,${match.data_creazione || ''},${match.archiviato ? 'Sì' : 'No'}\n`;
     }
     
-    // Company size appropriateness (based on funding amount)
-    const fundingAppropriate = bando.importoMax 
-      ? (bando.importoMax < cliente.fatturato * 0.5)
-      : false;
+    return csv;
+  }
+  
+  // Generate bandi CSV content
+  static async generateBandiCSV(bandi: Bando[]): Promise<string> {
+    // Generate CSV header
+    let csv = "ID,Titolo,Fonte,Tipo,Scadenza,Importo Min,Importo Max\n";
     
-    if (fundingAppropriate) {
-      score += 20;
+    // Add each bando as a row
+    for (const bando of bandi) {
+      csv += `${bando.id},${bando.titolo},${bando.fonte},${bando.tipo},${bando.scadenza},${bando.importoMin || ''},${bando.importoMax || ''}\n`;
     }
     
-    // Normalize to 0-100
-    return Math.min(Math.max(score, 0), 100);
+    return csv;
   }
 }
 

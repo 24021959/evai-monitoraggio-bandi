@@ -1,4 +1,6 @@
-export const mockClienti = [
+import { Bando, Cliente, Fonte, Statistica, TipoBando } from '@/types';
+
+export const mockClienti: Cliente[] = [
   {
     id: 'cliente-1',
     nome: 'Azienda Agricola Rossi',
@@ -56,7 +58,7 @@ export const mockClienti = [
   }
 ];
 
-export const mockBandi = [
+export const mockBandi: Bando[] = [
   {
     "id": "bando-1",
     "titolo": "Bando per l'innovazione nel settore agricolo",

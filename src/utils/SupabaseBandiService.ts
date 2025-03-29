@@ -40,6 +40,13 @@ class SupabaseBandiService {
     return this.bandiStorage;
   }
 
+  // Get combined bandi from all sources
+  static async getBandiCombinati(): Promise<Bando[]> {
+    // In a real implementation, this would fetch from Supabase and any other sources
+    console.log('Fetching combined bandi');
+    return this.bandiStorage;
+  }
+
   // Get a specific bando by ID
   static async getBandoById(id: string): Promise<Bando | null> {
     // In a real implementation, this would fetch from Supabase
@@ -77,6 +84,18 @@ class SupabaseBandiService {
         count: 0,
         matchCount: 0
       };
+    }
+  }
+  
+  // Delete a bando by ID
+  static async deleteBando(id: string): Promise<boolean> {
+    try {
+      const initialLength = this.bandiStorage.length;
+      this.bandiStorage = this.bandiStorage.filter(bando => bando.id !== id);
+      return initialLength > this.bandiStorage.length;
+    } catch (error) {
+      console.error('Error deleting bando:', error);
+      return false;
     }
   }
 }

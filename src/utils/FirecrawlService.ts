@@ -634,6 +634,33 @@ export class FirecrawlService {
       tipo: this.determineFonteType(data.nome || '')
     };
   }
+
+  static determineFonteType(url: string): TipoBando {
+    // Determine the type based on URL patterns
+    if (url.includes('europa.eu') || url.includes('ec.europa.eu')) {
+      return 'europeo';
+    } else if (
+      url.includes('gov.it') || 
+      url.includes('mise.gov.it') || 
+      url.includes('mimit') || 
+      url.includes('simest') || 
+      url.includes('invitalia')
+    ) {
+      return 'statale';
+    } else if (
+      url.includes('regione') || 
+      url.includes('lombardia') || 
+      url.includes('lazio') || 
+      url.includes('toscana') || 
+      url.includes('veneto') ||
+      url.includes('campania') ||
+      url.includes('piemonte')
+    ) {
+      return 'regionale';
+    } else {
+      return 'altro';
+    }
+  }
 }
 
 function isBandoPage(content: string, url: string, isMimitPage: boolean = false): boolean {
