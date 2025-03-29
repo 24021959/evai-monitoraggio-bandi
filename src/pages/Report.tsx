@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Download, FileText, FileJson, PieChart as PieChartIcon, BarChart as BarChartIcon, LineChart as LineChartIcon, MapPin } from "lucide-react";
+import { CalendarIcon, Download, FileText, FileJson, PieChart as PieChartIcon, BarChart as BarChartIcon, LineChart as LineChartIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import SupabaseReportService from "@/utils/SupabaseReportService";
 import StatCard from "@/components/StatCard";
-import StatisticheCard from "@/components/StatisticheCard";
 import LineChartCard from "@/components/LineChartCard";
 import BarChartCard from "@/components/BarChartCard";
 import DataTableCard from "@/components/DataTableCard";
@@ -52,25 +52,6 @@ const performanceColumns = [
   {
     accessorKey: "compatibilitaMedia",
     header: "Compatibilità Media %",
-  },
-];
-
-const geographicColumns = [
-  {
-    accessorKey: "regione",
-    header: "Regione",
-  },
-  {
-    accessorKey: "numeroClienti",
-    header: "Clienti",
-  },
-  {
-    accessorKey: "numeroBandi",
-    header: "Bandi",
-  },
-  {
-    accessorKey: "percentuale",
-    header: "Percentuale %",
   },
 ];
 
@@ -327,7 +308,7 @@ const Report = () => {
         </Card>
       ) : reportData ? (
         <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 grid grid-cols-2 md:grid-cols-5">
+          <TabsList className="mb-6 grid grid-cols-2 md:grid-cols-3">
             <TabsTrigger value="dashboard" className="gap-2">
               <PieChartIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -336,16 +317,8 @@ const Report = () => {
               <LineChartIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Temporale</span>
             </TabsTrigger>
-            <TabsTrigger value="sectorial" className="gap-2">
+            <TabsTrigger value="performance" className="gap-2">
               <BarChartIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Settoriale</span>
-            </TabsTrigger>
-            <TabsTrigger value="geographic" className="gap-2">
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Geografica</span>
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="gap-2 hidden md:flex">
-              <PieChartIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Performance</span>
             </TabsTrigger>
           </TabsList>
@@ -422,48 +395,6 @@ const Report = () => {
               description="Dati mensili di bandi, clienti e match"
               data={reportData.analisiTemporale}
               columns={monthlyColumns}
-            />
-          </TabsContent>
-
-          <TabsContent value="sectorial" className="space-y-6">
-            <BarChartCard
-              title="Analisi Settoriale"
-              description="Distribuzione di bandi e clienti per settore"
-              data={reportData.analisiSettoriale}
-              bars={[
-                { dataKey: "numeroBandi", fill: "#8884d8", name: "Bandi" },
-                { dataKey: "numeroClienti", fill: "#82ca9d", name: "Clienti" },
-                { dataKey: "numeroMatch", fill: "#ffc658", name: "Match" }
-              ]}
-              xAxisDataKey="settore"
-              xAxisAngle={-45}
-            />
-
-            <DataTableCard
-              title="Dettaglio Settori"
-              description="Dati dettagliati per ogni settore"
-              data={reportData.analisiSettoriale}
-              columns={sectorColumns}
-              searchColumn="settore"
-            />
-          </TabsContent>
-
-          <TabsContent value="geographic" className="space-y-6">
-            <StatisticheCard
-              title="Analisi Geografica"
-              description="Distribuzione regionale dei clienti"
-              data={reportData.analisiGeografica.map(item => ({
-                name: item.regione,
-                value: item.numeroClienti
-              }))}
-            />
-
-            <DataTableCard
-              title="Dettaglio Regioni"
-              description="Dati dettagliati per ogni regione"
-              data={reportData.analisiGeografica}
-              columns={geographicColumns}
-              searchColumn="regione"
             />
           </TabsContent>
 
