@@ -17,43 +17,157 @@ export interface MatchResult {
   };
   punteggio: number;
   dataMatch: string;
+  dettaglioMatch?: string[];
 }
 
 class MatchService {
   /**
-   * Calcola la compatibilità tra un bando e un cliente
+   * Calcola la compatibilità tra un bando e un cliente analizzando i requisiti
+   * e le caratteristiche del cliente
    * @param bando Bando da valutare
    * @param cliente Cliente da valutare
-   * @returns Punteggio di compatibilità (0-100)
+   * @returns Punteggio di compatibilità (0-100) e dettagli del match
    */
-  static calculateMatch(bando: Bando, cliente: Cliente): number {
-    // Se il bando non ha settori o il cliente non ha interessi settoriali, il match è zero
-    if (!bando.settori || !cliente.interessiSettoriali || 
-        !Array.isArray(bando.settori) || !Array.isArray(cliente.interessiSettoriali) ||
-        bando.settori.length === 0 || cliente.interessiSettoriali.length === 0) {
-      return 0;
+  static calculateMatch(bando: Bando, cliente: Cliente): { punteggio: number, dettaglioMatch: string[] } {
+    let punteggio = 0;
+    const dettaglioMatch: string[] = [];
+    const fattoriDiPeso = {
+      settori: 50,
+      regione: 15,
+      dimensioneAzienda: 20,
+      altriRequisiti: 15
+    };
+    
+    // 1. Match sui settori (peso 50%)
+    let punteggioSettori = 0;
+    if (bando.settori && Array.isArray(bando.settori) && bando.settori.length > 0 && 
+        cliente.interessiSettoriali && Array.isArray(cliente.interessiSettoriali) && cliente.interessiSettoriali.length > 0) {
+      
+      const settoriInComune = bando.settori.filter(settore => 
+        cliente.interessiSettoriali.some(interesse => 
+          interesse.toLowerCase().includes(settore.toLowerCase()) || 
+          settore.toLowerCase().includes(interesse.toLowerCase())
+        )
+      );
+      
+      if (settoriInComune.length > 0) {
+        punteggioSettori = Math.round((settoriInComune.length / Math.max(1, cliente.interessiSettoriali.length)) * 100);
+        dettaglioMatch.push(`Settori in comune: ${settoriInComune.join(', ')} (${punteggioSettori}%)`);
+      } else {
+        dettaglioMatch.push('Nessun settore in comune');
+      }
+    } else {
+      dettaglioMatch.push('Dati settoriali mancanti');
     }
     
-    // Calcoliamo l'overlap tra i settori del bando e gli interessi del cliente
-    const settoriInComune = bando.settori.filter(settore => 
-      cliente.interessiSettoriali.some(interesse => 
-        interesse.toLowerCase() === settore.toLowerCase()
-      )
-    );
-    
-    // Se non ci sono settori in comune, il match è zero
-    if (settoriInComune.length === 0) {
-      return 0;
+    // 2. Match sulla regione/territorio (peso 15%)
+    let punteggioRegione = 0;
+    if (bando.requisiti && cliente.regione) {
+      const requisitiLower = bando.requisiti.toLowerCase();
+      const regioneLower = cliente.regione.toLowerCase();
+      
+      if (requisitiLower.includes(regioneLower)) {
+        punteggioRegione = 100;
+        dettaglioMatch.push(`Regione compatibile: ${cliente.regione}`);
+      } else if (requisitiLower.includes('nazionale') || requisitiLower.includes('tutte le regioni')) {
+        punteggioRegione = 100;
+        dettaglioMatch.push('Bando nazionale, compatibile con tutte le regioni');
+      } else {
+        dettaglioMatch.push('Regione non specificatamente inclusa nei requisiti');
+      }
     }
     
-    // Calcoliamo il punteggio basato sulla percentuale di settori in comune
-    // rispetto agli interessi del cliente (max 100 punti)
-    const punteggio = Math.min(
-      100,
-      Math.round((settoriInComune.length / cliente.interessiSettoriali.length) * 100)
+    // 3. Match sulla dimensione aziendale (fatturato, dipendenti) (peso 20%)
+    let punteggioDimensione = 0;
+    if (bando.requisiti && (cliente.dipendenti || cliente.fatturato)) {
+      const requisitiLower = bando.requisiti.toLowerCase();
+      
+      // Analisi requisiti sui dipendenti
+      if (cliente.dipendenti) {
+        if (
+          (requisitiLower.includes('piccole imprese') && cliente.dipendenti < 50) ||
+          (requisitiLower.includes('medie imprese') && cliente.dipendenti >= 50 && cliente.dipendenti < 250) ||
+          (requisitiLower.includes('grandi imprese') && cliente.dipendenti >= 250)
+        ) {
+          punteggioDimensione += 50;
+          dettaglioMatch.push(`Dimensione aziendale compatibile: ${cliente.dipendenti} dipendenti`);
+        }
+      }
+      
+      // Analisi requisiti sul fatturato
+      if (cliente.fatturato) {
+        if (
+          (requisitiLower.includes('piccole imprese') && cliente.fatturato < 10000000) ||
+          (requisitiLower.includes('medie imprese') && cliente.fatturato >= 10000000 && cliente.fatturato < 50000000) ||
+          (requisitiLower.includes('grandi imprese') && cliente.fatturato >= 50000000)
+        ) {
+          punteggioDimensione += 50;
+          dettaglioMatch.push(`Fatturato aziendale compatibile: ${cliente.fatturato} €`);
+        }
+      }
+    } else if (!bando.requisiti) {
+      // Se non ci sono requisiti specifici, diamo un punteggio neutro
+      punteggioDimensione = 50;
+      dettaglioMatch.push('Nessun requisito dimensionale specificato');
+    } else {
+      dettaglioMatch.push('Dati dimensionali del cliente mancanti');
+    }
+    
+    // 4. Altri requisiti (forma giuridica, anno fondazione, etc.) (peso 15%)
+    let punteggioAltriRequisiti = 0;
+    if (bando.requisiti) {
+      const requisitiLower = bando.requisiti.toLowerCase();
+      let fattoriCorrispondenti = 0;
+      let fattoriTotali = 0;
+      
+      // Forma giuridica
+      if (cliente.formaGiuridica) {
+        fattoriTotali++;
+        if (requisitiLower.includes(cliente.formaGiuridica.toLowerCase())) {
+          fattoriCorrispondenti++;
+          dettaglioMatch.push(`Forma giuridica compatibile: ${cliente.formaGiuridica}`);
+        }
+      }
+      
+      // Anno fondazione
+      if (cliente.annoFondazione) {
+        fattoriTotali++;
+        // Controllo se ci sono riferimenti a età dell'azienda o anno di fondazione
+        const annoAttuale = new Date().getFullYear();
+        const etaAzienda = annoAttuale - cliente.annoFondazione;
+        
+        if (
+          (requisitiLower.includes('start-up') && etaAzienda <= 5) ||
+          (requisitiLower.includes('nuove imprese') && etaAzienda <= 3) ||
+          (!requisitiLower.includes('nuove imprese') && !requisitiLower.includes('start-up'))
+        ) {
+          fattoriCorrispondenti++;
+          dettaglioMatch.push(`Anno fondazione compatibile: ${cliente.annoFondazione} (${etaAzienda} anni)`);
+        }
+      }
+      
+      if (fattoriTotali > 0) {
+        punteggioAltriRequisiti = Math.round((fattoriCorrispondenti / fattoriTotali) * 100);
+      } else {
+        punteggioAltriRequisiti = 50; // Valore neutro se non ci sono dati da confrontare
+        dettaglioMatch.push('Dati aggiuntivi non disponibili per la valutazione');
+      }
+    } else {
+      punteggioAltriRequisiti = 50; // Valore neutro se non ci sono requisiti specifici
+    }
+    
+    // Calcolo del punteggio finale ponderato
+    punteggio = Math.round(
+      (punteggioSettori * fattoriDiPeso.settori +
+      punteggioRegione * fattoriDiPeso.regione +
+      punteggioDimensione * fattoriDiPeso.dimensioneAzienda +
+      punteggioAltriRequisiti * fattoriDiPeso.altriRequisiti) / 100
     );
     
-    return punteggio;
+    // Aggiungiamo un riepilogo del punteggio
+    dettaglioMatch.unshift(`Punteggio complessivo: ${punteggio}%`);
+    
+    return { punteggio, dettaglioMatch };
   }
   
   /**
@@ -68,7 +182,7 @@ class MatchService {
     
     clienti.forEach(cliente => {
       bandi.forEach(bando => {
-        const punteggio = this.calculateMatch(bando, cliente);
+        const { punteggio, dettaglioMatch } = this.calculateMatch(bando, cliente);
         
         // Aggiungiamo solo i match con punteggio > 0
         if (punteggio > 0) {
@@ -86,7 +200,8 @@ class MatchService {
               scadenza: bando.scadenza
             },
             punteggio,
-            dataMatch: today
+            dataMatch: today,
+            dettaglioMatch
           });
         }
       });

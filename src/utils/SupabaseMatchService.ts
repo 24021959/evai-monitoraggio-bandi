@@ -154,25 +154,34 @@ export class SupabaseMatchService {
   }
 
   /**
-   * Genera e salva match tra clienti e bandi utilizzando l'algoritmo di matching
+   * Genera e salva match tra clienti e bandi utilizzando l'algoritmo di matching avanzato
    */
   static async generateAndSaveMatches(clienti: Cliente[], bandi: Bando[]): Promise<MatchResult[]> {
     try {
+      console.log(`Generazione match tra ${clienti.length} clienti e ${bandi.length} bandi...`);
+      
       // Genera match utilizzando l'algoritmo di MatchService
       const matchResults = MatchService.generateMatches(clienti, bandi);
+      console.log(`Generati ${matchResults.length} match potenziali`);
       
+      let salvati = 0;
       // Salva i match in Supabase
       for (const match of matchResults) {
-        await this.saveMatch({
-          id: match.id,
-          clienteId: match.cliente.id,
-          bandoId: match.bando.id,
-          compatibilita: match.punteggio,
-          notificato: false
-        });
+        // Salviamo solo i match con compatibilità > 30%
+        if (match.punteggio > 30) {
+          const success = await this.saveMatch({
+            id: match.id,
+            clienteId: match.cliente.id,
+            bandoId: match.bando.id,
+            compatibilita: match.punteggio,
+            notificato: false
+          });
+          
+          if (success) salvati++;
+        }
       }
       
-      console.log(`Generati e salvati ${matchResults.length} match`);
+      console.log(`Salvati ${salvati} match su ${matchResults.length}`);
       return matchResults;
     } catch (error) {
       console.error('Errore durante la generazione e salvataggio dei match:', error);
@@ -193,13 +202,15 @@ export class SupabaseMatchService {
     
     // Converti i match in MatchResult
     const results: MatchResult[] = [];
-    const today = new Date().toISOString().split('T')[0];
     
     for (const match of matches) {
       const cliente = clientMap.get(match.clienteId);
       const bando = bandoMap.get(match.bandoId);
       
       if (cliente && bando) {
+        // Ricalcoliamo i dettagli del match
+        const { dettaglioMatch } = MatchService.calculateMatch(bando, cliente);
+        
         results.push({
           id: match.id,
           cliente: {
@@ -214,7 +225,8 @@ export class SupabaseMatchService {
             scadenza: bando.scadenza
           },
           punteggio: match.compatibilita,
-          dataMatch: today // Utilizziamo la data di oggi come approssimazione
+          dataMatch: match.created_at || new Date().toISOString(),
+          dettaglioMatch
         });
       }
     }
