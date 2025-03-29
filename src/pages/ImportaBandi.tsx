@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FileSpreadsheet, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { Bando } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
@@ -151,9 +151,6 @@ const ImportaBandi = () => {
       
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-blue-500" />
-          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
