@@ -13,6 +13,7 @@ interface StatisticheCardProps {
   }>;
   colors?: string[];
   height?: number;
+  simplifiedLabels?: boolean;
 }
 
 // Default colors with better contrast for visibility
@@ -23,7 +24,8 @@ const StatisticheCard: React.FC<StatisticheCardProps> = ({
   description,
   data,
   colors = COLORS,
-  height = 400
+  height = 400,
+  simplifiedLabels = false
 }) => {
   if (!data || data.length === 0) {
     return (
@@ -39,10 +41,18 @@ const StatisticheCard: React.FC<StatisticheCardProps> = ({
     );
   }
 
-  // Format labels for better readability 
+  // Format labels for better readability - simplified if requested
   const renderCustomLabel = ({ name, percent }: { name: string, percent: number }) => {
     // Only show label if percentage is significant enough
     if (percent < 0.05) return null;
+    
+    // For simplified labels, just show the name (no percentage)
+    if (simplifiedLabels) {
+      // Truncate long names if needed
+      const displayName = name.length > 12 ? name.substring(0, 10) + "..." : name;
+      return displayName;
+    }
+    
     return `${name}: ${(percent * 100).toFixed(0)}%`;
   };
 
@@ -77,7 +87,9 @@ const StatisticheCard: React.FC<StatisticheCardProps> = ({
               ))}
             </Pie>
             <Tooltip 
-              formatter={(value: number) => [`${value}`, 'Valore']}
+              formatter={(value: number, name: string) => {
+                return [`${value}`, simplifiedLabels ? name : 'Valore'];
+              }}
               contentStyle={{ 
                 backgroundColor: 'white', 
                 borderColor: '#cccccc',
@@ -100,7 +112,7 @@ const StatisticheCard: React.FC<StatisticheCardProps> = ({
                   fontWeight: 500,
                   padding: '0 8px'
                 }}>
-                  {value}
+                  {simplifiedLabels ? value : value.length > 20 ? value.substring(0, 18) + "..." : value}
                 </span>
               )}
             />

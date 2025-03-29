@@ -64,7 +64,9 @@ const Dashboard = () => {
     allBandi.forEach(bando => {
       if (bando.settori && Array.isArray(bando.settori)) {
         bando.settori.forEach(settore => {
-          settoriCount[settore] = (settoriCount[settore] || 0) + 1;
+          // Simplify long sector names for better display
+          const simplifiedSector = settore.split(' ')[0];
+          settoriCount[simplifiedSector] = (settoriCount[simplifiedSector] || 0) + 1;
         });
       }
     });
@@ -94,7 +96,7 @@ const Dashboard = () => {
     { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#5A6474' },
   ].filter(item => item.value > 0); // Show only non-zero values
 
-  // Preparazione dati per il grafico settoriale con colori migliorati
+  // Preparazione dati per il grafico settoriale con colori migliorati e nomi semplificati
   const bandoPerSettoreData = stats.bandoPerSettore
     .filter(item => item.percentuale > 0)
     .map((item, index) => ({
@@ -223,16 +225,17 @@ const Dashboard = () => {
         </ChartContainer>
       </div>
       
-      {/* Grafico settoriale a tutta larghezza, migliorato per la leggibilità */}
+      {/* Grafico settoriale a tutta larghezza, con testo semplificato */}
       {!isLoading && (
         <div className="mt-8">
           {bandoPerSettoreData.length > 0 ? (
             <StatisticheCard
               title="Bandi per Settore"
-              description="Distribuzione percentuale per settore di attività"
+              description="Distribuzione per settore (valori percentuali)"
               data={bandoPerSettoreData}
               colors={['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc']}
               height={500}
+              simplifiedLabels={true}
             />
           ) : (
             <div className="border rounded-lg p-6 bg-slate-50 text-center">
