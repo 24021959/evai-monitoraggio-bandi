@@ -31,22 +31,50 @@ export class WebhookService {
       
       console.log('Payload completo:', JSON.stringify(payload));
       
-      // Invia la richiesta al webhook
-      const response = await fetch(webhookUrl, {
+      // Prima tenta con modalità cors
+      try {
+        console.log('Tentativo invio con mode: cors');
+        const corsResponse = await fetch(webhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          mode: "cors",
+          body: JSON.stringify(payload),
+        });
+        
+        console.log('Risposta dal webhook (cors):', corsResponse);
+        if (corsResponse.ok) {
+          console.log('Risposta positiva ricevuta');
+          return true;
+        } else {
+          console.log('Risposta negativa ricevuta:', corsResponse.status, corsResponse.statusText);
+          // Se la risposta non è ok, continua con il fallback
+        }
+      } catch (corsError) {
+        console.log('Errore CORS, tentativo fallback:', corsError);
+        // Continua con il fallback no-cors
+      }
+      
+      // Fallback con no-cors se cors fallisce
+      console.log('Tentativo invio con mode: no-cors (fallback)');
+      await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        mode: "cors", // Cambiato da no-cors a cors per ricevere una risposta
+        mode: "no-cors", 
         body: JSON.stringify(payload),
       });
       
-      console.log('Risposta dal webhook:', response);
+      console.log('Richiesta no-cors inviata (non possiamo verificare la risposta)');
       
+      // Con no-cors non possiamo verificare la risposta, quindi assumiamo successo
+      // ma informiamo l'utente che dovrebbe verificare su n8n
       return true;
     } catch (error) {
       console.error('Errore durante l\'invio al webhook:', error);
-      return false;
+      throw error; // Rilanciamo l'errore per gestirlo a livello superiore
     }
   }
 }

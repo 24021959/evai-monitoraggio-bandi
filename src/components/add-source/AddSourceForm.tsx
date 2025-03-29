@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Fonte } from '@/types';
+import { Fonte, TipoBando } from '@/types';
 import { SourceFormFields } from './SourceFormFields';
 import { ExternalIntegrationToggle } from './ExternalIntegrationToggle';
 import { SubmitButton } from './SubmitButton';
@@ -19,7 +19,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
   const { toast } = useToast();
   const [nome, setNome] = useState('');
   const [url, setUrl] = useState('');
-  const [tipo, setTipo] = useState<string>('');
+  const [tipo, setTipo] = useState<TipoBando>('altro');
   const [syncWithN8n, setSyncWithN8n] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
@@ -80,7 +80,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     const newFonte: Omit<Fonte, 'id'> = {
       nome,
       url,
-      tipo: tipo as any,
+      tipo,
       stato: 'attivo'
     };
     
@@ -97,7 +97,8 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
         try {
           console.log("Tentativo di sincronizzare con n8n:", newFonte);
           // Crea un oggetto fonte con un ID temporaneo per il webhook
-          const fonte = { id: 'temp-' + Date.now(), ...newFonte };
+          const fonte: Fonte = { id: 'temp-' + Date.now(), ...newFonte };
+          console.log("Payload completo da inviare a n8n:", fonte);
           const webhookSuccess = await WebhookService.sendToWebhook(fonte, 'add');
           console.log("Risultato sincronizzazione con n8n:", webhookSuccess);
           setWebhookStatus(webhookSuccess ? 'success' : 'error');
@@ -129,7 +130,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
       
       setNome('');
       setUrl('');
-      setTipo('');
+      setTipo('altro');
       
       toast({
         title: "Fonte aggiunta",
@@ -179,13 +180,13 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     
     try {
       console.log("Test webhook n8n...");
-      const testData = {
+      const testData: Fonte = {
         id: 'test-' + Date.now(),
         nome: 'Test Webhook',
         url: 'https://example.com',
         tipo: 'test',
         stato: 'test'
-      };
+      } as Fonte;
       
       const success = await WebhookService.sendToWebhook(testData, 'add');
       setWebhookStatus(success ? 'success' : 'error');
@@ -235,7 +236,7 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
             url={url}
             setUrl={setUrl}
             tipo={tipo}
-            setTipo={setTipo as (value: string) => void}
+            setTipo={setTipo}
           />
           
           <ExternalIntegrationToggle

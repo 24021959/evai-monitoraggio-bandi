@@ -1,5 +1,5 @@
 
-export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro';
+export type TipoBando = 'europeo' | 'statale' | 'regionale' | 'altro' | 'test';
 
 export interface Bando {
   id: string;
@@ -43,7 +43,7 @@ export interface Fonte {
   nome: string;
   url: string;
   tipo: TipoBando;
-  stato: 'attivo' | 'inattivo';
+  stato: 'attivo' | 'inattivo' | 'test';
 }
 
 export interface Match {

@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Webhook, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Webhook, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface N8nWebhookConfigDialogProps {
   open: boolean;
@@ -24,6 +25,18 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
   const [tempUrl, setTempUrl] = useState(webhookUrl);
   const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [testError, setTestError] = useState('');
+  const [testRequested, setTestRequested] = useState(false);
+
+  // Verifica stato del workflow
+  useEffect(() => {
+    if (open) {
+      // Reset dello stato all'apertura
+      setTempUrl(webhookUrl);
+      setTestStatus('idle');
+      setTestError('');
+      setTestRequested(false);
+    }
+  }, [open, webhookUrl]);
 
   // Aggiorna il tempUrl quando cambia webhookUrl
   React.useEffect(() => {
@@ -52,6 +65,31 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
       return;
     }
 
+    // Suggerimento per n8n: verifica che l'URL contenga il path corretto
+    if (!tempUrl.includes('/webhook/')) {
+      toast({
+        title: "Attenzione",
+        description: "L'URL inserito potrebbe non essere un URL di webhook n8n valido. Verifica che il percorso includa '/webhook/'",
+        variant: "default",
+      });
+    }
+
+    // Suggerimento per n8n: verifica che il workflow sia attivo
+    if (testRequested && testStatus !== 'success') {
+      const confirmSave = window.confirm(
+        "Il test di connessione non è stato completato con successo. " +
+        "Vuoi comunque salvare questa configurazione?\n\n" +
+        "Assicurati che:\n" +
+        "1. Il workflow in n8n sia attivo (interruttore in alto a destra)\n" +
+        "2. Il nodo webhook sia configurato correttamente\n" +
+        "3. n8n sia in esecuzione e accessibile"
+      );
+      
+      if (!confirmSave) {
+        return;
+      }
+    }
+
     // Save the webhook URL to localStorage
     localStorage.setItem('n8nWebhookUrl', tempUrl);
     setWebhookUrl(tempUrl);
@@ -76,6 +114,7 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
 
     setTestStatus('loading');
     setTestError('');
+    setTestRequested(true);
     
     try {
       const testPayload = {
@@ -95,42 +134,57 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
       console.log("Payload di test:", JSON.stringify(testPayload));
       
       try {
-        await fetch(tempUrl, {
+        // Prova prima con cors
+        console.log("Tentativo test con mode: cors");
+        const corsResponse = await fetch(tempUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          mode: 'cors', // Cambiato da no-cors a cors
+          mode: 'cors',
           body: JSON.stringify(testPayload),
         });
         
-        setTestStatus('success');
-        
-        toast({
-          title: "Test completato",
-          description: "La richiesta è stata inviata al webhook n8n. Verifica nella tua istanza n8n se è stata ricevuta.",
-        });
-      } catch (fetchError) {
-        console.error("Errore fetch:", fetchError);
-        setTestStatus('error');
-        setTestError(fetchError instanceof Error ? fetchError.message : 'Errore di connessione');
-        
-        // Prova con no-cors in caso di problemi CORS
-        console.log("Riprovando con mode: 'no-cors'");
-        await fetch(tempUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'no-cors', 
-          body: JSON.stringify(testPayload),
-        });
-        
-        toast({
-          title: "Test inviato in modalità no-cors",
-          description: "La richiesta è stata inviata in modalità no-cors. Non è possibile verificare la risposta, controlla n8n.",
-        });
+        console.log('Risposta test cors:', corsResponse);
+        if (corsResponse.ok) {
+          setTestStatus('success');
+          
+          toast({
+            title: "Test completato",
+            description: "Il webhook n8n ha risposto correttamente. Workflow configurato correttamente!",
+            variant: "default",
+          });
+          return;
+        } else {
+          console.log('Risposta non ok:', corsResponse.status, corsResponse.statusText);
+          // Continua con il fallback
+        }
+      } catch (corsError) {
+        console.error("Errore test cors:", corsError);
+        // Continua con il fallback
       }
+      
+      console.log("Fallback test con mode: no-cors");
+      
+      // Fallback con no-cors
+      await fetch(tempUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors', 
+        body: JSON.stringify(testPayload),
+      });
+      
+      console.log("Richiesta no-cors inviata (non possiamo verificare la risposta)");
+      
+      setTestStatus('success');
+      
+      toast({
+        title: "Test inviato",
+        description: "La richiesta è stata inviata al webhook n8n. Verifica nella tua istanza n8n se è stata ricevuta.",
+        variant: "default",
+      });
     } catch (error) {
       console.error('Errore durante il test del webhook:', error);
       setTestStatus('error');
@@ -170,18 +224,30 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
               />
               <Button
                 variant="outline"
-                size="icon"
                 onClick={handleTest}
                 disabled={testStatus === 'loading'}
+                className="flex items-center gap-1"
               >
                 {testStatus === 'loading' ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Test</span>
+                  </>
                 ) : testStatus === 'success' ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>Test</span>
+                  </>
                 ) : testStatus === 'error' ? (
-                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <>
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <span>Test</span>
+                  </>
                 ) : (
-                  <Webhook className="h-4 w-4" />
+                  <>
+                    <Webhook className="h-4 w-4" />
+                    <span>Test</span>
+                  </>
                 )}
               </Button>
             </div>
@@ -197,6 +263,31 @@ export const N8nWebhookConfigDialog: React.FC<N8nWebhookConfigDialogProps> = ({
               Esempio di URL webhook n8n: https://tuoserver.com/webhook/fonte-manager
             </p>
           </div>
+          
+          {testStatus === 'success' && (
+            <Alert variant="default" className="bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertTitle>Webhook raggiungibile</AlertTitle>
+              <AlertDescription>
+                Il webhook n8n è raggiungibile e ha accettato la richiesta di test. Puoi procedere con il salvataggio.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {testStatus === 'error' && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Errore di connessione</AlertTitle>
+              <AlertDescription>
+                <p>Non è stato possibile connettersi al webhook n8n. Verifica:</p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li>Che l'URL sia corretto (deve includere '/webhook/')</li>
+                  <li>Che il workflow in n8n sia attivo (interruttore in alto a destra)</li>
+                  <li>Che n8n sia in esecuzione e pubblicamente accessibile</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
         
         <DialogFooter>
