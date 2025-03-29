@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Bando, Fonte } from '@/types';
 
 // This service handles the Google Sheets integration

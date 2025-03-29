@@ -1,5 +1,5 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
-import { Bando, Fonte } from '@/types';
+import { Bando, Fonte, TipoBando } from '@/types';
 import { mockBandi } from '@/data/mockData';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -1106,3 +1106,5 @@ function determinaFonte(url: string, content: string): string {
   
   return 'Altra Fonte';
 }
+
+export { determineFonteType };

@@ -13,22 +13,31 @@ interface MatchPerClienteChartProps {
 }
 
 const MatchPerClienteChart: React.FC<MatchPerClienteChartProps> = ({ matchData }) => {
+  // Make sure we have data to display
+  const dataToDisplay = matchData && matchData.length > 0 ? matchData : [
+    { cliente: 'Nessun dato', percentuale: 100 }
+  ];
+
+  // Custom colors for the pie chart
+  const COLORS = ['#0066cc', '#ff9900', '#00cc44', '#cc3300', '#9900cc', '#cc6600', '#009999'];
+
   return (
     <ChartContainer title="Match per Cliente" bgColor="bg-gradient-to-br from-green-50 to-white">
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={matchData}
+              data={dataToDisplay}
               nameKey="cliente"
               dataKey="percentuale"
               cx="50%"
               cy="50%"
               outerRadius={80}
               fill="#8884d8"
+              label
             >
-              {matchData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={['#0066cc', '#ff9900', '#00cc44', '#cc3300'][index % 4]} />
+              {dataToDisplay.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
             <Legend 

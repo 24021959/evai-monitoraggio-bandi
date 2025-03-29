@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,8 +14,8 @@ import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
+import MatchTable from '@/components/MatchTable';
 
-// Define a type for our extended match data
 interface MatchDisplay {
   id: string;
   cliente: {
@@ -46,7 +45,6 @@ const MatchPage = () => {
   const [filterScore, setFilterScore] = useState<string>('');
   const [lastImportDate, setLastImportDate] = useState<string | null>(null);
 
-  // Columns for the DataTable component
   const columns: ColumnDef<MatchDisplay>[] = [
     {
       accessorKey: "cliente.nome",
@@ -127,7 +125,6 @@ const MatchPage = () => {
     },
   ];
 
-  // Archived matches columns (similar but with Restore instead of Archive)
   const archivedColumns: ColumnDef<MatchDisplay>[] = [
     ...columns.slice(0, columns.length - 1),
     {
@@ -152,15 +149,12 @@ const MatchPage = () => {
     fetchData();
   }, []);
 
-  // Function to fetch data (clients, matches)
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Get clients
       const clientiData = await SupabaseClientiService.getClienti();
       setClienti(clientiData);
       
-      // Get latest import date
       const bandiData = await SupabaseBandiService.getBandi();
       if (bandiData.length > 0) {
         const sortedBandi = [...bandiData].sort((a, b) => {
@@ -171,7 +165,6 @@ const MatchPage = () => {
         }
       }
       
-      // Get matches
       await loadMatches();
       
       toast({
@@ -190,15 +183,12 @@ const MatchPage = () => {
     }
   };
 
-  // Function to load matches
   const loadMatches = async () => {
     try {
       const matchesData = await SupabaseMatchService.getMatches();
       
-      // Process matches for display
       const processedMatches = await processMatchesForDisplay(matchesData);
       
-      // Split into active and archived
       setActiveMatches(processedMatches.filter(m => !m.isArchived));
       setArchivedMatches(processedMatches.filter(m => m.isArchived));
     } catch (error) {
@@ -211,13 +201,10 @@ const MatchPage = () => {
     }
   };
 
-  // Process matches to add display information
   const processMatchesForDisplay = async (matches: Match[]) => {
-    // Get all bandi and clienti data
     const bandiData = await SupabaseBandiService.getBandi();
     const clientiData = await SupabaseClientiService.getClienti();
     
-    // Find the latest import date
     let latestImport = null;
     if (bandiData.length > 0) {
       const sortedBandi = [...bandiData].sort((a, b) => {
@@ -228,7 +215,6 @@ const MatchPage = () => {
       }
     }
     
-    // Create display matches
     return matches.map(match => {
       const bando = bandiData.find(b => b.id === match.bandoId) || { 
         id: 'unknown',
@@ -253,8 +239,7 @@ const MatchPage = () => {
       
       const matchDate = new Date(match.data_creazione || new Date());
       
-      // Determine if this is a new match from the latest import
-      const isNew = latestImport && matchDate >= latestImport;
+      const isNew = latestImport ? matchDate >= latestImport : false;
       
       return {
         id: match.id,
@@ -277,7 +262,6 @@ const MatchPage = () => {
     });
   };
 
-  // Function to generate matches automatically
   const generateMatches = async () => {
     setIsLoading(true);
     try {
@@ -297,10 +281,9 @@ const MatchPage = () => {
       
       toast({
         title: "Match generati",
-        description: `Sono stati generati ${matchResults.length} nuovi match`,
+        description: `Sono stati generati ${matchResults} nuovi match`,
       });
       
-      // Reload matches
       await loadMatches();
     } catch (error) {
       console.error("Error generating matches:", error);
@@ -314,12 +297,10 @@ const MatchPage = () => {
     }
   };
 
-  // Function to archive a match
   const archiveMatch = async (matchId: string) => {
     try {
       await SupabaseMatchService.updateMatchArchiveStatus(matchId, true);
       
-      // Move from active to archived
       const matchToArchive = activeMatches.find(m => m.id === matchId);
       if (matchToArchive) {
         setActiveMatches(activeMatches.filter(m => m.id !== matchId));
@@ -340,12 +321,10 @@ const MatchPage = () => {
     }
   };
 
-  // Function to restore a match from archive
   const restoreMatch = async (matchId: string) => {
     try {
       await SupabaseMatchService.updateMatchArchiveStatus(matchId, false);
       
-      // Move from archived to active
       const matchToRestore = archivedMatches.find(m => m.id === matchId);
       if (matchToRestore) {
         setArchivedMatches(archivedMatches.filter(m => m.id !== matchId));
@@ -366,7 +345,6 @@ const MatchPage = () => {
     }
   };
 
-  // Function to export matches to CSV
   const exportMatchesCSV = () => {
     const matches = [...activeMatches, ...archivedMatches];
     if (matches.length === 0) {
@@ -393,7 +371,6 @@ const MatchPage = () => {
         }))
       );
       
-      // Download CSV file
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -417,7 +394,6 @@ const MatchPage = () => {
     }
   };
 
-  // Filter functions
   const getFilteredMatches = (matches: MatchDisplay[]) => {
     let filtered = [...matches];
     

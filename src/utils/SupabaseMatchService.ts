@@ -178,13 +178,13 @@ class SupabaseMatchService {
     return matchCount;
   }
   
-  // Generate matches CSV content
-  static async generateMatchesCSV(): Promise<string> {
+  // Generate matches CSV content - changing to return string directly instead of Promise
+  static generateMatchesCSV(matches: Match[]): string {
     // Generate CSV header
     let csv = "ID,Cliente,Bando,Compatibilità,Data Creazione,Archiviato\n";
     
     // Add each match as a row
-    for (const match of this.matchesStorage) {
+    for (const match of matches) {
       csv += `${match.id},${match.cliente_nome || ''},${match.bando_titolo || ''},${match.compatibilita}%,${match.data_creazione || ''},${match.archiviato ? 'Sì' : 'No'}\n`;
     }
     
@@ -192,7 +192,7 @@ class SupabaseMatchService {
   }
   
   // Generate bandi CSV content
-  static async generateBandiCSV(bandi: Bando[]): Promise<string> {
+  static generateBandiCSV(bandi: Bando[]): string {
     // Generate CSV header
     let csv = "ID,Titolo,Fonte,Tipo,Scadenza,Importo Min,Importo Max\n";
     
