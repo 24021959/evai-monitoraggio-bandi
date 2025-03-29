@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Match, Bando, Cliente } from '@/types';
 import MatchService, { MatchResult } from './MatchService';
@@ -380,28 +379,6 @@ export class SupabaseMatchService {
   }
 
   /**
-   * Verifica se un bando ha già match salvati
-   */
-  static async hasBandoMatches(bandoId: string): Promise<boolean> {
-    try {
-      const { count, error } = await supabase
-        .from('match')
-        .select('*', { count: 'exact', head: true })
-        .eq('bandoid', bandoId);
-
-      if (error) {
-        console.error('Errore nella verifica dei match per il bando:', error);
-        return false;
-      }
-
-      return (count || 0) > 0;
-    } catch (error) {
-      console.error('Errore durante la verifica dei match per il bando:', error);
-      return false;
-    }
-  }
-
-  /**
    * Genera automaticamente match per un nuovo bando
    */
   static async generateMatchesForBando(bando: Bando): Promise<number> {
@@ -451,6 +428,28 @@ export class SupabaseMatchService {
     } catch (error) {
       console.error('Errore durante la generazione dei match per il bando:', error);
       return 0;
+    }
+  }
+
+  /**
+   * Verifica se un bando ha già match salvati
+   */
+  static async hasBandoMatches(bandoId: string): Promise<boolean> {
+    try {
+      const { count, error } = await supabase
+        .from('match')
+        .select('*', { count: 'exact', head: true })
+        .eq('bandoid', bandoId);
+
+      if (error) {
+        console.error('Errore nella verifica dei match per il bando:', error);
+        return false;
+      }
+
+      return (count || 0) > 0;
+    } catch (error) {
+      console.error('Errore durante la verifica dei match per il bando:', error);
+      return false;
     }
   }
 }

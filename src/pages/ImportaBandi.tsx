@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { GoogleSheetsService } from '@/utils/GoogleSheetsService';
 import { Bando } from "@/types";
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SupabaseBandiService from '@/utils/SupabaseBandiService';
 
 const ImportaBandi = () => {
   const { toast } = useToast();

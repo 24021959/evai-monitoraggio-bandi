@@ -2,17 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Archive, Calendar, Filter, RefreshCw } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Download, Archive, RefreshCw } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
-import { Bando, Cliente, Match } from "@/types";
+import { Cliente, Match } from "@/types";
 import SupabaseMatchService from '@/utils/SupabaseMatchService';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import SupabaseClientiService from '@/utils/SupabaseClientiService';
-import MatchTable from '@/components/MatchTable';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
@@ -35,6 +33,7 @@ interface MatchDisplay {
   punteggio: number;
   dataMatch: string;
   isNew: boolean;
+  isArchived: boolean;
 }
 
 const MatchPage = () => {
