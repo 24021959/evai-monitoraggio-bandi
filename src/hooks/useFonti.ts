@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -29,7 +28,6 @@ export function useFonti() {
   
   const handleDelete = async (id: string) => {
     try {
-      // Trova la fonte prima di eliminarla per poterla inviare a n8n
       const fonteToDelete = fonti.find(fonte => fonte.id === id);
       
       if (!fonteToDelete) {
@@ -42,7 +40,6 @@ export function useFonti() {
         return;
       }
 
-      // Prima notifichiamo n8n dell'eliminazione
       const webhookUrl = localStorage.getItem('n8nWebhookUrl');
       if (webhookUrl) {
         try {
@@ -50,15 +47,12 @@ export function useFonti() {
           await WebhookService.sendToWebhook(fonteToDelete, 'delete');
         } catch (webhookError) {
           console.error("Errore durante la notifica n8n dell'eliminazione:", webhookError);
-          // Continuiamo con l'eliminazione locale anche se l'invio a n8n fallisce
         }
       }
       
-      // Poi eliminiamo la fonte da Supabase
       const success = await SupabaseFontiService.deleteFonte(id);
       
       if (success) {
-        // Aggiorniamo l'elenco locale delle fonti
         setFonti(fonti.filter(fonte => fonte.id !== id));
         
         toast({
@@ -88,13 +82,26 @@ export function useFonti() {
     try {
       console.log("Aggiunta fonte:", newSource);
       
-      // The service will generate a proper UUID
+      const duplicates = fonti.filter(fonte => 
+        fonte.url.trim().toLowerCase() === newSource.url.trim().toLowerCase()
+      );
+      
+      if (duplicates.length > 0) {
+        console.log("URL duplicato trovato:", duplicates[0]);
+        toast({
+          title: "URL duplicato",
+          description: `Esiste già una fonte con questo URL: "${duplicates[0].nome}"`,
+          variant: "destructive",
+          duration: 3000,
+        });
+        return false;
+      }
+      
       const newFonte: Fonte = { 
         id: `temp-${Date.now()}`, 
         ...newSource 
       };
       
-      // Notifichiamo n8n dell'aggiunta della fonte
       const webhookUrl = localStorage.getItem('n8nWebhookUrl');
       if (webhookUrl) {
         try {
@@ -102,13 +109,11 @@ export function useFonti() {
           await WebhookService.sendToWebhook(newFonte, 'add');
         } catch (webhookError) {
           console.error("Errore durante la sincronizzazione con n8n:", webhookError);
-          // Continuiamo con l'aggiunta locale anche se l'invio a n8n fallisce
         }
       }
       
       const success = await SupabaseFontiService.saveFonte(newFonte);
       if (success) {
-        // We need to refetch to get the updated list with correct IDs
         await refetch();
         
         toast({
@@ -164,7 +169,6 @@ export function useFonti() {
 
       console.log(`Trovate ${fontesFromSheet.length} fonti da importare:`, fontesFromSheet);
 
-      // Save fonti to Supabase one by one to better track errors
       let savedCount = 0;
       for (const fonte of fontesFromSheet) {
         try {
@@ -177,7 +181,6 @@ export function useFonti() {
         }
       }
       
-      // Refresh the list
       await refetch();
       
       toast({

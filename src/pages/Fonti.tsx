@@ -25,6 +25,7 @@ const Fonti = () => {
     if (success) {
       setActiveTab("fonti");
     }
+    return success;
   };
 
   return (
@@ -51,7 +52,10 @@ const Fonti = () => {
         </TabsContent>
         
         <TabsContent value="aggiungi">
-          <AggiungiTabContent onAddSource={onAddSource} />
+          <AggiungiTabContent 
+            onAddSource={onAddSource} 
+            fonti={fonti}
+          />
         </TabsContent>
       </Tabs>
     </div>

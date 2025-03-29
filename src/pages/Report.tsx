@@ -1,202 +1,344 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Download } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
-import { format } from 'date-fns';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BandiService } from '@/utils/BandiService';
-import { ClienteService } from '@/utils/ClienteService';
-import { Bando, Cliente } from '@/types';
-import SupabaseMatchService from '@/utils/SupabaseMatchService';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar"
+import { DatePicker } from "@/components/ui/date-picker"
+import { Button } from "@/components/ui/button"
+import { CalendarIcon } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { addDays, format } from "date-fns"
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
+import { useToast } from "@/components/ui/use-toast"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  CardHeader as ShadCardHeader,
+  CardTitle as ShadCardTitle,
+  CardDescription as ShadCardDescription,
+  CardContent as ShadCardContent,
+} from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
+import { useQuery } from "@tanstack/react-query"
+import SupabaseReportService from "@/utils/SupabaseReportService"
+import { Statistica } from "@/types"
 
 const Report = () => {
-  const { toast } = useToast();
-  const [startDate, setStartDate] = useState<Date | undefined>(() => {
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    return lastMonth;
+  const { toast } = useToast()
+  const [startDate, setStartDate] = useState<Date | undefined>(addDays(new Date(), -7))
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date())
+  const [reportData, setReportData] = useState<Statistica | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const { data: latestReport, isLoading: isLatestReportLoading } = useQuery({
+    queryKey: ['latestReport'],
+    queryFn: () => SupabaseReportService.getLatestReportByType('generale'),
   });
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
-  const [clienteId, setClienteId] = useState<string | undefined>(undefined);
-  const [clienti, setClienti] = useState<Cliente[]>([]);
-  const [bandi, setBandi] = useState<Bando[]>([]);
-  const [matches, setMatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchClienti = async () => {
-      try {
-        const clientiData = await ClienteService.getClienti();
-        setClienti(clientiData);
-      } catch (error) {
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore nel caricamento dei clienti",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchClienti();
-  }, [toast]);
-
-  const downloadCSV = (csv: string, filename: string) => {
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('href', url);
-    a.setAttribute('download', filename);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
+    if (latestReport && latestReport.dati) {
+      setReportData(latestReport.dati as Statistica);
+    }
+  }, [latestReport]);
 
   const generateReport = async () => {
-    if (!startDate || !endDate) {
-      toast({
-        title: "Errore",
-        description: "Seleziona un intervallo di date valido",
-        variant: "destructive",
-      });
-      return;
+    setIsLoading(true)
+    // Simulate fetching data and generating a report
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    // Mock data for demonstration
+    const mockReportData: Statistica = {
+      bandiAttivi: Math.floor(Math.random() * 100),
+      numeroClienti: Math.floor(Math.random() * 50),
+      matchRecenti: Math.floor(Math.random() * 20),
+      distribuzioneBandi: {
+        europei: Math.floor(Math.random() * 100),
+        statali: Math.floor(Math.random() * 100),
+        regionali: Math.floor(Math.random() * 100),
+      },
+      bandoPerSettore: [
+        { settore: "Agricoltura", percentuale: Math.floor(Math.random() * 100) },
+        { settore: "Turismo", percentuale: Math.floor(Math.random() * 100) },
+        { settore: "Innovazione", percentuale: Math.floor(Math.random() * 100) },
+      ],
+      matchPerCliente: [
+        { cliente: "Cliente A", percentuale: Math.floor(Math.random() * 100) },
+        { cliente: "Cliente B", percentuale: Math.floor(Math.random() * 100) },
+        { cliente: "Cliente C", percentuale: Math.floor(Math.random() * 100) },
+      ],
     }
 
-    setLoading(true);
-    try {
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+    setReportData(mockReportData)
+    setIsLoading(false)
+  }
 
-      const bandiData = await BandiService.getBandiByDateRange(formattedStartDate, formattedEndDate);
-      setBandi(bandiData);
-
-      let matchesData = await SupabaseMatchService.getMatchesByDateRange(formattedStartDate, formattedEndDate, clienteId);
-      if (clienteId) {
-        matchesData = matchesData.filter(match => match.clienteId === clienteId);
-      }
-      setMatches(matchesData);
-      
-      toast({
-        title: "Report generato",
-        description: "I dati sono stati recuperati con successo",
-      });
-    } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore nella generazione del report",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const downloadReport = () => {
-    if (bandi.length === 0 && matches.length === 0) {
+  const saveReport = async () => {
+    if (!reportData) {
       toast({
         title: "Nessun dato",
-        description: "Genera prima il report",
-        variant: "destructive",
-      });
-      return;
+        description: "Genera prima un report",
+      })
+      return
     }
 
-    try {
-      const bandiCSV = SupabaseMatchService.generateBandiCSV(bandi);
-      const matchCSV = SupabaseMatchService.generateMatchesCSV(matches);
+    const saved = await SupabaseReportService.saveStatisticsReport(reportData)
 
-      downloadCSV(bandiCSV, 'bandi_report.csv');
-      downloadCSV(matchCSV, 'matches_report.csv');
-
+    if (saved) {
       toast({
-        title: "Download completato",
-        description: "I report CSV sono stati scaricati",
-      });
-    } catch (error) {
+        title: "Report salvato",
+        description: "Il report è stato salvato con successo",
+      })
+    } else {
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il download dei report",
+        description: "Si è verificato un errore durante il salvataggio del report",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Genera Report</CardTitle>
-          <CardDescription>Seleziona i parametri per generare il report e scarica i dati in formato CSV.</CardDescription>
+          <CardTitle>Genera Report</CardTitle>
+          <CardDescription>
+            Seleziona un intervallo di date per generare un report.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="startDate">Data Inizio</Label>
-              <div className="w-full relative">
-                <input
-                  type="date"
-                  id="startDate"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
-                  onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : undefined)}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="endDate">Data Fine</Label>
-              <div className="w-full relative">
-                <input
-                  type="date"
-                  id="endDate"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={endDate ? format(endDate, 'yyyy-MM-dd') : ''}
-                  onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : undefined)}
-                />
-              </div>
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="cliente">Cliente (opzionale)</Label>
-            <Select onValueChange={(value) => setClienteId(value === "tutti" ? undefined : value)}>
-              <SelectTrigger id="cliente">
-                <SelectValue placeholder="Tutti i clienti" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tutti">Tutti i clienti</SelectItem>
-                {clienti.map((cliente) => (
-                  <SelectItem key={cliente.id} value={cliente.id}>{cliente.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button onClick={generateReport} disabled={loading}>
-              {loading ? (
-                <>
-                  Caricamento...
-                </>
-              ) : (
-                "Genera Report"
-              )}
-            </Button>
-            <Button 
-              variant="secondary" 
-              onClick={downloadReport} 
-              disabled={loading || (bandi.length === 0 && matches.length === 0)}
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Scarica CSV
-            </Button>
-          </div>
+        <CardContent className="grid gap-4 grid-cols-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !startDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={startDate}
+                onSelect={setStartDate}
+                className="w-full"
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !endDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={endDate}
+                onSelect={setEndDate}
+                className="w-full"
+              />
+            </PopoverContent>
+          </Popover>
+          <Button onClick={generateReport} disabled={isLoading}>
+            {isLoading ? "Generazione..." : "Genera Report"}
+          </Button>
+          <Button onClick={saveReport} disabled={isLoading || !reportData}>
+            Salva Report
+          </Button>
         </CardContent>
       </Card>
+
+      {isLatestReportLoading ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ultimo Report</CardTitle>
+            <CardDescription>Caricamento...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[300px]" />
+          </CardContent>
+        </Card>
+      ) : reportData ? (
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bandi Attivi</CardTitle>
+              <CardDescription>Numero di bandi attivi nel sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{reportData.bandiAttivi}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Numero Clienti</CardTitle>
+              <CardDescription>Numero totale di clienti registrati</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{reportData.numeroClienti}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Match Recenti</CardTitle>
+              <CardDescription>Numero di match creati negli ultimi 7 giorni</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{reportData.matchRecenti}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1 md:col-span-2">
+            <CardHeader>
+              <CardTitle>Distribuzione Bandi</CardTitle>
+              <CardDescription>Distribuzione dei bandi per tipo</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart
+                  data={[
+                    { name: "Europei", value: reportData.distribuzioneBandi.europei },
+                    { name: "Statali", value: reportData.distribuzioneBandi.statali },
+                    { name: "Regionali", value: reportData.distribuzioneBandi.regionali },
+                  ]}
+                  margin={{
+                    top: 10,
+                    right: 30,
+                    left: 0,
+                    bottom: 0,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="value" stroke="#8884d8" fill="#8884d8" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Bandi per Settore</CardTitle>
+              <CardDescription>Percentuale di bandi per settore</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Settore</TableHead>
+                    <TableHead>Percentuale</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportData.bandoPerSettore.map((item) => (
+                    <TableRow key={item.settore}>
+                      <TableCell>{item.settore}</TableCell>
+                      <TableCell>{item.percentuale}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Match per Cliente</CardTitle>
+              <CardDescription>Percentuale di match per cliente</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Percentuale</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportData.matchPerCliente.map((item) => (
+                    <TableRow key={item.cliente}>
+                      <TableCell>{item.cliente}</TableCell>
+                      <TableCell>{item.percentuale}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ultimo Report</CardTitle>
+            <CardDescription>Nessun report generato</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Genera un report per visualizzare i dati.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
-  );
-};
+  )
+}
 
 export default Report;

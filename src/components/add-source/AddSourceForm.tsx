@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fonte, TipoBando } from '@/types';
@@ -32,7 +31,6 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     if (storedWebhookUrl) {
       setWebhookUrl(storedWebhookUrl);
     } else {
-      // If no webhook URL is configured, show the config dialog
       setShowConfigDialog(true);
     }
   }, []);
@@ -89,9 +87,14 @@ const AddSourceForm: React.FC<AddSourceFormProps> = ({ onAddSource }) => {
     setErrorDetails('');
     
     try {
-      console.log("Aggiunta fonte a Supabase:", newFonte);
+      console.log("Tentativo di aggiunta fonte:", newFonte);
       
-      await onAddSource(newFonte);
+      const success = await onAddSource(newFonte);
+      
+      if (!success) {
+        setIsAdding(false);
+        return;
+      }
       
       if (syncWithN8n) {
         setWebhookStatus('adding');

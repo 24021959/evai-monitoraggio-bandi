@@ -1,31 +1,27 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
-import { Bando, Fonte } from '@/types';
-import { mockBandi } from '@/data/mockData';
+import { v4 as uuidv4 } from 'uuid';
 
-interface ErrorResponse {
-  success: false;
-  error: string;
+// Function to determine fonte type based on URL
+function determineFonteType(url: string): 'europeo' | 'statale' | 'regionale' | 'altro' {
+  // Determine the type based on URL patterns
+  if (url.includes('europa.eu') || url.includes('ec.europa.eu')) {
+    return 'europeo';
+  } else if (url.includes('gov.it') || url.includes('mise.gov.it') || url.includes('mimit') || url.includes('simest') || url.includes('invitalia')) {
+    return 'statale';
+  } else if (url.includes('regione') || url.includes('lombardia') || url.includes('lazio') || url.includes('toscana') || url.includes('veneto') || url.includes('campania') || url.includes('piemonte')) {
+    return 'regionale';
+  } else {
+    return 'altro';
+  }
 }
-
-interface CrawlStatusResponse {
-  success: true;
-  status: string;
-  completed: number;
-  total: number;
-  creditsUsed: number;
-  expiresAt: string;
-  data: any[];
-}
-
-type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 
 export class FirecrawlService {
-  private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
-  private static SAVED_BANDI_STORAGE_KEY = 'saved_bandi';
-  private static SCRAPED_BANDI_STORAGE_KEY = 'scraped_bandi';
-  private static SCRAPED_SOURCES_STORAGE_KEY = 'scraped_sources';
-  private static SAVED_FONTI_STORAGE_KEY = 'saved_fonti';
-  private static firecrawlApp: FirecrawlApp | null = null;
+  static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
+  static SAVED_BANDI_STORAGE_KEY = 'saved_bandi';
+  static SCRAPED_BANDI_STORAGE_KEY = 'scraped_bandi';
+  static SCRAPED_SOURCES_STORAGE_KEY = 'scraped_sources';
+  static SAVED_FONTI_STORAGE_KEY = 'saved_fonti';
+  static firecrawlApp: any = null;
 
   static saveApiKey(apiKey: string): void {
     localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
@@ -624,6 +620,17 @@ export class FirecrawlService {
       return [];
     }
   }
+
+  static generateFonteFromRawData(data: any) {
+    return {
+      id: uuidv4(),
+      nome: data.nome || 'Fonte senza nome',
+      url: data.url || '',
+      tipo: determineFonteType(data.url || '')
+    };
+  }
+
+  static determineFonteType = determineFonteType;
 }
 
 function isBandoPage(content: string, url: string, isMimitPage: boolean = false): boolean {
@@ -814,7 +821,7 @@ function extractScadenza(content: string, isMimitPage: boolean = false): string 
   // Parole chiave che indicano una scadenza
   const scadenzaKeywords = ['scadenza', 'termine', 'entro il', 'fino al', 'data limite', 'chiusura'];
   
-  // Cerca date vicine alle parole chiave di scadenza
+  // Cerca date vicino alle parole chiave di scadenza
   for (const keyword of scadenzaKeywords) {
     const keywordIndex = contentLower.indexOf(keyword);
     if (keywordIndex >= 0) {
@@ -1069,3 +1076,5 @@ function determinaFonte(url: string, content: string): string {
   
   return 'Altra Fonte';
 }
+
+export { determineFonteType };
