@@ -152,7 +152,6 @@ export type Database = {
       }
       match: {
         Row: {
-          archiviato: boolean | null
           bandoid: string
           clienteid: string
           compatibilita: number
@@ -161,7 +160,6 @@ export type Database = {
           notificato: boolean | null
         }
         Insert: {
-          archiviato?: boolean | null
           bandoid: string
           clienteid: string
           compatibilita: number
@@ -170,7 +168,6 @@ export type Database = {
           notificato?: boolean | null
         }
         Update: {
-          archiviato?: boolean | null
           bandoid?: string
           clienteid?: string
           compatibilita?: number

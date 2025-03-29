@@ -1,26 +1,27 @@
+
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { GoogleSheetsService } from '@/utils/GoogleSheetsService';
-import { Bando } from "@/types";
-import { useNavigate } from 'react-router-dom';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { FileSpreadsheet, ArrowRight, AlertCircle } from 'lucide-react';
+import GoogleSheetsService from '@/utils/GoogleSheetsService';
+import { Bando } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
-import { v4 as uuidv4 } from 'uuid';
 
 const ImportaBandi = () => {
-  const { toast } = useToast();
-  const [sheetsUrl, setSheetsUrl] = useState('');
-  const [bandi, setBandi] = useState<Bando[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const [selectedScope, setSelectedScope] = useState<string>('bandi');
-
-  const handleImport = async () => {
-    if (!sheetsUrl) {
+  const { toast } = useToast();
+  const [googleSheetUrl, setGoogleSheetUrl] = useState(GoogleSheetsService.getSheetUrl() || '');
+  const [isLoading, setIsLoading] = useState(false);
+  const [bandiAnteprima, setBandiAnteprima] = useState<Bando[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  
+  const handleImportBandi = async () => {
+    if (!googleSheetUrl) {
       toast({
         title: "URL mancante",
         description: "Inserisci l'URL del foglio Google Sheets",
@@ -28,132 +29,168 @@ const ImportaBandi = () => {
       });
       return;
     }
-
+    
     setIsLoading(true);
+    setError(null);
+    
     try {
-      // Mock implementation for fetchGoogleSheetsData until the real implementation is available
-      const fetchSheetData = async (url: string, scope: string) => {
-        console.log(`Fetching data from ${url} for scope ${scope}`);
-        // Return mock data for demonstration
-        return [
-          ['Titolo Bando 1', 'Descrizione 1', 'europeo', 'Settore1,Settore2', '2024-12-31', '50000', '100000', 'https://example.com/1'],
-          ['Titolo Bando 2', 'Descrizione 2', 'statale', 'Settore3', '2024-11-30', '20000', '80000', 'https://example.com/2'],
-        ];
-      };
-
-      // Mock implementation for mapRowsToBandi until the real implementation is available
-      const mapSheetDataToBandi = (rows: any[]): Bando[] => {
-        return rows.map((row, index) => ({
-          id: uuidv4(),
-          titolo: row[0] || `Bando ${index + 1}`,
-          descrizione: row[1] || '',
-          tipo: (row[2] || 'altro') as 'europeo' | 'statale' | 'regionale' | 'altro',
-          settori: (row[3] || '').split(',').map((s: string) => s.trim()).filter(Boolean),
-          scadenza: row[4] || new Date().toISOString().split('T')[0],
-          importoMin: parseInt(row[5]) || 0,
-          importoMax: parseInt(row[6]) || 0,
-          url: row[7] || '',
-          fonte: 'Google Sheets Import'
-        }));
-      };
+      console.log('Iniziando importazione da:', googleSheetUrl);
+      GoogleSheetsService.setSheetUrl(googleSheetUrl);
       
-      // Fetch data from Google Sheets
-      const data = await fetchSheetData(sheetsUrl, selectedScope);
+      const bandi = await GoogleSheetsService.fetchBandiFromSheet(googleSheetUrl);
+      console.log('Bandi ottenuti dal foglio:', bandi?.length);
       
-      if (!data || data.length === 0) {
+      if (!bandi || bandi.length === 0) {
+        setError("Nessun bando trovato nel foglio Google Sheets. Verifica che il formato sia corretto.");
         toast({
-          title: "Nessun dato",
-          description: "Non sono stati trovati dati nel foglio",
+          title: "Nessun dato trovato",
+          description: "Nessun bando trovato nel foglio. Verifica che il formato sia corretto.",
           variant: "destructive",
         });
-        return;
-      }
-      
-      // Map the data to Bando format
-      const mappedBandi = mapSheetDataToBandi(data);
-      setBandi(mappedBandi);
-      
-      // Import the bandi to Supabase and generate matches automatically
-      const result = await SupabaseBandiService.importBandi(mappedBandi);
-      
-      if (result.success) {
-        toast({
-          title: "Importazione completata",
-          description: `Importati ${result.count} nuovi bandi e generati ${result.matchCount} nuovi match`,
+      } else {
+        // Prima recuperiamo i bandi esistenti da Supabase
+        const bandiEsistenti = await SupabaseBandiService.getBandi();
+        console.log('Bandi già esistenti in Supabase:', bandiEsistenti.length);
+        
+        // Filtriamo i bandi per escludere duplicati (basati su titolo e fonte)
+        const titoliFonteEsistenti = new Set(
+          bandiEsistenti.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+        );
+        
+        const bandiUnici = bandi.filter(bando => {
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          return !titoliFonteEsistenti.has(chiave);
         });
         
-        // Navigate to the match page if matches were generated
-        if (result.matchCount > 0) {
-          setTimeout(() => {
-            navigate('/match');
-          }, 2000);
+        console.log(`Filtrati ${bandi.length - bandiUnici.length} bandi duplicati`);
+        console.log(`Bandi unici da importare: ${bandiUnici.length}`);
+        
+        // Salva in sessionStorage solo i bandi unici
+        if (bandiUnici.length > 0) {
+          sessionStorage.setItem('bandiImportati', JSON.stringify(bandiUnici));
+          console.log('Bandi salvati in sessionStorage:', bandiUnici.length);
+          
+          // Salva in Supabase
+          let contatoreSalvati = 0;
+          for (const bando of bandiUnici) {
+            // Verifichiamo che i campi obbligatori siano presenti
+            if (!bando.titolo || !bando.fonte) {
+              console.warn('Bando senza titolo o fonte, saltato:', bando);
+              continue;
+            }
+            
+            const success = await SupabaseBandiService.saveBando(bando);
+            if (success) {
+              contatoreSalvati++;
+            } else {
+              console.error('Errore nel salvataggio del bando in Supabase:', bando.titolo);
+            }
+          }
+          
+          // Impostiamo il flag per indicare che i bandi sono stati importati
+          sessionStorage.setItem('bandiImportatiFlag', 'true');
+          
+          console.log(`Bandi salvati in Supabase: ${contatoreSalvati}/${bandiUnici.length}`);
+          
+          setBandiAnteprima(bandiUnici.slice(0, 5));
+          
+          toast({
+            title: "Importazione completata",
+            description: `Importati ${bandiUnici.length} bandi dal foglio Google Sheets (${contatoreSalvati} salvati in Supabase)`,
+          });
+        } else {
+          toast({
+            title: "Nessun nuovo bando da importare",
+            description: "Tutti i bandi dal foglio sono già presenti nel database.",
+          });
         }
-      } else {
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante l'importazione",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
-      console.error('Errore durante l\'importazione:', error);
+    } catch (error: any) {
+      console.error('Errore dettagliato durante l\'importazione:', error);
+      setError(error.message || "Errore durante l'importazione");
       toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante l'importazione",
+        title: "Errore di importazione",
+        description: error.message || "Si è verificato un errore durante l'importazione",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   return (
-    <div className="container mx-auto py-8">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Importa Bandi</h1>
+      </div>
+      
       <Card>
         <CardHeader>
-          <CardTitle>Importa Bandi da Google Sheets</CardTitle>
-          <CardDescription>
-            Inserisci l'URL del tuo foglio Google Sheets per importare i bandi.
-          </CardDescription>
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-blue-500" />
+            <CardTitle>Importa Bandi</CardTitle>
+          </div>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="sheetsUrl">URL del foglio Google Sheets</Label>
-            <Input
-              type="text"
-              id="sheetsUrl"
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-              value={sheetsUrl}
-              onChange={(e) => setSheetsUrl(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="scope">Seleziona Scope</Label>
-            <Select onValueChange={setSelectedScope} defaultValue={selectedScope}>
-              <SelectTrigger id="scope">
-                <SelectValue placeholder="Seleziona..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bandi">Bandi</SelectItem>
-                {/* <SelectItem value="fonti">Fonti</SelectItem> */}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button onClick={handleImport} disabled={isLoading} className="bg-blue-500 hover:bg-blue-600 text-white">
-            {isLoading ? "Importando..." : "Importa"}
-          </Button>
-          {bandi.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold">Anteprima Bandi</h3>
-              <ul>
-                {bandi.slice(0, 5).map((bando) => (
-                  <li key={bando.id} className="truncate">
-                    {bando.titolo}
-                  </li>
-                ))}
-              </ul>
-              {bandi.length > 5 && <p>...e altri {bandi.length - 5} bandi</p>}
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="googleSheetUrl">Inserisci URL</Label>
+              <Input
+                id="googleSheetUrl"
+                placeholder="Es. https://docs.google.com/spreadsheets/d/..."
+                value={googleSheetUrl}
+                onChange={(e) => setGoogleSheetUrl(e.target.value)}
+              />
             </div>
+            
+            <Button 
+              onClick={handleImportBandi} 
+              disabled={isLoading || !googleSheetUrl} 
+              className="w-full md:w-auto md:px-8 bg-blue-500 hover:bg-blue-600 text-white"
+              variant="secondary"
+            >
+              {isLoading ? 'Importazione bandi in corso...' : 'Importa Bandi'}
+              {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+            </Button>
+            
+            {bandiAnteprima.length > 0 && (
+              <div className="space-y-2 mt-4">
+                <h3 className="font-medium">Anteprima bandi importati</h3>
+                <div className="rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="px-4 py-3 text-left">Titolo</th>
+                        <th className="px-4 py-3 text-left">Fonte</th>
+                        <th className="px-4 py-3 text-left">Tipo</th>
+                        <th className="px-4 py-3 text-left">Scadenza</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bandiAnteprima.map((bando, index) => (
+                        <tr key={index} className="border-b">
+                          <td className="px-4 py-3">{bando.titolo}</td>
+                          <td className="px-4 py-3">{bando.fonte}</td>
+                          <td className="px-4 py-3">{bando.tipo}</td>
+                          <td className="px-4 py-3">{bando.scadenza}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-sm text-gray-500 italic">
+                  Visualizzazione dei primi 5 record importati.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Errore</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>

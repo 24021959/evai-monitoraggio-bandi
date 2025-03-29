@@ -1,170 +1,397 @@
 
-import { Bando, TipoBando } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { Bando } from '@/types';
+import { FirecrawlService } from './FirecrawlService';
 import { v4 as uuidv4 } from 'uuid';
-import SupabaseMatchService from './SupabaseMatchService';
 
-// Mock implementation of a Supabase bandi service
-class SupabaseBandiService {
-  // Storage for mock bandi
-  private static bandiStorage: Bando[] = [
-    {
-      id: 'bando-1',
-      titolo: 'Bando per l\'innovazione nel settore agricolo',
-      fonte: 'Regione Lombardia',
-      descrizione: 'Finanziamenti a fondo perduto per progetti di innovazione tecnologica nelle aziende agricole lombarde.',
-      tipo: 'regionale' as TipoBando,
-      settori: ['Agricoltura', 'Innovazione Agricola'],
-      scadenza: '2024-03-15',
-      importoMin: 50000,
-      importoMax: 200000,
-      url: 'https://www.regione.lombardia.it/wps/portal/istituzionale/HP/servizi-e-informazioni/enti-e-operatori/attivita-produttive/Bandi-e-agevolazioni'
-    },
-    {
-      id: 'bando-2',
-      titolo: 'Incentivi per l\'efficienza energetica nelle PMI',
-      fonte: 'MIMIT - Ministero delle Imprese e del Made in Italy',
-      descrizione: 'Agevolazioni per investimenti in impianti di produzione di energia da fonti rinnovabili e interventi di efficientamento energetico.',
-      tipo: 'statale' as TipoBando,
-      settori: ['Energia Rinnovabile', 'Efficienza Energetica'],
-      scadenza: '2024-04-30',
-      importoMin: 30000,
-      importoMax: 150000,
-      url: 'https://www.mise.gov.it/it/incentivi'
-    },
-    {
-      id: 'bando-3',
-      titolo: 'Fondo di garanzia per le startup innovative',
-      fonte: 'Governo Italiano',
-      descrizione: 'Garanzie statali sui finanziamenti bancari per startup innovative nei settori ad alta tecnologia.',
-      tipo: 'statale' as TipoBando,
-      settori: ['Startup', 'Innovazione', 'Tecnologia'],
-      scadenza: '2024-06-30',
-      importoMin: 100000,
-      importoMax: 500000,
-      url: 'https://www.governo.it/it/articolo/fondo-nazionale-innovazione/11864'
-    },
-    {
-      id: 'bando-4',
-      titolo: 'Bando per la digitalizzazione del commercio locale',
-      fonte: 'Regione Lazio',
-      descrizione: 'Contributi a fondo perduto per la digitalizzazione delle attività commerciali locali.',
-      tipo: 'regionale' as TipoBando,
-      settori: ['Commercio', 'Digitalizzazione', 'PMI'],
-      scadenza: '2024-05-15',
-      importoMin: 5000,
-      importoMax: 30000,
-      url: 'https://www.regione.lazio.it/bandi'
-    },
-    {
-      id: 'bando-5',
-      titolo: 'Progetti di ricerca e sviluppo nel settore sanitario',
-      fonte: 'Commissione Europea',
-      descrizione: 'Finanziamenti per progetti di ricerca e sviluppo nel settore sanitario e delle biotecnologie.',
-      tipo: 'europeo' as TipoBando,
-      settori: ['Sanità', 'Ricerca', 'Biotecnologie'],
-      scadenza: '2024-07-31',
-      importoMin: 200000,
-      importoMax: 1000000,
-      url: 'https://ec.europa.eu/info/funding-tenders/opportunities/portal/'
-    }
-  ];
-
-  // Get all bandi
+export class SupabaseBandiService {
+  /**
+   * Recupera tutti i bandi dal database Supabase
+   */
   static async getBandi(): Promise<Bando[]> {
-    // In a real implementation, this would fetch from Supabase
-    console.log('Fetching all bandi');
-    return this.bandiStorage;
-  }
-
-  // Get combined bandi from all sources
-  static async getBandiCombinati(): Promise<Bando[]> {
-    // In a real implementation, this would fetch from Supabase and any other sources
-    console.log('Fetching combined bandi');
-    return this.bandiStorage;
-  }
-
-  // Get a specific bando by ID
-  static async getBandoById(id: string): Promise<Bando | null> {
-    // In a real implementation, this would fetch from Supabase
-    const bando = this.bandiStorage.find(b => b.id === id);
-    return bando || null;
-  }
-
-  // Import bandi
-  static async importBandi(bandi: Bando[]): Promise<{ success: boolean, count: number, matchCount: number }> {
     try {
-      console.log(`Importing ${bandi.length} bandi`);
-      
-      // Ensure all bandi have valid IDs and tipo values
-      const processedBandi = bandi.map(bando => ({
-        ...bando,
-        id: bando.id || uuidv4(),
-        tipo: (bando.tipo || 'altro') as TipoBando
-      }));
-      
-      // Add the bandi to our storage (in a real implementation, this would insert into Supabase)
-      this.bandiStorage = [...this.bandiStorage, ...processedBandi];
-      
-      // Generate matches for the imported bandi
-      const matchCount = await SupabaseMatchService.generateMatchesForBandi(processedBandi);
-      
-      return {
-        success: true,
-        count: processedBandi.length,
-        matchCount
-      };
+      console.log('SupabaseBandiService: Fetching bandi from Supabase');
+      const { data, error } = await supabase
+        .from('bandi')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Errore nel recupero dei bandi:', error);
+        return [];
+      }
+
+      // Converte i dati del database nel formato Bando
+      console.log(`SupabaseBandiService: Retrieved ${data.length} bandi from Supabase`);
+      return data.map(this.mapDbRowToBando);
     } catch (error) {
-      console.error('Error importing bandi:', error);
-      return {
-        success: false,
-        count: 0,
-        matchCount: 0
-      };
+      console.error('Errore durante il recupero dei bandi:', error);
+      return [];
     }
   }
-  
-  // Delete a bando by ID
-  static async deleteBando(id: string): Promise<boolean> {
+
+  /**
+   * Recupera tutti i bandi combinati (Supabase + localStorage + sessionStorage) senza duplicati
+   * Modificato per evitare la duplicazione continua dei bandi
+   */
+  static async getBandiCombinati(): Promise<Bando[]> {
     try {
-      const initialLength = this.bandiStorage.length;
-      this.bandiStorage = this.bandiStorage.filter(bando => bando.id !== id);
-      return initialLength > this.bandiStorage.length;
+      // 1. Carica bandi da Supabase
+      const supaBandi = await this.getBandi();
+      console.log(`SupabaseBandiService: Retrieved ${supaBandi.length} bandi from Supabase for combined list`);
+      
+      // 2. Carica bandi dal localStorage
+      const localBandi = FirecrawlService.getSavedBandi();
+      console.log(`SupabaseBandiService: Retrieved ${localBandi.length} bandi from localStorage for combined list`);
+      
+      // 3. Carica bandi importati da sessionStorage
+      let importedBandi: Bando[] = [];
+      const importedBandiStr = sessionStorage.getItem('bandiImportati');
+      if (importedBandiStr) {
+        try {
+          importedBandi = JSON.parse(importedBandiStr);
+          console.log(`SupabaseBandiService: Retrieved ${importedBandi.length} bandi from sessionStorage for combined list`);
+        } catch (error) {
+          console.error('Error parsing imported bandi:', error);
+        }
+      }
+      
+      // 4. Combina tutti i bandi, rimuovendo duplicati basati su ID
+      const allBandiMap = new Map<string, Bando>();
+      
+      // Priorità a Supabase - aggiungiamo tutti i bandi da Supabase
+      supaBandi.forEach(bando => {
+        allBandiMap.set(bando.id, bando);
+      });
+      
+      // Creiamo un set di chiavi univoche basate su titolo+fonte per identificare duplicati
+      const titoloFonteSet = new Set(
+        supaBandi.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+      );
+      
+      // Poi localStorage (solo se non già presenti in Supabase)
+      for (const bando of localBandi) {
+        // Verifichiamo prima se non c'è già un bando con questo ID
+        if (!allBandiMap.has(bando.id)) {
+          // Verifichiamo anche se non esiste già un bando con lo stesso titolo e fonte
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          if (!titoloFonteSet.has(chiave)) {
+            // Solo in questo caso lo salviamo in Supabase (una tantum)
+            try {
+              await this.saveBando(bando);
+              console.log(`Bando dal localStorage salvato in Supabase: ${bando.id}`);
+              allBandiMap.set(bando.id, bando);
+              titoloFonteSet.add(chiave);
+            } catch (err) {
+              console.error(`Errore nel salvare il bando dal localStorage in Supabase: ${bando.id}`, err);
+            }
+          }
+        }
+      }
+      
+      // Solo la prima volta importiamo i bandi da sessionStorage a Supabase
+      // Le volte successive, li mostreremo solo se non esistono già bandi simili
+      const bandiImportatiFlag = sessionStorage.getItem('bandiImportatiFlag');
+      if (!bandiImportatiFlag && importedBandi.length > 0) {
+        for (const bando of importedBandi) {
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          if (!titoloFonteSet.has(chiave)) {
+            try {
+              // Creiamo un ID valido se non esiste
+              if (!bando.id || !this.isValidUUID(bando.id)) {
+                bando.id = uuidv4();
+              }
+              
+              await this.saveBando(bando);
+              console.log(`Bando da sessionStorage salvato in Supabase: ${bando.id}`);
+              allBandiMap.set(bando.id, bando);
+              titoloFonteSet.add(chiave);
+            } catch (err) {
+              console.error(`Errore nel salvare il bando da sessionStorage in Supabase: ${bando.id}`, err);
+            }
+          }
+        }
+        
+        // Impostiamo il flag per evitare di importare più volte
+        sessionStorage.setItem('bandiImportatiFlag', 'true');
+      } else {
+        console.log('I bandi da sessionStorage sono già stati importati in precedenza.');
+      }
+      
+      const combinedBandi = Array.from(allBandiMap.values());
+      console.log(`SupabaseBandiService: Combined unique bandi count: ${combinedBandi.length}`);
+      
+      return combinedBandi;
     } catch (error) {
-      console.error('Error deleting bando:', error);
+      console.error('Errore durante il recupero dei bandi combinati:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Salva un bando nel database
+   */
+  static async saveBando(bando: Bando): Promise<boolean> {
+    try {
+      // Assicuriamoci che il bando abbia un ID valido (UUID)
+      let bandoId = bando.id;
+      // Verificare che l'ID sia un UUID valido o generarne uno nuovo
+      if (!bandoId || !this.isValidUUID(bandoId)) {
+        bandoId = uuidv4();
+        console.log(`Generato nuovo UUID per bando: ${bandoId}`);
+      }
+
+      // Creiamo una copia del bando con l'ID corretto
+      const bandoToSave = {
+        ...bando,
+        id: bandoId
+      };
+
+      // Convertiamo il bando nel formato del database
+      const dbBando = this.mapBandoToDbRow(bandoToSave);
+
+      // Verifichiamo se il bando esiste già in Supabase
+      const { data: existingBando } = await supabase
+        .from('bandi')
+        .select('id')
+        .eq('id', bandoId)
+        .maybeSingle();
+
+      if (existingBando) {
+        console.log(`Bando con ID ${bandoId} già presente in Supabase, aggiornamento...`);
+      }
+
+      const { error } = await supabase
+        .from('bandi')
+        .upsert(dbBando, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Errore nel salvataggio del bando:', error);
+        return false;
+      }
+
+      console.log('Bando salvato con successo in Supabase:', bandoToSave.id);
+      return true;
+    } catch (error) {
+      console.error('Errore durante il salvataggio del bando:', error);
       return false;
     }
   }
 
-  // Add generateBandiCSV method to fix Report.tsx error
-  static async generateBandiCSV(): Promise<string> {
+  /**
+   * Elimina un bando dal database
+   */
+  static async deleteBando(id: string): Promise<boolean> {
     try {
-      const bandi = await this.getBandi();
-      
-      // Define CSV header
-      const header = ['ID', 'Titolo', 'Fonte', 'Tipo', 'Settori', 'Importo Min', 'Importo Max', 'Scadenza', 'URL'];
-      
-      // Format bandi data as CSV rows
-      const rows = bandi.map(bando => {
-        return [
-          bando.id,
-          `"${(bando.titolo || '').replace(/"/g, '""')}"`, // Escape quotes
-          `"${(bando.fonte || '').replace(/"/g, '""')}"`,
-          bando.tipo || '',
-          `"${Array.isArray(bando.settori) ? bando.settori.join('; ') : ''}"`,
-          bando.importoMin || '',
-          bando.importoMax || '',
-          bando.scadenza || '',
-          `"${(bando.url || '').replace(/"/g, '""')}"`
-        ].join(',');
-      });
-      
-      // Combine header and rows
-      const csvContent = [header.join(','), ...rows].join('\n');
-      return csvContent;
+      const { error } = await supabase
+        .from('bandi')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Errore nell\'eliminazione del bando:', error);
+        return false;
+      }
+
+      console.log('Bando eliminato con successo da Supabase:', id);
+      return true;
     } catch (error) {
-      console.error('Error generating CSV for bandi:', error);
-      return '';
+      console.error('Errore durante l\'eliminazione del bando:', error);
+      return false;
     }
+  }
+
+  /**
+   * Recupera un bando specifico dal database
+   */
+  static async getBando(id: string): Promise<Bando | null> {
+    try {
+      const { data, error } = await supabase
+        .from('bandi')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Errore nel recupero del bando:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log(`Bando con ID ${id} non trovato in Supabase, cercando in localStorage`);
+        // Se il bando non è stato trovato in Supabase, cercalo in localStorage
+        const localBandi = FirecrawlService.getSavedBandi();
+        const localBando = localBandi.find(b => b.id === id);
+        
+        if (localBando) {
+          console.log(`Bando con ID ${id} trovato in localStorage`);
+          return localBando;
+        }
+        
+        // Cerca anche nei bandi importati
+        const importedBandiStr = sessionStorage.getItem('bandiImportati');
+        if (importedBandiStr) {
+          try {
+            const importedBandi = JSON.parse(importedBandiStr);
+            const importedBando = importedBandi.find((b: Bando) => b.id === id);
+            if (importedBando) {
+              console.log(`Bando con ID ${id} trovato nei bandi importati`);
+              return importedBando;
+            }
+          } catch (err) {
+            console.error('Errore nel parsing dei bandi importati:', err);
+          }
+        }
+        
+        console.log(`Bando con ID ${id} non trovato in nessuna fonte`);
+        return null;
+      }
+
+      return this.mapDbRowToBando(data);
+    } catch (error) {
+      console.error('Errore durante il recupero del bando:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Importa i bandi dal FirecrawlService a Supabase
+   */
+  static async importFromFirecrawl(): Promise<number> {
+    try {
+      const bandiLocali = FirecrawlService.getSavedBandi();
+      
+      let contatore = 0;
+      
+      for (const bando of bandiLocali) {
+        const salvato = await this.saveBando(bando);
+        if (salvato) {
+          contatore++;
+        }
+      }
+      
+      return contatore;
+    } catch (error) {
+      console.error('Errore durante l\'importazione dei bandi da Firecrawl:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Importa i bandi dalla sessionStorage a Supabase
+   */
+  static async importFromSessionStorage(): Promise<number> {
+    try {
+      const bandiImportatiString = sessionStorage.getItem('bandiImportati');
+      if (!bandiImportatiString) {
+        return 0;
+      }
+      
+      const bandiImportati = JSON.parse(bandiImportatiString);
+      
+      // Recuperiamo prima i bandi esistenti per evitare duplicazioni
+      const bandiEsistenti = await this.getBandi();
+      const titoliFonteEsistenti = new Set(
+        bandiEsistenti.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+      );
+      
+      let contatore = 0;
+      
+      for (const bando of bandiImportati) {
+        try {
+          // Verifichiamo che non esista già un bando con lo stesso titolo e fonte
+          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          if (!titoliFonteEsistenti.has(chiave)) {
+            // Assicuriamo che ogni bando abbia tutti i campi necessari
+            const bandoCompleto = {
+              ...bando,
+              settori: bando.settori || [],
+              fonte: bando.fonte || 'Importato',
+              tipo: bando.tipo || 'altro'
+            };
+            
+            const salvato = await this.saveBando(bandoCompleto);
+            if (salvato) {
+              contatore++;
+              titoliFonteEsistenti.add(chiave);
+              console.log(`Bando importato e salvato con successo in Supabase: ${bando.titolo}`);
+            } else {
+              console.error(`Errore nel salvataggio del bando in Supabase: ${bando.titolo}`);
+            }
+          } else {
+            console.log(`Bando "${bando.titolo}" da ${bando.fonte} già presente nel database, saltato.`);
+          }
+        } catch (err) {
+          console.error(`Errore nell'elaborazione del bando: ${bando.titolo}`, err);
+        }
+      }
+      
+      // Impostiamo il flag per evitare di importare più volte
+      sessionStorage.setItem('bandiImportatiFlag', 'true');
+      
+      return contatore;
+    } catch (error) {
+      console.error('Errore durante l\'importazione dei bandi dalla sessionStorage:', error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Verifica se una stringa è un UUID valido
+   */
+  private static isValidUUID(uuid: string): boolean {
+    const regexExp = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return regexExp.test(uuid);
+  }
+
+  /**
+   * Mappa una riga del database nel formato Bando
+   */
+  private static mapDbRowToBando(row: any): Bando {
+    return {
+      id: row.id,
+      titolo: row.titolo,
+      descrizione: row.descrizione,
+      descrizioneCompleta: row.descrizione_completa,
+      fonte: row.fonte,
+      url: row.url,
+      tipo: row.tipo,
+      settori: row.settori || [],
+      importoMin: row.importo_min,
+      importoMax: row.importo_max,
+      budgetDisponibile: row.budget_disponibile,
+      scadenza: row.scadenza,
+      scadenzaDettagliata: row.scadenza_dettagliata,
+      dataEstrazione: row.data_estrazione,
+      requisiti: row.requisiti,
+      modalitaPresentazione: row.modalita_presentazione,
+      ultimiAggiornamenti: row.ultimi_aggiornamenti
+    };
+  }
+
+  /**
+   * Mappa un Bando in una riga del database
+   */
+  private static mapBandoToDbRow(bando: Bando): any {
+    return {
+      id: bando.id,
+      titolo: bando.titolo,
+      descrizione: bando.descrizione,
+      descrizione_completa: bando.descrizioneCompleta,
+      fonte: bando.fonte,
+      url: bando.url,
+      tipo: bando.tipo,
+      settori: bando.settori || [],
+      importo_min: bando.importoMin,
+      importo_max: bando.importoMax,
+      budget_disponibile: bando.budgetDisponibile,
+      scadenza: bando.scadenza,
+      scadenza_dettagliata: bando.scadenzaDettagliata,
+      data_estrazione: bando.dataEstrazione,
+      requisiti: bando.requisiti,
+      modalita_presentazione: bando.modalitaPresentazione,
+      ultimi_aggiornamenti: bando.ultimiAggiornamenti
+    };
   }
 }
 

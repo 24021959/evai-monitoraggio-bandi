@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import { Bando, Fonte } from '@/types';
 
 // This service handles the Google Sheets integration
@@ -541,22 +540,6 @@ export class GoogleSheetsService {
     }
     
     return 'altro';
-  }
-
-  /**
-   * Converte la risposta dell'API in un array di Fonte
-   */
-  static mapRowsToFonti(rows: any[]): Fonte[] {
-    if (!rows || rows.length === 0) return [];
-
-    return rows.map(row => {
-      return {
-        id: row.id || uuidv4(),
-        nome: row.nome || 'Fonte senza nome',
-        url: row.url || '',
-        tipo: row.tipo || 'altro'
-      };
-    });
   }
 }
 
