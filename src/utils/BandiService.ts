@@ -53,6 +53,19 @@ export class BandiService {
       return [];
     }
   }
+
+  /**
+   * Recupera tutti i titoli dei bandi per mostrare suggerimenti
+   */
+  static async getTitoliBandi(): Promise<string[]> {
+    try {
+      const bandi = await SupabaseBandiService.getBandiCombinati();
+      return bandi.map(bando => bando.titolo);
+    } catch (error) {
+      console.error('Errore nel recupero dei titoli dei bandi:', error);
+      return [];
+    }
+  }
 }
 
 export default BandiService;

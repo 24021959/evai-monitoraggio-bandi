@@ -47,6 +47,17 @@ export interface Cliente {
   formaGiuridica?: string;
   codiceateco?: string;
   codiceATECO?: string;
+  // Nuovi campi per il matching avanzato
+  esperienzaFinanziamenti?: string;
+  tecnologieSpecifiche?: string;
+  criteriESG?: string;
+  capacitaRD?: string;
+  presenzaInternazionale?: string;
+  faseDiCrescita?: 'startup' | 'scaleup' | 'matura' | 'consolidata';
+  stabilitaFinanziaria?: string;
+  competenzeDipendenti?: string;
+  partnership?: string;
+  certificazioni?: string;
 }
 
 export interface Match {

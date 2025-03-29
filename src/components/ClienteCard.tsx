@@ -2,7 +2,7 @@
 import { Cliente } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, MapPin, Tag, Euro } from 'lucide-react';
+import { Building2, MapPin, Tag, Euro, Award, Briefcase } from 'lucide-react';
 
 interface ClienteCardProps {
   cliente: Cliente;
@@ -35,20 +35,45 @@ const ClienteCard: React.FC<ClienteCardProps> = ({ cliente }) => {
           <Euro className="h-4 w-4 text-gray-500 mt-0.5" />
           <div>
             <p className="text-sm font-medium">Fatturato</p>
-            <p className="text-sm text-gray-600">€{cliente.fatturato.toLocaleString('it-IT')}</p>
+            <p className="text-sm text-gray-600">€{cliente.fatturato?.toLocaleString('it-IT') || '-'}</p>
           </div>
         </div>
+
+        {cliente.faseDiCrescita && (
+          <div className="flex items-start gap-2">
+            <Briefcase className="h-4 w-4 text-gray-500 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Fase</p>
+              <p className="text-sm text-gray-600">
+                {cliente.faseDiCrescita === 'startup' && 'Startup'}
+                {cliente.faseDiCrescita === 'scaleup' && 'Scale-up'}
+                {cliente.faseDiCrescita === 'matura' && 'Azienda Matura'}
+                {cliente.faseDiCrescita === 'consolidata' && 'Azienda Consolidata'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {cliente.certificazioni && (
+          <div className="flex items-start gap-2">
+            <Award className="h-4 w-4 text-gray-500 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Certificazioni</p>
+              <p className="text-sm text-gray-600">{cliente.certificazioni}</p>
+            </div>
+          </div>
+        )}
         
         <div className="flex items-start gap-2">
           <Tag className="h-4 w-4 text-gray-500 mt-0.5" />
           <div>
             <p className="text-sm font-medium">Interessi</p>
             <div className="flex flex-wrap gap-1 mt-1">
-              {cliente.interessiSettoriali.map((interesse, index) => (
+              {cliente.interessiSettoriali?.map((interesse, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
                   {interesse}
                 </Badge>
-              ))}
+              )) || <span className="text-sm text-gray-400">Nessun interesse specificato</span>}
             </div>
           </div>
         </div>
