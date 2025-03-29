@@ -16,13 +16,11 @@ import { useFontiUrlHandler } from '@/utils/FontiUrlHandler';
 
 interface FontiTableProps {
   fonti: Fonte[];
-  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
 const FontiTable: React.FC<FontiTableProps> = ({ 
   fonti, 
-  onEdit, 
   onDelete
 }) => {
   const { toast } = useToast();
@@ -50,7 +48,6 @@ const FontiTable: React.FC<FontiTableProps> = ({
               <TableHead>Nome</TableHead>
               <TableHead>URL</TableHead>
               <TableHead>Tipo</TableHead>
-              <TableHead>Stato</TableHead>
               <TableHead>Azioni</TableHead>
             </TableRow>
           </TableHeader>
@@ -59,7 +56,6 @@ const FontiTable: React.FC<FontiTableProps> = ({
               <FonteRow 
                 key={fonte.id}
                 fonte={fonte}
-                onEdit={onEdit}
                 onDelete={onDelete}
                 onEditUrl={handleEditUrl}
                 onSaveUrl={handleSaveUrl}

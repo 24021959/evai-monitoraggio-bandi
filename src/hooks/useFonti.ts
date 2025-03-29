@@ -10,7 +10,6 @@ import WebhookService from '@/utils/WebhookService';
 export function useFonti() {
   const { toast } = useToast();
   const [fonti, setFonti] = useState<Fonte[]>([]);
-  const [selectedFonte, setSelectedFonte] = useState<Fonte | null>(null);
   const [importingFromSheets, setImportingFromSheets] = useState(false);
   
   const { data: supabaseFonti, isLoading, refetch } = useQuery({
@@ -27,50 +26,6 @@ export function useFonti() {
       setFonti(supabaseFonti);
     }
   }, [supabaseFonti]);
-
-  const handleEdit = (id: string) => {
-    const fonte = fonti.find(f => f.id === id);
-    if (fonte) {
-      setSelectedFonte(fonte);
-    }
-  };
-  
-  const handleSaveEdit = async (updatedFonte: Fonte) => {
-    try {
-      // Aggiorniamo prima la fonte localmente
-      setFonti(fonti.map(f => f.id === updatedFonte.id ? updatedFonte : f));
-      
-      // Salviamo la fonte su Supabase
-      const success = await SupabaseFontiService.saveFonte(updatedFonte);
-      
-      if (success) {
-        toast({
-          title: "Fonte aggiornata",
-          description: "La fonte è stata aggiornata con successo",
-          duration: 3000,
-        });
-      } else {
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante l'aggiornamento della fonte su Supabase",
-          variant: "destructive",
-          duration: 3000,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Errore",
-        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
-    setSelectedFonte(null);
-  };
-  
-  const handleCancelEdit = () => {
-    setSelectedFonte(null);
-  };
   
   const handleDelete = async (id: string) => {
     try {
@@ -244,11 +199,7 @@ export function useFonti() {
   return {
     fonti,
     isLoading,
-    selectedFonte,
     importingFromSheets,
-    handleEdit,
-    handleSaveEdit,
-    handleCancelEdit,
     handleDelete,
     handleAddSource,
     importFromGoogleSheets

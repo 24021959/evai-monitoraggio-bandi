@@ -187,8 +187,7 @@ export class SupabaseFontiService {
       id: row.id,
       nome: row.nome,
       url: row.url,
-      tipo: row.tipo,
-      stato: row.stato
+      tipo: row.tipo
     };
   }
 
@@ -200,8 +199,7 @@ export class SupabaseFontiService {
       id: fonte.id,
       nome: fonte.nome,
       url: fonte.url,
-      tipo: fonte.tipo,
-      stato: fonte.stato
+      tipo: fonte.tipo
     };
   }
 }

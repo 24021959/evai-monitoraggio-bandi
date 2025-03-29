@@ -4,7 +4,7 @@ import { Fonte } from '@/types';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Link } from 'lucide-react';
+import { Trash2, Link } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,6 @@ import { FonteUrlEditor } from './FonteUrlEditor';
 
 interface FonteRowProps {
   fonte: Fonte;
-  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onEditUrl: (id: string) => void;
   onSaveUrl: (fonte: Fonte, newUrl: string) => Promise<boolean>;
@@ -27,7 +26,6 @@ interface FonteRowProps {
 
 export const FonteRow: React.FC<FonteRowProps> = ({ 
   fonte, 
-  onEdit, 
   onDelete,
   onEditUrl,
   onSaveUrl
@@ -53,12 +51,6 @@ export const FonteRow: React.FC<FonteRowProps> = ({
       default:
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Altro</Badge>;
     }
-  };
-  
-  const getStatoBadge = (stato: string) => {
-    return stato === 'attivo' 
-      ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Attivo</Badge>
-      : <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Inattivo</Badge>;
   };
 
   const handleSaveUrl = async (newUrl: string) => {
@@ -94,20 +86,8 @@ export const FonteRow: React.FC<FonteRowProps> = ({
           </div>
         </TableCell>
         <TableCell>{getTipoBadge(fonte.tipo)}</TableCell>
-        <TableCell>{getStatoBadge(fonte.stato)}</TableCell>
         <TableCell>
           <div className="flex space-x-1">
-            {onEdit && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => onEdit(fonte.id)}
-              >
-                <Pencil className="h-4 w-4" />
-                <span className="sr-only">Modifica</span>
-              </Button>
-            )}
-            
             {onDelete && (
               <Button 
                 variant="ghost" 
