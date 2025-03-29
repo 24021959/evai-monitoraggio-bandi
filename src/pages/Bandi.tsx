@@ -109,7 +109,7 @@ const Bandi = () => {
       
       toast({
         title: "Bando eliminato",
-        description: "Il bando è stato rimosso con successo",
+        description: "Il bando �� stato rimosso con successo",
         duration: 3000,
       });
     } else {

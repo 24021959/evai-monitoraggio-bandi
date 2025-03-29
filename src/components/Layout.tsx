@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
@@ -15,8 +16,14 @@ const Sidebar = () => {
   
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-gray-800 text-white p-5 text-xl font-medium">
-        Sistema Monitoraggio Bandi
+      <div className="bg-gray-800 text-white p-4">
+        <div className="flex items-center">
+          <img 
+            src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
+            alt="EV-AI Technologies Logo" 
+            className="h-12 mr-2"
+          />
+        </div>
       </div>
       <div className="bg-gray-100 flex-grow">
         <nav className="flex flex-col">          
