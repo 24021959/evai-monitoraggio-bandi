@@ -41,7 +41,6 @@ const AdminPage: React.FC = () => {
     try {
       setLoadingUsers(true);
       
-      // Otteniamo i profili utente
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select(`
@@ -51,14 +50,12 @@ const AdminPage: React.FC = () => {
         
       if (profilesError) throw profilesError;
 
-      // Otteniamo gli utenti da auth.users usando il client admin
       const { data, error: usersError } = await adminClient.auth.admin.listUsers();
       
       if (usersError) throw usersError;
 
       const authUsers = data?.users || [];
 
-      // Combiniamo i dati
       const combinedUsers = profiles?.map(profile => {
         const authUser = authUsers.find(u => u.id === profile.id);
         return {
@@ -66,7 +63,7 @@ const AdminPage: React.FC = () => {
           display_name: profile.display_name,
           email: authUser?.email || 'N/A',
           role: profile.role,
-          is_active: profile.organizations?.is_active !== false // Se non è esplicitamente false, consideriamo l'utente attivo
+          is_active: profile.organizations?.is_active !== false
         };
       }) || [];
 
@@ -95,7 +92,8 @@ const AdminPage: React.FC = () => {
     }
 
     try {
-      // Creare un nuovo utente tramite Supabase Auth utilizzando adminClient
+      console.log("Tentativo di creazione utente con adminClient");
+      
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email: newUserEmail,
         password: newUserPassword,
@@ -105,9 +103,17 @@ const AdminPage: React.FC = () => {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error("Errore auth:", authError);
+        throw authError;
+      }
 
-      // Aggiorniamo il profilo utente con il ruolo corretto
+      console.log("Utente creato con successo:", authData);
+
+      if (!authData.user) {
+        throw new Error("Dati utente non ricevuti dalla creazione");
+      }
+
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({ 
@@ -116,7 +122,10 @@ const AdminPage: React.FC = () => {
         })
         .eq('id', authData.user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Errore profilo:", profileError);
+        throw profileError;
+      }
 
       toast({
         title: 'Utente creato',
@@ -130,18 +139,17 @@ const AdminPage: React.FC = () => {
       setShowCreateUserDialog(false);
       fetchUsers();
     } catch (error: any) {
+      console.error('Errore dettagliato nella creazione dell\'utente:', error);
       toast({
         title: 'Errore',
         description: `Impossibile creare l'utente: ${error.message}`,
         variant: 'destructive'
       });
-      console.error('Errore nella creazione dell\'utente:', error);
     }
   };
 
   const toggleUserActive = async (userId: string, isCurrentlyActive: boolean, userName: string) => {
     try {
-      // Recupera l'organization_id dell'utente
       const { data: userProfile, error: profileError } = await supabase
         .from('user_profiles')
         .select('organization_id')
@@ -150,7 +158,6 @@ const AdminPage: React.FC = () => {
         
       if (profileError) throw profileError;
       
-      // Aggiorna lo stato dell'organizzazione
       const { error: updateError } = await supabase
         .from('organizations')
         .update({ is_active: !isCurrentlyActive })
@@ -195,7 +202,6 @@ const AdminPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Gestione Utenti */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -266,10 +272,8 @@ const AdminPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Sezione per il cambio password */}
       <ChangePasswordForm />
 
-      {/* Dialog per la creazione di un nuovo utente */}
       <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
