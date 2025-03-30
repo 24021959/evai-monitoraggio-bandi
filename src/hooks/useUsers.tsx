@@ -16,20 +16,34 @@ export const useUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [adminClientVerified, setAdminClientVerified] = useState<boolean | null>(null);
+  const [adminVerificationError, setAdminVerificationError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Verify admin client on hook initialization
+  // Verifica avanzata del client amministrativo all'inizializzazione del hook
   useEffect(() => {
     async function checkAdminAccess() {
-      const verified = await verifyAdminClientAccess();
-      setAdminClientVerified(verified);
-      
-      if (!verified) {
-        toast({
-          title: 'Errore di configurazione',
-          description: 'Il client amministrativo non è configurato correttamente. Contattare l\'amministratore di sistema.',
-          variant: 'destructive'
-        });
+      try {
+        console.log("Verifica dell'accesso amministrativo in corso...");
+        const verified = await verifyAdminClientAccess();
+        setAdminClientVerified(verified);
+        
+        if (!verified) {
+          const errorMsg = 'Il client amministrativo non è configurato correttamente. Verificare la chiave Service Role.';
+          setAdminVerificationError(errorMsg);
+          toast({
+            title: 'Errore di configurazione',
+            description: errorMsg,
+            variant: 'destructive'
+          });
+          console.error(errorMsg);
+        } else {
+          console.log("Client amministrativo verificato con successo");
+        }
+      } catch (error: any) {
+        const errorMsg = `Errore durante la verifica del client amministrativo: ${error.message}`;
+        setAdminVerificationError(errorMsg);
+        setAdminClientVerified(false);
+        console.error(errorMsg);
       }
     }
     
@@ -40,7 +54,7 @@ export const useUsers = () => {
     try {
       setLoadingUsers(true);
       
-      // Step 1: Get user profiles from public schema
+      // Fase 1: Recupero dei profili utente dallo schema pubblico
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select(`
@@ -50,11 +64,15 @@ export const useUsers = () => {
         
       if (profilesError) throw profilesError;
 
-      // Step 2: Only fetch auth users if admin client is verified
+      // Fase 2: Recupero degli utenti autenticati solo se il client amministrativo è verificato
       if (adminClientVerified) {
+        console.log("Tentativo di recupero utenti con adminClient");
         const { data, error: usersError } = await adminClient.auth.admin.listUsers();
         
-        if (usersError) throw usersError;
+        if (usersError) {
+          console.error("Errore nel recupero degli utenti auth:", usersError);
+          throw usersError;
+        }
 
         const authUsers = data?.users || [];
 
@@ -69,13 +87,15 @@ export const useUsers = () => {
           };
         }) || [];
 
+        console.log("Utenti combinati recuperati:", combinedUsers.length);
         setUsers(combinedUsers);
       } else {
-        // Fallback to just profiles if admin client isn't available
+        // Fallback ai soli profili se il client amministrativo non è disponibile
+        console.log("Fallback al recupero dei soli profili (senza email)");
         const basicUsers = profiles?.map(profile => ({
           id: profile.id,
           display_name: profile.display_name,
-          email: 'N/A', // Can't access emails without admin access
+          email: 'Email non disponibile', // Messaggio più chiaro all'utente
           role: profile.role,
           is_active: profile.organizations?.is_active !== false
         })) || [];
@@ -88,7 +108,7 @@ export const useUsers = () => {
         description: `Impossibile recuperare gli utenti: ${error.message}`,
         variant: 'destructive'
       });
-      console.error('Errore nel recupero degli utenti:', error);
+      console.error('Errore dettagliato nel recupero degli utenti:', error);
     } finally {
       setLoadingUsers(false);
     }
@@ -112,7 +132,7 @@ export const useUsers = () => {
     if (!adminClientVerified) {
       toast({
         title: 'Errore di configurazione',
-        description: 'Impossibile creare utenti: client amministrativo non configurato correttamente.',
+        description: adminVerificationError || 'Impossibile creare utenti: client amministrativo non configurato correttamente.',
         variant: 'destructive'
       });
       return false;
@@ -131,7 +151,7 @@ export const useUsers = () => {
       });
 
       if (authError) {
-        console.error("Errore auth:", authError);
+        console.error("Errore nella creazione dell'utente auth:", authError);
         throw authError;
       }
 
@@ -150,7 +170,7 @@ export const useUsers = () => {
         .eq('id', authData.user.id);
 
       if (profileError) {
-        console.error("Errore profilo:", profileError);
+        console.error("Errore nell'aggiornamento del profilo:", profileError);
         throw profileError;
       }
 
@@ -215,6 +235,7 @@ export const useUsers = () => {
     loadingUsers,
     createUser,
     toggleUserActive,
-    adminClientVerified
+    adminClientVerified,
+    adminVerificationError
   };
 };

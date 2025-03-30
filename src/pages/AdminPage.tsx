@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Shield, UserPlus, AlertTriangle } from 'lucide-react';
+import { Shield, UserPlus, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ChangePasswordForm from '@/components/admin/ChangePasswordForm';
 import UserTable from '@/components/admin/UserTable';
@@ -17,7 +17,14 @@ const AdminPage: React.FC = () => {
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   
   const { isAdmin } = useAuth();
-  const { users, loadingUsers, createUser, toggleUserActive, adminClientVerified } = useUsers();
+  const { 
+    users, 
+    loadingUsers, 
+    createUser, 
+    toggleUserActive, 
+    adminClientVerified, 
+    adminVerificationError 
+  } = useUsers();
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,8 +69,19 @@ const AdminPage: React.FC = () => {
         <Alert variant="destructive" className="bg-red-50 border-red-200">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Impossibile creare nuovi utenti: problemi di configurazione con le API admin. 
-            Contattare l'amministratore di sistema.
+            <p className="font-semibold">Impossibile creare nuovi utenti: problemi di configurazione con le API admin.</p>
+            <p className="text-sm mt-1">
+              {adminVerificationError || 'Verificare la chiave Service Role in Supabase e assicurarsi che sia configurata correttamente.'}
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {adminClientVerified === true && (
+        <Alert className="bg-green-50 border-green-200">
+          <AlertCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription>
+            API amministrative configurate correttamente. È possibile creare nuovi utenti.
           </AlertDescription>
         </Alert>
       )}
