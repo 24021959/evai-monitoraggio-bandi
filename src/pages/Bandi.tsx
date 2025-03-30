@@ -33,6 +33,9 @@ const Bandi = () => {
   const [showAllBandi, setShowAllBandi] = useState<boolean>(false);
   const { fonti } = useFonti();
 
+  // Array per tenere traccia delle fonti disponibili, senza duplicati
+  const [fontiUniche, setFontiUniche] = useState<string[]>([]);
+
   useEffect(() => {
     const fetchBandi = async () => {
       setLoading(true);
@@ -40,6 +43,10 @@ const Bandi = () => {
         const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
         setBandi(bandiCombinati);
         console.log("Bandi page: Caricati bandi combinati:", bandiCombinati.length);
+        
+        // Estrai le fonti uniche dai bandi
+        const setFontiDaiBandi = new Set(bandiCombinati.map(bando => bando.fonte));
+        setFontiUniche(Array.from(setFontiDaiBandi).sort());
       } catch (error) {
         console.error("Errore nel recupero dei bandi:", error);
         toast({
@@ -121,8 +128,28 @@ const Bandi = () => {
     setShowAllBandi(true);
   };
 
-  // Estrai tutte le fonti dai bandi per il filtro
-  const fontiBandi = Array.from(new Set(bandi.map(bando => bando.fonte))).sort();
+  // Combina le fonti dai bandi e dalle configurazioni delle fonti
+  const getFontiCombinate = () => {
+    // Inizia con le fonti uniche dai bandi
+    const fonteCombinate = new Map<string, string>();
+    
+    // Aggiungi le fonti dai bandi
+    fontiUniche.forEach(fonte => {
+      fonteCombinate.set(fonte.toLowerCase(), fonte);
+    });
+    
+    // Aggiungi le fonti dalla configurazione
+    fonti.forEach(fonte => {
+      if (fonte.nome) {
+        fonteCombinate.set(fonte.nome.toLowerCase(), fonte.nome);
+      }
+    });
+    
+    // Converti la mappa in array e ordina
+    return Array.from(fonteCombinate.values()).sort();
+  };
+
+  const fontiCombinate = getFontiCombinate();
 
   return (
     <div className="space-y-6">
@@ -173,9 +200,9 @@ const Bandi = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="tutte">Tutte le fonti</SelectItem>
-                    {fonti.map(fonte => (
-                      <SelectItem key={fonte.id} value={fonte.nome}>
-                        {fonte.nome}
+                    {fontiCombinate.map((fonte, index) => (
+                      <SelectItem key={`fonte-${index}`} value={fonte}>
+                        {fonte}
                       </SelectItem>
                     ))}
                   </SelectContent>
