@@ -25,7 +25,8 @@ class WebhookService {
         url: fonte.url,
         tipo: fonte.tipo,
         stato_elaborazione: action === 'delete' ? 'inattivo' : 'attivo',
-        data_ultimo_aggiornamento: new Date().toISOString().split('T')[0]
+        data_ultimo_aggiornamento: new Date().toISOString().split('T')[0],
+        append_mode: action === 'add' // Aggiungiamo un flag per indicare che vogliamo aggiungere una nuova riga
       },
       timestamp: new Date().toISOString()
     };

@@ -13,7 +13,7 @@ function doGet(e) {
   console.log("Richiesta GET ricevuta");
   return ContentService.createTextOutput(JSON.stringify({
     status: "ok",
-    message: "Google Apps Script per l'aggiornamento delle fonti è attivo! Versione 3.0"
+    message: "Google Apps Script per l'aggiornamento delle fonti è attivo! Versione 3.1"
   }))
   .setMimeType(ContentService.MimeType.JSON)
   .setHeader('Access-Control-Allow-Origin', '*');
@@ -64,8 +64,8 @@ function doPost(e) {
     }
     
     // Esegui l'azione richiesta
-    if (data.action === "updateFonte" && data.fonte) {
-      console.log("Esecuzione azione updateFonte con:", JSON.stringify(data.fonte));
+    if ((data.action === "updateFonte" || data.action === "add") && data.fonte) {
+      console.log("Esecuzione azione updateFonte/add con:", JSON.stringify(data.fonte));
       const result = addFonteToSheet(data.fonte, data.sheetId);
       return ContentService.createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON)
@@ -162,6 +162,9 @@ function addFonteToSheet(fonte, sheetId) {
     
     // Trova l'ultima riga con dati
     var lastRow = Math.max(sheet.getLastRow(), 1);
+    
+    // MODIFICATO: Quando append_mode è true, aggiungiamo sempre una nuova riga
+    // Se è false, gestisci l'aggiornamento di una riga esistente (non implementato)
     var nextRowNumber = lastRow + 1;
     
     console.log("Ultima riga:", lastRow, "Prossima riga:", nextRowNumber);
@@ -187,7 +190,7 @@ function addFonteToSheet(fonte, sheetId) {
     }
     
     if ("stato_elaborazione" in headerMap) {
-      rowData[headerMap["stato_elaborazione"]] = fonte.stato || "attivo";
+      rowData[headerMap["stato_elaborazione"]] = fonte.stato_elaborazione || "attivo";
     }
     
     console.log("Dati riga da scrivere:", rowData);

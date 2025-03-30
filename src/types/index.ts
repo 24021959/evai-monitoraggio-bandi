@@ -1,3 +1,4 @@
+
 export interface Bando {
   id: string;
   titolo: string;
@@ -99,13 +100,6 @@ export interface Fonte {
 // Interface for data items used in charts
 export interface DataItem {
   [key: string]: string | number | undefined;
-  periodo?: string;
-  matchGenerati?: number;
-  bandiScaduti?: number;
-  cliente?: string;
-  matchAlta?: number;
-  matchMedia?: number;
-  matchBassa?: number;
 }
 
 // Extending DataItem for specific chart types
