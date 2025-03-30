@@ -21,7 +21,7 @@ export interface ReportData {
   totaleMatch: number;
   tassoSuccesso: number;
   fontiAttive: number;
-  tempoMedioElaborazione: number;
+  numeroClienti: number;
   analisiTemporale: ReportAnalisiTemporale[];
   performanceMatch: ReportPerformanceMatch[];
   distribuzioneFonti: ReportDistribuzioneFonti[];

@@ -92,7 +92,7 @@ const Report = () => {
           <h2 className="text-xl font-semibold text-blue-700">Riepilogo</h2>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-blue-50 p-6 rounded-lg shadow-sm">
               <div className="text-base text-blue-600 font-medium">Totale Match</div>
               <div className="text-3xl font-bold text-blue-800 mt-1">{reportData.totaleMatch}</div>
@@ -104,6 +104,10 @@ const Report = () => {
             <div className="bg-purple-50 p-6 rounded-lg shadow-sm">
               <div className="text-base text-purple-600 font-medium">Fonti Attive</div>
               <div className="text-3xl font-bold text-purple-800 mt-1">{reportData.fontiAttive}</div>
+            </div>
+            <div className="bg-amber-50 p-6 rounded-lg shadow-sm">
+              <div className="text-base text-amber-600 font-medium">Numero Clienti</div>
+              <div className="text-3xl font-bold text-amber-800 mt-1">{reportData.numeroClienti}</div>
             </div>
           </div>
         </CardContent>

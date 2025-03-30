@@ -36,6 +36,16 @@ class ReportServiceClass {
         console.error("Error fetching fonti:", fontiError);
         throw new Error(fontiError.message);
       }
+      
+      // Get all clienti
+      const { data: clientiData, error: clientiError } = await supabase
+        .from('clienti')
+        .select('*');
+      
+      if (clientiError) {
+        console.error("Error fetching clienti:", clientiError);
+        throw new Error(clientiError.message);
+      }
 
       // Calculate actual metrics from real data
       
@@ -51,6 +61,9 @@ class ReportServiceClass {
       // Count active fonti
       const fontiAttive = fontiData.filter(fonte => fonte.stato === 'attivo').length;
       
+      // Count number of clients
+      const numeroClienti = clientiData.length;
+      
       // Generate time analysis data - group by month using created_at
       const analisiTemporale = this.generateTimeAnalysis(matchData);
       
@@ -61,7 +74,7 @@ class ReportServiceClass {
         totaleMatch,
         tassoSuccesso,
         fontiAttive,
-        tempoMedioElaborazione: 0, // We're not using this anymore
+        numeroClienti,
         analisiTemporale,
         performanceMatch: [], // We're not using this anymore
         distribuzioneFonti
