@@ -70,7 +70,7 @@ const Bandi = () => {
 
   const getBandiFiltrati = () => {
     // Se showAllBandi è true o non ci sono filtri, mostra tutti i bandi
-    if (showAllBandi && filtro === '') {
+    if (showAllBandi && filtro === '' && fonteFiltro === 'tutte') {
       return bandi;
     }
     
@@ -166,6 +166,18 @@ const Bandi = () => {
 
   const fontiCombinate = getFontiCombinate();
 
+  const handleFonteChange = (value: string) => {
+    setFonteFiltro(value);
+    // Quando si seleziona una fonte specifica, disattiviamo showAllBandi
+    // per mostrare solo i bandi filtrati per quella fonte
+    if (value !== 'tutte') {
+      setShowAllBandi(false);
+    } else {
+      // Se si seleziona "tutte le fonti", torniamo a mostrare tutti i bandi
+      setShowAllBandi(true);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -204,7 +216,8 @@ const Bandi = () => {
             
             <div className="flex flex-wrap gap-3">
               <div className="w-48">
-                <Select value={fonteFiltro} onValueChange={setFonteFiltro}>
+                <p className="text-sm font-medium mb-1">Seleziona fonte</p>
+                <Select value={fonteFiltro} onValueChange={handleFonteChange}>
                   <SelectTrigger>
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
