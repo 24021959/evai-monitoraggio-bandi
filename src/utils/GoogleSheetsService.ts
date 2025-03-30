@@ -24,49 +24,63 @@ class GoogleSheetsService {
       return [];
     }
     
-    // Log dettagliato per debug
     console.log(`Dati del foglio - Colonne: ${table.cols.length}, Righe: ${table.rows.length}`);
     console.log('Intestazioni colonne:', table.cols.map((col: any) => col.label));
     
     const headers = table.cols.map((col: any) => col.label);
     
-    // Controllo per verificare che ci siano le colonne principali
-    const requiredColumns = ['nome', 'descrizione', 'fonte', 'tipo'];
-    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+    // Mappatura più flessibile delle intestazioni del foglio ai campi del bando
+    const fieldMapping: {[key: string]: string} = {
+      'titolo_incentivo': 'titolo',
+      'titolo': 'titolo',
+      'nome': 'titolo',
+      'fonte': 'fonte',
+      'descrizione': 'descrizione',
+      'url_dettaglio': 'url',
+      'url': 'url',
+      'tipo': 'tipo',
+      'data_scraping': 'dataEstrazione',
+      'data_estrazione': 'dataEstrazione',
+      'scadenza': 'scadenza',
+      'scadenza_dettagliata': 'scadenzaDettagliata',
+      'budget_disponibile': 'budgetDisponibile',
+      'modalita_presentazione': 'modalitaPresentazione',
+      'requisiti': 'requisiti',
+      'descrizione_dettagliata': 'descrizioneCompleta',
+      'ultimi_aggiornamenti': 'ultimiAggiornamenti'
+    };
     
-    if (missingColumns.length > 0) {
-      console.error(`Colonne obbligatorie mancanti: ${missingColumns.join(', ')}`);
-      console.log('Colonne disponibili:', headers.join(', '));
-    }
-    
-    return table.rows.map((row: any) => {
-      const bando: any = {};
-      
+    return table.rows.map((row: any, rowIndex: number) => {
       // Verifica che row.c (celle della riga) esista e sia un array
       if (!row.c || !Array.isArray(row.c)) {
         console.error('Formato riga non valido:', row);
         return null;
       }
       
+      // Inizializzazione di un oggetto bando vuoto con valori predefiniti
+      const bando: any = {
+        // Assegniamo valori predefiniti per i campi obbligatori
+        id: `sheet-row-${rowIndex + 1}-${Date.now()}`,
+        titolo: '',
+        fonte: 'Google Sheet',
+        tipo: 'altro'
+      };
+      
+      // Popolazione del bando con i dati dalla riga
       headers.forEach((header: string, index: number) => {
         // Verifica che l'indice sia valido per l'array di celle
         if (index >= row.c.length) {
-          console.warn(`Indice ${index} non valido per la riga:`, row.c);
-          bando[header] = '';
           return;
         }
         
         const cell = row.c[index];
         let value = null;
         
-        // Gestione più robusta dei valori delle celle
+        // Gestione robusta dei valori delle celle
         if (cell) {
-          // Prima controlliamo v (value)
-          if (cell.v !== undefined && cell.v !== null) {
+          if (cell.v !== undefined) {
             value = cell.v;
-          } 
-          // Poi controlliamo f (formatted value) se v non è disponibile
-          else if (cell.f !== undefined && cell.f !== null) {
+          } else if (cell.f !== undefined) {
             value = cell.f;
           }
         }
@@ -75,29 +89,48 @@ class GoogleSheetsService {
           value = '';
         }
         
-        bando[header] = value;
+        // Usa il mapping per determinare a quale campo del bando assegnare questo valore
+        const mappedField = fieldMapping[header.toLowerCase()];
+        if (mappedField) {
+          bando[mappedField] = String(value).trim();
+        } else {
+          // Per campi non mappati, usa direttamente il nome dell'intestazione
+          // Questo ci dà una maggiore flessibilità con strutture di foglio variabili
+          bando[header] = String(value).trim();
+        }
       });
 
-      // Trasforma i nomi delle colonne in camelCase e pulisce i valori di testo
+      // Log dettagliato per il debug
+      console.log(`Riga ${rowIndex + 1}:`, JSON.stringify(bando).substring(0, 200) + '...');
+      
+      // Validazione bando: deve avere almeno un titolo non vuoto
+      if (!bando.titolo || bando.titolo.trim() === '') {
+        console.log(`Riga ${rowIndex + 1} saltata: titolo mancante`);
+        return null;
+      }
+
+      // Conversione a formato Bando
       const mappedBando: Bando = {
-        id: bando.row_number?.toString() || '',
-        titolo: typeof bando.nome === 'string' ? bando.nome.trim() : String(bando.nome || '').trim(),
-        descrizione: typeof bando.descrizione === 'string' ? bando.descrizione.trim() : String(bando.descrizione || '').trim(),
-        fonte: typeof bando.fonte === 'string' ? bando.fonte.trim() : String(bando.fonte || '').trim(),
-        scadenza: bando.scadenza ? String(bando.scadenza) : '',
-        tipo: bando.tipo ? String(bando.tipo) : '',
-        url: bando.url ? String(bando.url) : '',
-        importo_min: bando.importo_min !== undefined && bando.importo_min !== '' ? parseFloat(bando.importo_min) : undefined,
-        importo_max: bando.importo_max !== undefined && bando.importo_max !== '' ? parseFloat(bando.importo_max) : undefined,
-        budget_disponibile: bando.budget_disponibile ? String(bando.budget_disponibile) : '',
-        data_estrazione: bando.data_estrazione ? String(bando.data_estrazione) : '',
-        requisiti: typeof bando.requisiti === 'string' ? bando.requisiti.trim() : String(bando.requisiti || '').trim(),
-        modalita_presentazione: bando.modalita_presentazione ? String(bando.modalita_presentazione) : '',
-        ultimi_aggiornamenti: bando.ultimi_aggiornamenti ? String(bando.ultimi_aggiornamenti) : '',
+        id: bando.id,
+        titolo: bando.titolo,
+        descrizione: bando.descrizione || '',
+        descrizioneCompleta: bando.descrizioneCompleta || '',
+        fonte: bando.fonte || 'Google Sheet',
+        scadenza: bando.scadenza || '',
+        tipo: bando.tipo || 'altro',
+        url: bando.url || '',
+        importoMin: typeof bando.importo_min !== 'undefined' ? Number(bando.importo_min) : undefined,
+        importoMax: typeof bando.importo_max !== 'undefined' ? Number(bando.importo_max) : undefined,
+        budgetDisponibile: bando.budgetDisponibile || '',
+        dataEstrazione: bando.dataEstrazione || '',
+        requisiti: bando.requisiti || '',
+        modalitaPresentazione: bando.modalitaPresentazione || '',
+        ultimiAggiornamenti: bando.ultimiAggiornamenti || '',
+        settori: []
       };
 
       return mappedBando;
-    }).filter(bando => bando !== null); // Filtra eventuali bandi nulli
+    }).filter(bando => bando !== null);
   }
 
   public static async fetchBandiFromSheet(sheetUrlParam?: string): Promise<Bando[]> {
@@ -126,16 +159,26 @@ class GoogleSheetsService {
       const response = await fetch(apiUrl);
       const text = await response.text();
       
+      // Log per il debug
+      console.log('Risposta Google Sheets ricevuta, lunghezza:', text.length);
+      
       // Pulizia della risposta JSONP-like per estrarre il JSON
-      const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+      const startIndex = text.indexOf('{');
+      const endIndex = text.lastIndexOf('}') + 1;
+      
+      if (startIndex < 0 || endIndex <= 0 || startIndex >= endIndex) {
+        throw new Error('Formato risposta non valido dal foglio Google');
+      }
+      
+      const jsonString = text.substring(startIndex, endIndex);
+      console.log('JSON estratto, lunghezza:', jsonString.length);
       
       try {
         const data = JSON.parse(jsonString);
-        console.log('Risposta JSON ricevuta dal foglio Google:', data.status);
+        console.log('Risposta JSON parsing completato');
         
         if (!data || !data.table) {
           console.error('Formato dati non valido, manca il campo "table"');
-          console.log('Struttura dati ricevuta:', JSON.stringify(data).substring(0, 500) + '...');
           return [];
         }
         
@@ -145,36 +188,19 @@ class GoogleSheetsService {
         const bandi: Bando[] = this.mapSheetRowsToBandi(data.table);
         console.log(`Bandi mappati: ${bandi.length}`);
         
-        // Log più dettagliato per debug
         if (bandi.length === 0) {
-          console.error('Nessun bando mappato. Verifica formato del foglio.');
-          console.log('Prime 3 righe del foglio:');
-          if (data.table.rows && data.table.rows.length > 0) {
-            data.table.rows.slice(0, 3).forEach((row: any, i: number) => {
-              console.log(`Riga ${i+1}:`, JSON.stringify(row).substring(0, 200));
-            });
-          }
-        }
-        
-        // Filtra eventuali bandi non validi (senza titolo o fonte)
-        const bandiFiltrati = bandi.filter(bando => 
-          bando.titolo && bando.titolo.trim() !== ''
-        );
-        
-        console.log(`Bandi validi dopo filtro: ${bandiFiltrati.length}`);
-        
-        // Debug dei primi 3 bandi per verificare il corretto mapping
-        if (bandiFiltrati.length > 0) {
-          console.log('Esempio primi 3 bandi:');
-          bandiFiltrati.slice(0, 3).forEach((b, i) => {
-            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}, Scadenza: ${b.scadenza}`);
+          console.error('Nessun bando mappato.');
+        } else {
+          console.log('Primi 3 bandi estratti:');
+          bandi.slice(0, 3).forEach((b, i) => {
+            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}`);
           });
         }
         
-        return bandiFiltrati;
+        return bandi;
       } catch (parseError) {
         console.error('Errore durante il parsing della risposta JSON:', parseError);
-        console.log('Testo ricevuto:', text.substring(0, 500) + '...');
+        console.log('Testo ricevuto (primi 200 caratteri):', text.substring(0, 200) + '...');
         throw new Error('Formato risposta dal foglio Google non valido');
       }
     } catch (error) {

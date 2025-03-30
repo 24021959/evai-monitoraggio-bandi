@@ -62,7 +62,7 @@ export const useBandiData = () => {
     return bandi.filter(bando => {
       const matchTestoRicerca = filtro === '' || 
         bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
-        bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
+        (bando.descrizione && bando.descrizione.toLowerCase().includes(filtro.toLowerCase())) ||
         bando.fonte.toLowerCase().includes(filtro.toLowerCase());
       
       const matchFonte = fonteFiltro === 'tutte' || 
@@ -136,6 +136,8 @@ export const useBandiData = () => {
     handleDeleteBando,
     handleResetFiltri,
     fontiCombinate: getFontiCombinate(),
-    fontiUniche
+    fontiUniche,
+    fetchBandi // Esporre questa funzione per consentire l'aggiornamento dopo l'importazione
   };
 };
+
