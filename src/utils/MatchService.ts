@@ -31,31 +31,61 @@ class MatchService {
   static calculateMatch(bando: Bando, cliente: Cliente): { punteggio: number, dettaglioMatch: string[] } {
     let punteggio = 0;
     const dettaglioMatch: string[] = [];
+    
+    // Fattori di peso per ogni categoria di matching
     const fattoriDiPeso = {
-      settori: 50,
-      regione: 15,
-      dimensioneAzienda: 20,
-      altriRequisiti: 15
+      settori: 40,            // Ridotto da 50 a 40
+      regione: 15,            // Invariato 
+      dimensioneAzienda: 20,  // Invariato
+      formeDiFinanziamento: 10, // Nuovo fattore
+      altriRequisiti: 15      // Invariato
     };
     
-    // 1. Match sui settori (peso 50%)
+    // 1. Match sui settori (peso 40%)
     let punteggioSettori = 0;
     if (bando.settori && Array.isArray(bando.settori) && bando.settori.length > 0 && 
         cliente.interessiSettoriali && Array.isArray(cliente.interessiSettoriali) && cliente.interessiSettoriali.length > 0) {
       
+      // Miglioramento: utilizziamo una maggiore flessibilità nella corrispondenza dei settori
       const settoriInComune = bando.settori.filter(settore => 
-        cliente.interessiSettoriali.some(interesse => 
-          interesse.toLowerCase().includes(settore.toLowerCase()) || 
-          settore.toLowerCase().includes(interesse.toLowerCase())
-        )
+        cliente.interessiSettoriali.some(interesse => {
+          // Verifica corrispondenza esatta
+          if (interesse.toLowerCase() === settore.toLowerCase()) return true;
+          
+          // Verifica se uno contiene l'altro
+          if (interesse.toLowerCase().includes(settore.toLowerCase()) || 
+              settore.toLowerCase().includes(interesse.toLowerCase())) return true;
+              
+          // Verifica corrispondenza parziale su parole chiave
+          const settoreParole = settore.toLowerCase().split(/\s+/);
+          const interesseParole = interesse.toLowerCase().split(/\s+/);
+          
+          // Se almeno due parole significative corrispondono, consideriamo una corrispondenza
+          let paroleTrovate = 0;
+          for (const parola of settoreParole) {
+            if (parola.length > 3 && interesseParole.includes(parola)) {
+              paroleTrovate++;
+              if (paroleTrovate >= 2) return true;
+            }
+          }
+          
+          return false;
+        })
       );
       
       if (settoriInComune.length > 0) {
-        punteggioSettori = Math.round((settoriInComune.length / Math.max(1, cliente.interessiSettoriali.length)) * 100);
-        dettaglioMatch.push(`Settori in comune: ${settoriInComune.join(', ')} (${punteggioSettori}%)`);
+        punteggioSettori = Math.min(100, Math.round((settoriInComune.length / Math.max(1, bando.settori.length)) * 100));
+        
+        const msg = `Settori in comune: ${settoriInComune.join(', ')} (${punteggioSettori}%)`;
+        console.log(`Match settori per cliente ${cliente.id} e bando ${bando.id}: ${msg}`);
+        dettaglioMatch.push(msg);
       } else {
         dettaglioMatch.push('Nessun settore in comune');
       }
+    } else if (!bando.settori || bando.settori.length === 0) {
+      // Se il bando non ha settori specificati, assegniamo un punteggio neutro
+      punteggioSettori = 50;
+      dettaglioMatch.push('Bando senza settori specificati');
     } else {
       dettaglioMatch.push('Dati settoriali mancanti');
     }
@@ -66,44 +96,114 @@ class MatchService {
       const requisitiLower = bando.requisiti.toLowerCase();
       const regioneLower = cliente.regione.toLowerCase();
       
+      // Miglioramento: migliore rilevamento di regioni e territori
       if (requisitiLower.includes(regioneLower)) {
         punteggioRegione = 100;
         dettaglioMatch.push(`Regione compatibile: ${cliente.regione}`);
-      } else if (requisitiLower.includes('nazionale') || requisitiLower.includes('tutte le regioni')) {
+      } else if (
+        requisitiLower.includes('nazionale') || 
+        requisitiLower.includes('tutte le regioni') ||
+        requisitiLower.includes('tutto il territorio nazionale') ||
+        requisitiLower.includes('tutto il territorio italiano') ||
+        requisitiLower.includes('tutto il paese')
+      ) {
         punteggioRegione = 100;
         dettaglioMatch.push('Bando nazionale, compatibile con tutte le regioni');
+      } else if (requisitiLower.includes('nord italia') && ['lombardia', 'piemonte', 'liguria', 'valle d\'aosta', 'trentino', 'veneto', 'friuli'].includes(regioneLower)) {
+        punteggioRegione = 100;
+        dettaglioMatch.push('Bando per Nord Italia, compatibile con la regione del cliente');
+      } else if (requisitiLower.includes('centro italia') && ['toscana', 'lazio', 'umbria', 'marche', 'abruzzo', 'molise'].includes(regioneLower)) {
+        punteggioRegione = 100;
+        dettaglioMatch.push('Bando per Centro Italia, compatibile con la regione del cliente');
+      } else if (requisitiLower.includes('sud italia') && ['campania', 'puglia', 'basilicata', 'calabria', 'sicilia', 'sardegna'].includes(regioneLower)) {
+        punteggioRegione = 100;
+        dettaglioMatch.push('Bando per Sud Italia, compatibile con la regione del cliente');
+      } else if (!requisitiLower.includes('regione') && !requisitiLower.includes('regioni') && !requisitiLower.includes('territorio')) {
+        // Se non si menzionano esplicitamente requisiti territoriali, diamo un punteggio neutro
+        punteggioRegione = 50;
+        dettaglioMatch.push('Nessun requisito territoriale esplicito nel bando');
       } else {
         dettaglioMatch.push('Regione non specificatamente inclusa nei requisiti');
       }
+    } else if (!bando.requisiti) {
+      // Se non ci sono requisiti, diamo un punteggio neutro
+      punteggioRegione = 50;
+      dettaglioMatch.push('Nessun requisito regionale specificato nel bando');
+    } else {
+      dettaglioMatch.push('Dati regionali del cliente mancanti');
     }
     
     // 3. Match sulla dimensione aziendale (fatturato, dipendenti) (peso 20%)
     let punteggioDimensione = 0;
     if (bando.requisiti && (cliente.dipendenti || cliente.fatturato)) {
       const requisitiLower = bando.requisiti.toLowerCase();
+      let punteggioDipendenti = 0;
+      let punteggioFatturato = 0;
+      let fattoriDimensione = 0;
       
       // Analisi requisiti sui dipendenti
-      if (cliente.dipendenti) {
+      if (cliente.dipendenti !== undefined) {
+        fattoriDimensione++;
+        
+        // Miglioramento: precisione nell'identificare le dimensioni aziendali
         if (
+          (requisitiLower.includes('microimprese') && cliente.dipendenti < 10) ||
+          (requisitiLower.includes('micro imprese') && cliente.dipendenti < 10) ||
           (requisitiLower.includes('piccole imprese') && cliente.dipendenti < 50) ||
           (requisitiLower.includes('medie imprese') && cliente.dipendenti >= 50 && cliente.dipendenti < 250) ||
+          (requisitiLower.includes('piccole e medie imprese') && cliente.dipendenti < 250) ||
+          (requisitiLower.includes('pmi') && cliente.dipendenti < 250) ||
           (requisitiLower.includes('grandi imprese') && cliente.dipendenti >= 250)
         ) {
-          punteggioDimensione += 50;
+          punteggioDipendenti = 100;
           dettaglioMatch.push(`Dimensione aziendale compatibile: ${cliente.dipendenti} dipendenti`);
+        } else if (!requisitiLower.includes('dipendenti') && 
+                  !requisitiLower.includes('personale') && 
+                  !requisitiLower.includes('lavoratori') &&
+                  !requisitiLower.includes('pmi') &&
+                  !requisitiLower.includes('imprese')) {
+          // Se non si menzionano requisiti sui dipendenti, diamo un punteggio neutro
+          punteggioDipendenti = 50;
+          dettaglioMatch.push('Nessun requisito specifico sul numero di dipendenti');
+        } else {
+          dettaglioMatch.push('Dimensione aziendale (dipendenti) non compatibile');
         }
       }
       
       // Analisi requisiti sul fatturato
-      if (cliente.fatturato) {
+      if (cliente.fatturato !== undefined) {
+        fattoriDimensione++;
+        
+        // Miglioramento: precisione nell'identificare le dimensioni di fatturato
+        const fatturatoInMillions = cliente.fatturato / 1000000;
         if (
-          (requisitiLower.includes('piccole imprese') && cliente.fatturato < 10000000) ||
-          (requisitiLower.includes('medie imprese') && cliente.fatturato >= 10000000 && cliente.fatturato < 50000000) ||
-          (requisitiLower.includes('grandi imprese') && cliente.fatturato >= 50000000)
+          (requisitiLower.includes('microimprese') && fatturatoInMillions < 2) ||
+          (requisitiLower.includes('micro imprese') && fatturatoInMillions < 2) ||
+          (requisitiLower.includes('piccole imprese') && fatturatoInMillions < 10) ||
+          (requisitiLower.includes('medie imprese') && fatturatoInMillions >= 10 && fatturatoInMillions < 50) ||
+          (requisitiLower.includes('piccole e medie imprese') && fatturatoInMillions < 50) ||
+          (requisitiLower.includes('pmi') && fatturatoInMillions < 50) ||
+          (requisitiLower.includes('grandi imprese') && fatturatoInMillions >= 50)
         ) {
-          punteggioDimensione += 50;
-          dettaglioMatch.push(`Fatturato aziendale compatibile: ${cliente.fatturato} €`);
+          punteggioFatturato = 100;
+          dettaglioMatch.push(`Fatturato aziendale compatibile: ${cliente.fatturato.toLocaleString('it-IT')} €`);
+        } else if (!requisitiLower.includes('fatturato') && 
+                  !requisitiLower.includes('volume d\'affari') && 
+                  !requisitiLower.includes('ricavi')) {
+          // Se non si menzionano requisiti sul fatturato, diamo un punteggio neutro
+          punteggioFatturato = 50;
+          dettaglioMatch.push('Nessun requisito specifico sul fatturato');
+        } else {
+          dettaglioMatch.push('Fatturato aziendale non compatibile');
         }
+      }
+      
+      // Calcolo del punteggio dimensionale totale
+      if (fattoriDimensione > 0) {
+        punteggioDimensione = (punteggioDipendenti + punteggioFatturato) / fattoriDimensione;
+      } else {
+        // Nessun dato dimensionale disponibile
+        punteggioDimensione = 50; // Valore neutro
       }
     } else if (!bando.requisiti) {
       // Se non ci sono requisiti specifici, diamo un punteggio neutro
@@ -113,7 +213,51 @@ class MatchService {
       dettaglioMatch.push('Dati dimensionali del cliente mancanti');
     }
     
-    // 4. Altri requisiti (forma giuridica, anno fondazione, etc.) (peso 15%)
+    // 4. NUOVO: Match sulle forme di finanziamento (peso 10%)
+    let punteggioFinanziamento = 50; // Valore predefinito neutro
+    if (bando.descrizione || bando.descrizioneCompleta) {
+      const descCompleta = (bando.descrizioneCompleta || bando.descrizione || '').toLowerCase();
+      
+      // Analizziamo il tipo di finanziamento offerto
+      let tipoFinanziamento = '';
+      
+      if (descCompleta.includes('contributo a fondo perduto') || 
+          descCompleta.includes('fondo perduto') ||
+          descCompleta.includes('contributi diretti') ||
+          descCompleta.includes('sovvenzione')) {
+        tipoFinanziamento = 'fondo perduto';
+        punteggioFinanziamento = 100; // Tipo di finanziamento più attraente
+        dettaglioMatch.push('Finanziamento: contributo a fondo perduto (ottimo)');
+      } else if (descCompleta.includes('finanziamento agevolato') ||
+                descCompleta.includes('tasso agevolato') ||
+                descCompleta.includes('prestito agevolato')) {
+        tipoFinanziamento = 'finanziamento agevolato';
+        punteggioFinanziamento = 85; // Molto attraente
+        dettaglioMatch.push('Finanziamento: prestito a tasso agevolato (molto buono)');
+      } else if (descCompleta.includes('credito d\'imposta') ||
+                descCompleta.includes('credito di imposta') ||
+                descCompleta.includes('agevolazione fiscale')) {
+        tipoFinanziamento = 'credito imposta';
+        punteggioFinanziamento = 90; // Molto attraente
+        dettaglioMatch.push('Finanziamento: credito d\'imposta (molto buono)');
+      } else if (descCompleta.includes('garanzia') ||
+                descCompleta.includes('fondo di garanzia')) {
+        tipoFinanziamento = 'garanzia';
+        punteggioFinanziamento = 75; // Attraente
+        dettaglioMatch.push('Finanziamento: garanzia per accesso al credito (buono)');
+      } else if (descCompleta.includes('voucher') ||
+                descCompleta.includes('bonus')) {
+        tipoFinanziamento = 'voucher/bonus';
+        punteggioFinanziamento = 90; // Molto attraente
+        dettaglioMatch.push('Finanziamento: voucher/bonus (molto buono)');
+      } else {
+        dettaglioMatch.push('Forma di finanziamento non specificata chiaramente');
+      }
+    } else {
+      dettaglioMatch.push('Informazioni sul finanziamento non disponibili');
+    }
+    
+    // 5. Altri requisiti (forma giuridica, anno fondazione, etc.) (peso 15%)
     let punteggioAltriRequisiti = 0;
     if (bando.requisiti) {
       const requisitiLower = bando.requisiti.toLowerCase();
@@ -123,7 +267,19 @@ class MatchService {
       // Forma giuridica
       if (cliente.formaGiuridica) {
         fattoriTotali++;
-        if (requisitiLower.includes(cliente.formaGiuridica.toLowerCase())) {
+        
+        // Miglioramento: identificazione più precisa delle forme giuridiche
+        const formaGiuridicaLower = cliente.formaGiuridica.toLowerCase();
+        if (requisitiLower.includes(formaGiuridicaLower)) {
+          fattoriCorrispondenti++;
+          dettaglioMatch.push(`Forma giuridica compatibile: ${cliente.formaGiuridica}`);
+        } else if (
+          // Categorizzazioni comuni delle forme giuridiche
+          (requisitiLower.includes('società di capitali') && ['spa', 'srl', 'sapa'].some(f => formaGiuridicaLower.includes(f))) ||
+          (requisitiLower.includes('società di persone') && ['snc', 'sas', 'ss'].some(f => formaGiuridicaLower.includes(f))) ||
+          (requisitiLower.includes('ditte individuali') && formaGiuridicaLower.includes('ditta individuale')) ||
+          (!requisitiLower.includes('forma giuridica') && !requisitiLower.includes('società'))
+        ) {
           fattoriCorrispondenti++;
           dettaglioMatch.push(`Forma giuridica compatibile: ${cliente.formaGiuridica}`);
         }
@@ -138,11 +294,51 @@ class MatchService {
         
         if (
           (requisitiLower.includes('start-up') && etaAzienda <= 5) ||
+          (requisitiLower.includes('startup') && etaAzienda <= 5) ||
           (requisitiLower.includes('nuove imprese') && etaAzienda <= 3) ||
-          (!requisitiLower.includes('nuove imprese') && !requisitiLower.includes('start-up'))
+          (requisitiLower.includes('imprese consolidate') && etaAzienda > 5) ||
+          (requisitiLower.includes('aziende storiche') && etaAzienda > 20) ||
+          (!requisitiLower.includes('anno') && !requisitiLower.includes('startup') && !requisitiLower.includes('start-up') && !requisitiLower.includes('nuove imprese'))
         ) {
           fattoriCorrispondenti++;
           dettaglioMatch.push(`Anno fondazione compatibile: ${cliente.annoFondazione} (${etaAzienda} anni)`);
+        }
+      }
+      
+      // Codice ATECO
+      if (cliente.codiceATECO && bando.requisiti) {
+        fattoriTotali++;
+        const codiceAtecoCliente = cliente.codiceATECO.replace(/\./g, ''); // Rimuove i punti dal codice
+        
+        // Cerca codici ATECO nei requisiti (migliorato)
+        let atecoCompatibile = false;
+        const codiciAtecoPattern = /([A-Z]\d{2}(\.\d+)?)/g;
+        const codiciNeiRequisiti = bando.requisiti.match(codiciAtecoPattern);
+        
+        if (codiciNeiRequisiti) {
+          const codiciFormattati = codiciNeiRequisiti.map(codice => codice.replace(/\./g, ''));
+          
+          // Verifica se il codice del cliente è incluso nei requisiti o se c'è una corrispondenza sulla radice
+          atecoCompatibile = codiciFormattati.some(codiceBando => {
+            // Match esatto
+            if (codiceBando === codiceAtecoCliente) return true;
+            
+            // Match sulla radice (es. se il bando richiede C10, va bene anche C10.1, C10.11, ecc.)
+            if (codiceBando.length < codiceAtecoCliente.length) {
+              return codiceAtecoCliente.startsWith(codiceBando);
+            }
+            
+            return false;
+          });
+          
+          if (atecoCompatibile) {
+            fattoriCorrispondenti++;
+            dettaglioMatch.push(`Codice ATECO compatibile: ${cliente.codiceATECO}`);
+          }
+        } else if (!requisitiLower.includes('ateco') && !requisitiLower.includes('codici')) {
+          // Se non ci sono riferimenti a codici ATECO nei requisiti, consideriamo compatibile
+          fattoriCorrispondenti++;
+          dettaglioMatch.push('Nessun requisito specifico sul codice ATECO');
         }
       }
       
@@ -154,6 +350,7 @@ class MatchService {
       }
     } else {
       punteggioAltriRequisiti = 50; // Valore neutro se non ci sono requisiti specifici
+      dettaglioMatch.push('Nessun requisito aggiuntivo specificato');
     }
     
     // Calcolo del punteggio finale ponderato
@@ -161,8 +358,16 @@ class MatchService {
       (punteggioSettori * fattoriDiPeso.settori +
       punteggioRegione * fattoriDiPeso.regione +
       punteggioDimensione * fattoriDiPeso.dimensioneAzienda +
+      punteggioFinanziamento * fattoriDiPeso.formeDiFinanziamento +
       punteggioAltriRequisiti * fattoriDiPeso.altriRequisiti) / 100
     );
+    
+    // Aggiungiamo importi del bando se disponibili (informativo)
+    if (bando.importoMin || bando.importoMax) {
+      const importoMin = bando.importoMin ? bando.importoMin.toLocaleString('it-IT') + ' €' : 'non specificato';
+      const importoMax = bando.importoMax ? bando.importoMax.toLocaleString('it-IT') + ' €' : 'non specificato';
+      dettaglioMatch.push(`Importo: min ${importoMin}, max ${importoMax}`);
+    }
     
     // Aggiungiamo un riepilogo del punteggio
     dettaglioMatch.unshift(`Punteggio complessivo: ${punteggio}%`);

@@ -165,6 +165,8 @@ export class SupabaseMatchService {
       console.log(`Generati ${matchResults.length} match potenziali`);
       
       let salvati = 0;
+      const matchSalvati: MatchResult[] = [];
+      
       // Salva i match in Supabase
       for (const match of matchResults) {
         // Salviamo solo i match con compatibilità > 30%
@@ -177,14 +179,58 @@ export class SupabaseMatchService {
             notificato: false
           });
           
-          if (success) salvati++;
+          if (success) {
+            salvati++;
+            matchSalvati.push(match);
+          }
         }
       }
       
       console.log(`Salvati ${salvati} match su ${matchResults.length}`);
-      return matchResults;
+      return matchSalvati;
     } catch (error) {
       console.error('Errore durante la generazione e salvataggio dei match:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Trova i nuovi match dopo l'importazione di nuovi bandi
+   * @param clienti Lista dei clienti
+   * @param nuoviBandi Nuovi bandi importati
+   * @returns Match trovati
+   */
+  static async findNewMatches(clienti: Cliente[], nuoviBandi: Bando[]): Promise<MatchResult[]> {
+    if (nuoviBandi.length === 0 || clienti.length === 0) {
+      return [];
+    }
+    
+    try {
+      // Genera match utilizzando l'algoritmo migliorato
+      const matchResults = MatchService.generateMatches(clienti, nuoviBandi);
+      
+      // Filtra per i match con punteggio significativo
+      const matchRilevanti = matchResults.filter(match => match.punteggio > 40);
+      
+      // Salva i match in Supabase
+      const salvati: MatchResult[] = [];
+      for (const match of matchRilevanti) {
+        const success = await this.saveMatch({
+          id: match.id,
+          clienteId: match.cliente.id,
+          bandoId: match.bando.id,
+          compatibilita: match.punteggio,
+          notificato: false
+        });
+        
+        if (success) {
+          salvati.push(match);
+        }
+      }
+      
+      return salvati.sort((a, b) => b.punteggio - a.punteggio);
+    } catch (error) {
+      console.error('Errore durante la ricerca di nuovi match:', error);
       return [];
     }
   }

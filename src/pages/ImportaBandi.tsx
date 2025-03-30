@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowRight, AlertCircle, RefreshCw, Check, ArrowUpRight } from 'lucide-react';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
-import { Bando } from '@/types';
+import { Bando, Cliente } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import SupabaseClientiService from '@/utils/SupabaseClientiService';
+import SupabaseMatchService from '@/utils/SupabaseMatchService';
+import { Badge } from "@/components/ui/badge";
+import MatchTable from '@/components/MatchTable';
+import { MatchResult } from '@/utils/MatchService';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const ImportaBandi = () => {
   const navigate = useNavigate();
@@ -20,6 +34,26 @@ const ImportaBandi = () => {
     unique: number;
     saved: number;
   } | null>(null);
+  
+  // Stato per i nuovi match trovati
+  const [nuoviMatch, setNuoviMatch] = useState<MatchResult[]>([]);
+  const [showMatchResults, setShowMatchResults] = useState<boolean>(false);
+  
+  useEffect(() => {
+    // Controlla se ci sono match recenti salvati nella sessione
+    const matchRecenti = sessionStorage.getItem('nuoviMatch');
+    if (matchRecenti) {
+      try {
+        const matchData = JSON.parse(matchRecenti);
+        if (Array.isArray(matchData) && matchData.length > 0) {
+          setNuoviMatch(matchData);
+          setShowMatchResults(true);
+        }
+      } catch (error) {
+        console.error("Errore nel parsing dei match recenti:", error);
+      }
+    }
+  }, []);
   
   const handleImportBandi = async () => {
     const googleSheetUrl = localStorage.getItem('googleSheetUrl');
@@ -35,6 +69,8 @@ const ImportaBandi = () => {
     setIsLoading(true);
     setError(null);
     setImportStats(null);
+    setNuoviMatch([]);
+    setShowMatchResults(false);
     
     try {
       console.log('Iniziando importazione da:', googleSheetUrl);
@@ -91,6 +127,22 @@ const ImportaBandi = () => {
         sessionStorage.setItem('bandiImportatiFlag', 'true');
         console.log(`Bandi salvati in Supabase: ${contatoreSalvati}/${bandiUnici.length}`);
         
+        // Generiamo match per i nuovi bandi
+        if (contatoreSalvati > 0) {
+          const clienti = await SupabaseClientiService.getClienti();
+          console.log(`Generando match tra ${clienti.length} clienti e ${bandiUnici.length} nuovi bandi...`);
+          
+          const matchResults = await SupabaseMatchService.generateAndSaveMatches(clienti, bandiUnici);
+          console.log(`Generati ${matchResults.length} match per i nuovi bandi`);
+          
+          // Salviamo i match nella sessione per mostrarli nella UI
+          if (matchResults.length > 0) {
+            sessionStorage.setItem('nuoviMatch', JSON.stringify(matchResults));
+            setNuoviMatch(matchResults);
+            setShowMatchResults(true);
+          }
+        }
+        
         setImportStats({
           total: bandi.length,
           unique: bandiUnici.length,
@@ -134,6 +186,56 @@ const ImportaBandi = () => {
 
   const handleViewBandi = () => {
     navigate('/bandi');
+  };
+  
+  const handleViewMatches = () => {
+    navigate('/match');
+  };
+  
+  const handleExportCSV = () => {
+    if (nuoviMatch.length === 0) {
+      toast({
+        title: "Nessun match da esportare",
+        description: "Non ci sono match da esportare in CSV.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Utilizziamo la funzione di MatchService per generare e scaricare il CSV
+    const matchesCSV = SupabaseMatchService.generateMatchesCSV(
+      nuoviMatch.map(match => ({
+        id: match.id,
+        clienteId: match.cliente.id,
+        bandoId: match.bando.id,
+        compatibilita: match.punteggio,
+        notificato: false,
+        bando_titolo: match.bando.titolo,
+        cliente_nome: match.cliente.nome,
+        data_creazione: match.dataMatch
+      }))
+    );
+    
+    const blob = new Blob([matchesCSV], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `match_nuovi_bandi_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Esportazione completata",
+      description: "Il file CSV con i match è stato scaricato.",
+    });
+  };
+  
+  const handleViewDetails = (matchId: string) => {
+    const match = nuoviMatch.find(m => m.id === matchId);
+    if (!match) return;
+    
+    navigate(`/bandi/${match.bando.id}`);
   };
   
   return (
@@ -193,6 +295,65 @@ const ImportaBandi = () => {
                   <li>Bandi unici (non già presenti): <span className="font-semibold">{importStats.unique}</span></li>
                   <li>Bandi salvati in database: <span className="font-semibold">{importStats.saved}</span></li>
                 </ul>
+              </div>
+            )}
+            
+            {nuoviMatch.length > 0 && (
+              <div className="mt-4 p-4 bg-green-50 rounded-md border border-green-200">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-medium text-green-800 flex items-center">
+                    <Check className="mr-2 h-4 w-4" />
+                    Match trovati con i nuovi bandi
+                  </h3>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleExportCSV}
+                      className="text-xs bg-white"
+                    >
+                      Esporta CSV
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleViewMatches}
+                      className="text-xs bg-white"
+                    >
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      Vedi tutti i match
+                    </Button>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-green-700 mb-3">
+                  Abbiamo trovato <span className="font-bold">{nuoviMatch.length}</span> match tra i nuovi bandi importati e i tuoi clienti.
+                </p>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="w-full bg-green-600 hover:bg-green-700" size="sm">
+                      Visualizza i match dei nuovi bandi
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Match con i nuovi bandi importati</DialogTitle>
+                      <DialogDescription>
+                        Qui puoi vedere i match tra i tuoi clienti e i nuovi bandi importati
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="pt-2">
+                      <MatchTable 
+                        matches={nuoviMatch} 
+                        onExportCSV={handleExportCSV}
+                        onViewDetails={handleViewDetails}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
             
