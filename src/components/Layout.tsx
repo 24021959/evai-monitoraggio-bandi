@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Link, Navigate } from 'react-router-dom';
 import { 
   BarChart3, 
   FileText, 
@@ -31,7 +31,7 @@ const Header = () => {
     <header className="w-full bg-white shadow-sm py-4 px-8">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
-          <Link to="/" className="flex items-center cursor-pointer">
+          <Link to="/app/dashboard" className="flex items-center cursor-pointer">
             <img 
               src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
               alt="EV-AI Technologies Logo" 
@@ -57,7 +57,7 @@ const Header = () => {
                 <DropdownMenuSeparator />
                 {isAdmin && (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin/gestione" className="flex items-center gap-2 cursor-pointer">
+                    <Link to="/app/admin/gestione" className="flex items-center gap-2 cursor-pointer">
                       <Shield className="w-4 h-4" />
                       <span>Gestione Admin</span>
                     </Link>
@@ -85,7 +85,7 @@ const Sidebar = () => {
       <div className="bg-gray-100 flex-grow">
         <nav className="flex flex-col">          
           <NavLink
-            to="/dashboard"
+            to="/app/dashboard"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
@@ -96,7 +96,7 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <NavLink
-            to="/bandi"
+            to="/app/bandi"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
@@ -107,7 +107,7 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <NavLink
-            to="/clienti"
+            to="/app/clienti"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
@@ -118,7 +118,7 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <NavLink
-            to="/match"
+            to="/app/match"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
@@ -129,7 +129,7 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <NavLink
-            to="/report"
+            to="/app/report"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
@@ -140,7 +140,7 @@ const Sidebar = () => {
             </div>
           </NavLink>
           <NavLink
-            to="/fonti"
+            to="/app/fonti"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
@@ -153,7 +153,7 @@ const Sidebar = () => {
           <div className="border-t border-gray-300 my-5"></div>
           
           <NavLink
-            to="/importa-bandi"
+            to="/app/importa-bandi"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`
             }
@@ -167,7 +167,7 @@ const Sidebar = () => {
           <div className="mt-auto"></div>
           
           <NavLink
-            to="/admin"
+            to="/app/admin"
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
             }
@@ -180,7 +180,7 @@ const Sidebar = () => {
           
           {isAdmin && (
             <NavLink
-              to="/admin/gestione"
+              to="/app/admin/gestione"
               className={({ isActive }) =>
                 `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
               }
@@ -198,6 +198,29 @@ const Sidebar = () => {
 };
 
 const Layout = () => {
+  const { userProfile } = useAuth();
+
+  // Se l'organizzazione dell'utente è disattivata, non mostrare il layout regolare
+  if (userProfile?.organizationDisabled) {
+    return (
+      <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center p-8 text-center">
+        <h1 className="text-3xl font-bold text-red-600 mb-4">Account Disattivato</h1>
+        <p className="text-lg max-w-md text-gray-700 mb-6">
+          Il tuo account è stato temporaneamente disattivato dall'amministratore.
+          Contatta il supporto per ulteriori informazioni.
+        </p>
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          onClick={() => window.location.href = '/login'}
+        >
+          <LogOut className="h-4 w-4" />
+          Torna alla pagina di login
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -33,13 +33,16 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Redirect from root to login page */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={
+            <Route path="/app" element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
             }>
-              <Route index element={<Index />} />
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="bandi" element={<Bandi />} />
               <Route path="bandi/:id" element={<DettaglioBando />} />

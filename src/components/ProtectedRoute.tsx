@@ -28,6 +28,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Se l'utente appartiene a un'organizzazione disattivata (verifica tramite context)
+  if (userProfile?.organizationDisabled) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-red-50 p-8 text-center">
+        <h1 className="text-3xl font-bold text-red-600 mb-4">Account Disattivato</h1>
+        <p className="text-lg max-w-md text-gray-700 mb-6">
+          Il tuo account è stato temporaneamente disattivato dall'amministratore.
+          Contatta il supporto per ulteriori informazioni.
+        </p>
+      </div>
+    );
+  }
+
   // Se tutto è ok, mostra il contenuto della route
   return <>{children}</>;
 };

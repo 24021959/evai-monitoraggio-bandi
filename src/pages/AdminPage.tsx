@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { PlusCircle, Trash2, Users } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { PlusCircle, Trash2, Users, Shield, UserPlus, Mail, Key } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type Organization = {
   id: string;
@@ -33,6 +35,11 @@ const AdminPage: React.FC = () => {
   const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserOrg, setNewUserOrg] = useState('');
+  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   
   const { isAdmin } = useAuth();
   const { toast } = useToast();
@@ -76,13 +83,15 @@ const AdminPage: React.FC = () => {
       if (profilesError) throw profilesError;
 
       // Otteniamo gli utenti da auth.users (gli admin hanno accesso)
-      const { data: authUsers, error: usersError } = await supabase.auth.admin.listUsers();
+      const { data, error: usersError } = await supabase.auth.admin.listUsers();
       
       if (usersError) throw usersError;
 
+      const authUsers = data?.users || [];
+
       // Combiniamo i dati
       const combinedUsers = profiles?.map(profile => {
-        const authUser = authUsers.users.find(u => u.id === profile.id);
+        const authUser = authUsers.find(u => u.id === profile.id);
         return {
           id: profile.id,
           display_name: profile.display_name,
@@ -90,9 +99,9 @@ const AdminPage: React.FC = () => {
           role: profile.role,
           organization_id: profile.organization_id
         };
-      });
+      }) || [];
 
-      setUsers(combinedUsers || []);
+      setUsers(combinedUsers);
 
       // Aggiorna le organizzazioni con il conteggio degli utenti
       if (combinedUsers && organizations.length > 0) {
@@ -176,6 +185,84 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleToggleOrgActive = async (org: Organization) => {
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ is_active: !org.is_active })
+        .eq('id', org.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Stato aggiornato',
+        description: `L'organizzazione ${org.name} è ora ${!org.is_active ? 'attiva' : 'disattivata'}.`
+      });
+
+      fetchOrganizations();
+    } catch (error: any) {
+      toast({
+        title: 'Errore',
+        description: `Impossibile aggiornare lo stato dell'organizzazione: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserEmail || !newUserPassword || !newUserName || !newUserOrg) {
+      toast({
+        title: 'Dati mancanti',
+        description: 'Compila tutti i campi per creare un nuovo utente',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Creare un nuovo utente tramite Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: newUserEmail,
+        password: newUserPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: newUserName
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Il trigger handle_new_user dovrebbe creare automaticamente il profilo utente
+      // Possiamo aggiornare l'organizzazione se necessario
+      if (newUserOrg !== 'default') {
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .update({ organization_id: newUserOrg })
+          .eq('id', authData.user.id);
+
+        if (profileError) throw profileError;
+      }
+
+      toast({
+        title: 'Utente creato',
+        description: `L'utente ${newUserEmail} è stato creato con successo.`
+      });
+
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserName('');
+      setShowCreateUserDialog(false);
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: 'Errore',
+        description: `Impossibile creare l'utente: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="p-8 text-center">
@@ -189,6 +276,10 @@ const AdminPage: React.FC = () => {
     <div className="space-y-8 p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gestione Amministratore</h1>
+        <Button onClick={() => setShowCreateUserDialog(true)} className="flex gap-2 items-center">
+          <UserPlus className="h-4 w-4" />
+          Crea Nuovo Utente
+        </Button>
       </div>
 
       {/* Gestione Organizzazioni */}
@@ -231,6 +322,7 @@ const AdminPage: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
+                      <TableHead>Stato</TableHead>
                       <TableHead>Utenti</TableHead>
                       <TableHead>Data creazione</TableHead>
                       <TableHead className="text-right">Azioni</TableHead>
@@ -239,7 +331,7 @@ const AdminPage: React.FC = () => {
                   <TableBody>
                     {organizations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                        <TableCell colSpan={5} className="text-center py-4 text-gray-500">
                           Nessuna organizzazione trovata
                         </TableCell>
                       </TableRow>
@@ -247,6 +339,17 @@ const AdminPage: React.FC = () => {
                       organizations.map((org) => (
                         <TableRow key={org.id}>
                           <TableCell className="font-medium">{org.name}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Switch 
+                                checked={org.is_active} 
+                                onCheckedChange={() => handleToggleOrgActive(org)}
+                              />
+                              <span className={org.is_active ? "text-green-600" : "text-red-600"}>
+                                {org.is_active ? "Attiva" : "Disattivata"}
+                              </span>
+                            </div>
+                          </TableCell>
                           <TableCell>{org.userCount || 0} utenti</TableCell>
                           <TableCell>
                             {new Date(org.created_at).toLocaleDateString('it-IT')}
@@ -347,6 +450,92 @@ const AdminPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog per la creazione di un nuovo utente */}
+      <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Crea Nuovo Utente
+            </DialogTitle>
+            <DialogDescription>
+              Inserisci i dettagli per creare un nuovo account utente.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-user-name">Nome Completo</Label>
+              <div className="flex">
+                <Users className="h-4 w-4 mr-2 mt-3 text-gray-500" />
+                <Input
+                  id="new-user-name"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  placeholder="Mario Rossi"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-user-email">Email</Label>
+              <div className="flex">
+                <Mail className="h-4 w-4 mr-2 mt-3 text-gray-500" />
+                <Input
+                  id="new-user-email"
+                  type="email"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  placeholder="mario.rossi@example.com"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-user-password">Password</Label>
+              <div className="flex">
+                <Key className="h-4 w-4 mr-2 mt-3 text-gray-500" />
+                <Input
+                  id="new-user-password"
+                  type="password"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  placeholder="Password sicura"
+                  minLength={8}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-user-org">Organizzazione</Label>
+              <select
+                id="new-user-org"
+                className="w-full border border-gray-300 rounded-md p-2"
+                value={newUserOrg}
+                onChange={(e) => setNewUserOrg(e.target.value)}
+                required
+              >
+                <option value="" disabled>Seleziona un'organizzazione</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id} disabled={!org.is_active}>
+                    {org.name} {!org.is_active && "(Disattivata)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowCreateUserDialog(false)}>
+                Annulla
+              </Button>
+              <Button type="submit">Crea Utente</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

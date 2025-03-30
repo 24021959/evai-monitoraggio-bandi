@@ -10,6 +10,7 @@ type UserProfile = {
   role: 'admin' | 'client';
   organization_id: string;
   display_name: string;
+  organizationDisabled?: boolean;
 }
 
 type AuthContextType = {
@@ -78,9 +79,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Piccolo delay per evitare problemi di sincronizzazione
       setTimeout(async () => {
+        // Otteniamo il profilo utente e anche le informazioni sull'organizzazione
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('*')
+          .select(`
+            *,
+            organizations:organization_id (
+              is_active
+            )
+          `)
           .eq('id', userId)
           .single();
 
@@ -92,11 +99,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (data) {
           console.log('Profilo utente recuperato:', data);
+          const organizationDisabled = data.organizations ? !data.organizations.is_active : false;
+          
           setUserProfile({
             id: data.id,
             role: data.role,
             organization_id: data.organization_id,
-            display_name: data.display_name || 'Utente'
+            display_name: data.display_name || 'Utente',
+            organizationDisabled
           });
         }
         
