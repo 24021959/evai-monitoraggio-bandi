@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Shield, UserPlus, AlertTriangle, AlertCircle, RefreshCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import ChangePasswordForm from '@/components/admin/ChangePasswordForm';
 import UserTable from '@/components/admin/UserTable';
 import CreateUserDialog from '@/components/admin/CreateUserDialog';
 import { useUsers } from '@/hooks/useUsers';
@@ -137,8 +136,6 @@ const AdminPage: React.FC = () => {
         loadingUsers={loadingUsers}
         toggleUserActive={toggleUserActive}
       />
-
-      <ChangePasswordForm />
 
       <CreateUserDialog
         open={showCreateUserDialog}

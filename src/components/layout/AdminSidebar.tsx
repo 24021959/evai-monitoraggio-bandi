@@ -33,6 +33,7 @@ const AdminSidebar = () => {
           
           <NavLink
             to="/app/admin"
+            end
             className={({ isActive }) =>
               `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
             }
@@ -46,7 +47,7 @@ const AdminSidebar = () => {
           <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
             <DialogTrigger asChild>
               <button 
-                className="p-5 text-black hover:bg-blue-50 w-full text-left"
+                className={`p-5 hover:bg-blue-50 w-full text-left ${isPasswordDialogOpen ? 'bg-blue-500 text-white' : 'text-black'}`}
               >
                 <div className="flex items-center gap-3">
                   <Lock className="w-5 h-5" />
