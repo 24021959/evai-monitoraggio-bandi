@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Shield, UserPlus, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Shield, UserPlus, AlertTriangle, AlertCircle, RefreshCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ChangePasswordForm from '@/components/admin/ChangePasswordForm';
 import UserTable from '@/components/admin/UserTable';
 import CreateUserDialog from '@/components/admin/CreateUserDialog';
 import { useUsers } from '@/hooks/useUsers';
+import { useToast } from '@/components/ui/use-toast';
 
 const AdminPage: React.FC = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -15,15 +16,18 @@ const AdminPage: React.FC = () => {
   const [newUserName, setNewUserName] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'client'>('client');
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   
   const { isAdmin } = useAuth();
+  const { toast } = useToast();
   const { 
     users, 
     loadingUsers, 
     createUser, 
     toggleUserActive, 
     adminClientVerified, 
-    adminVerificationError 
+    adminVerificationError,
+    verifyAdminClient
   } = useUsers();
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -36,6 +40,26 @@ const AdminPage: React.FC = () => {
       setNewUserName('');
       setNewUserRole('client');
       setShowCreateUserDialog(false);
+    }
+  };
+
+  const handleRetryVerification = async () => {
+    setIsVerifying(true);
+    const success = await verifyAdminClient();
+    setIsVerifying(false);
+    
+    if (success) {
+      toast({
+        title: "Verifica completata",
+        description: "Il client amministrativo è stato configurato correttamente.",
+        variant: "default"
+      });
+    } else {
+      toast({
+        title: "Verifica fallita",
+        description: "Problema con la configurazione del client amministrativo. Verificare la chiave Service Role in Supabase.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -68,11 +92,23 @@ const AdminPage: React.FC = () => {
       {adminClientVerified === false && (
         <Alert variant="destructive" className="bg-red-50 border-red-200">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
+          <AlertDescription className="flex flex-col gap-2">
             <p className="font-semibold">Impossibile creare nuovi utenti: problemi di configurazione con le API admin.</p>
-            <p className="text-sm mt-1">
-              {adminVerificationError || 'Verificare la chiave Service Role in Supabase e assicurarsi che sia configurata correttamente.'}
+            <p className="text-sm">
+              {adminVerificationError || 'Il client amministrativo non è configurato correttamente. Verificare la chiave Service Role in Supabase.'}
             </p>
+            <div className="mt-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleRetryVerification}
+                disabled={isVerifying}
+                className="flex items-center gap-1"
+              >
+                <RefreshCcw className={`h-3 w-3 ${isVerifying ? 'animate-spin' : ''}`} />
+                {isVerifying ? 'Verifica in corso...' : 'Riprova verifica'}
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}

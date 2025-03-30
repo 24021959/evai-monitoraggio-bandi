@@ -19,42 +19,42 @@ export const useUsers = () => {
   const [adminVerificationError, setAdminVerificationError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Verifica avanzata del client amministrativo all'inizializzazione del hook
-  useEffect(() => {
-    async function checkAdminAccess() {
-      try {
-        console.log("Verifica dell'accesso amministrativo in corso...");
-        const verified = await verifyAdminClientAccess();
-        setAdminClientVerified(verified);
-        
-        if (!verified) {
-          const errorMsg = 'Il client amministrativo non è configurato correttamente. Verificare la chiave Service Role.';
-          setAdminVerificationError(errorMsg);
-          toast({
-            title: 'Errore di configurazione',
-            description: errorMsg,
-            variant: 'destructive'
-          });
-          console.error(errorMsg);
-        } else {
-          console.log("Client amministrativo verificato con successo");
-        }
-      } catch (error: any) {
-        const errorMsg = `Errore durante la verifica del client amministrativo: ${error.message}`;
+  // Verify admin client access on hook initialization
+  const verifyAdminClient = async () => {
+    try {
+      console.log("Verifica dell'accesso amministrativo in corso...");
+      const verified = await verifyAdminClientAccess();
+      setAdminClientVerified(verified);
+      
+      if (!verified) {
+        const errorMsg = 'Il client amministrativo non è configurato correttamente. Verificare la chiave Service Role.';
         setAdminVerificationError(errorMsg);
-        setAdminClientVerified(false);
         console.error(errorMsg);
+        return false;
+      } else {
+        console.log("Client amministrativo verificato con successo");
+        setAdminVerificationError(null);
+        fetchUsers(); // Reload users after successful verification
+        return true;
       }
+    } catch (error: any) {
+      const errorMsg = `Errore durante la verifica del client amministrativo: ${error.message}`;
+      setAdminVerificationError(errorMsg);
+      setAdminClientVerified(false);
+      console.error(errorMsg);
+      return false;
     }
-    
-    checkAdminAccess();
-  }, [toast]);
+  };
+  
+  useEffect(() => {
+    verifyAdminClient();
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
       setLoadingUsers(true);
       
-      // Fase 1: Recupero dei profili utente dallo schema pubblico
+      // Step 1: Retrieve user profiles from the public schema
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select(`
@@ -64,7 +64,7 @@ export const useUsers = () => {
         
       if (profilesError) throw profilesError;
 
-      // Fase 2: Recupero degli utenti autenticati solo se il client amministrativo è verificato
+      // Step 2: Retrieve authenticated users only if admin client is verified
       if (adminClientVerified) {
         console.log("Tentativo di recupero utenti con adminClient");
         const { data, error: usersError } = await adminClient.auth.admin.listUsers();
@@ -90,12 +90,12 @@ export const useUsers = () => {
         console.log("Utenti combinati recuperati:", combinedUsers.length);
         setUsers(combinedUsers);
       } else {
-        // Fallback ai soli profili se il client amministrativo non è disponibile
+        // Fallback to profiles only if admin client is unavailable
         console.log("Fallback al recupero dei soli profili (senza email)");
         const basicUsers = profiles?.map(profile => ({
           id: profile.id,
           display_name: profile.display_name,
-          email: 'Email non disponibile', // Messaggio più chiaro all'utente
+          email: 'Email non disponibile', // Clearer message to user
           role: profile.role,
           is_active: profile.organizations?.is_active !== false
         })) || [];
@@ -179,7 +179,7 @@ export const useUsers = () => {
         description: `L'utente ${email} è stato creato con successo.`
       });
 
-      // Aggiorna la lista degli utenti
+      // Update users list
       fetchUsers();
       return true;
 
@@ -226,16 +226,13 @@ export const useUsers = () => {
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
   return {
     users,
     loadingUsers,
     createUser,
     toggleUserActive,
     adminClientVerified,
-    adminVerificationError
+    adminVerificationError,
+    verifyAdminClient
   };
 };
