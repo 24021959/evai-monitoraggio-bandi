@@ -2,14 +2,13 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Use environment variables or constants for Supabase connection
+// Utilizziamo costanti per la connessione Supabase
 const SUPABASE_URL = "https://yeyfuxtzutciijtsezgc.supabase.co";
 
-// La chiave Service Role deve essere quella corretta dal pannello di controllo di Supabase
-// Aggiorniamo la chiave con una che funzionerà correttamente
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWZ1eHR6dXRjaWlqdHNlemdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjUyMTAyOCwiZXhwIjoyMDUyMDk3MDI4fQ.zrFtwX_0KaZ9x10YErb9HAzsfgw4r9gblnFpS4lU-BA";
+// Utilizziamo direttamente la chiave di servizio senza riferimento a process.env
+const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWZ1eHR6dXRjaWlqdHNlemdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjUyMTAyOCwiZXhwIjoyMDUyMDk3MDI4fQ.zrFtwX_0KaZ9x10YErb9HAzsfgw4r9gblnFpS4lU-BA";
 
-// Configurazione migliorata del client amministrativo
+// Configurazione del client amministrativo
 export const adminClient = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: {
     autoRefreshToken: false,
@@ -18,12 +17,12 @@ export const adminClient = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY
   }
 });
 
-// Funzione migliorata per verificare l'accesso amministrativo
+// Funzione per verificare l'accesso amministrativo
 export const verifyAdminClientAccess = async () => {
   try {
     console.log("Tentativo di verifica dell'accesso amministrativo...");
     
-    // Verifica più robusta per l'accesso amministrativo
+    // Verifica dell'accesso amministrativo
     const { data, error } = await adminClient.auth.admin.listUsers({
       perPage: 1,
       page: 1
