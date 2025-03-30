@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { FileText, Users, GitCompare } from 'lucide-react';
@@ -19,6 +18,7 @@ const Dashboard = () => {
   const [allBandi, setAllBandi] = useState<Bando[]>([]);
   const [clientiCount, setClientiCount] = useState<number>(0);
   const [matchCount, setMatchCount] = useState<number>(0);
+  const [fontDistribution, setFontDistribution] = useState<{fonte: string, valore: number}[]>([]);
   
   useEffect(() => {
     const loadAllData = async () => {
@@ -29,6 +29,22 @@ const Dashboard = () => {
         const combinedBandi = await SupabaseBandiService.getBandiCombinati();
         setAllBandi(combinedBandi);
         console.log("Dashboard: Unique bandi count:", combinedBandi.length);
+        
+        // Calcola distribuzione fonti
+        const fontiCount: Record<string, number> = {};
+        combinedBandi.forEach(bando => {
+          if (bando.fonte) {
+            fontiCount[bando.fonte] = (fontiCount[bando.fonte] || 0) + 1;
+          }
+        });
+        
+        // Converti a formato per grafico a torta
+        const fontiData = Object.entries(fontiCount)
+          .map(([fonte, valore]) => ({ fonte, valore }))
+          .sort((a, b) => b.valore - a.valore);
+        
+        setFontDistribution(fontiData);
+        console.log("Dashboard: Fonts distribution:", fontiData);
         
         if (combinedBandi.length === 0) {
           console.log("Dashboard: No bandi found in any source");
@@ -58,27 +74,7 @@ const Dashboard = () => {
     loadAllData();
   }, [toast]);
   
-  const calcStatistiche = () => {
-    const europei = allBandi.filter(b => b.tipo === 'europeo').length;
-    const statali = allBandi.filter(b => b.tipo === 'statale').length;
-    const regionali = allBandi.filter(b => b.tipo === 'regionale').length;
-    const altri = allBandi.filter(b => b.tipo !== 'europeo' && b.tipo !== 'statale' && b.tipo !== 'regionale').length;
-    
-    return {
-      bandiAttivi: allBandi.length,
-      distribuzioneBandi: { europei, statali, regionali, altri }
-    };
-  };
-  
-  const stats = calcStatistiche();
-  
-  // Updated colors for better visibility
-  const distribuzioneBandiData = [
-    { name: 'Europei', value: stats.distribuzioneBandi.europei, color: '#0066cc' },
-    { name: 'Statali', value: stats.distribuzioneBandi.statali, color: '#00cc44' },
-    { name: 'Regionali', value: stats.distribuzioneBandi.regionali, color: '#ff9900' },
-    { name: 'Altri', value: stats.distribuzioneBandi.altri, color: '#5A6474' },
-  ].filter(item => item.value > 0); // Show only non-zero values
+  const CHART_COLORS = ['#0066cc', '#00cc44', '#ff9900', '#cc3300', '#9900cc', '#00cccc', '#cc0099', '#5A6474'];
 
   const ultimiBandi = [...allBandi]
     .sort((a, b) => new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime())
@@ -92,7 +88,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard 
           title="Bandi Attivi" 
-          value={stats.bandiAttivi} 
+          value={allBandi.length} 
           color="blue" 
           icon={<FileText className="w-8 h-8 text-blue-500" />}
           bgColor="bg-blue-50" 
@@ -115,27 +111,28 @@ const Dashboard = () => {
       
       {/* Grafici principali */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartContainer title="Distribuzione Bandi" bgColor="bg-gradient-to-br from-blue-50 to-white">
+        <ChartContainer title="Distribuzione Fonti" bgColor="bg-gradient-to-br from-blue-50 to-white">
           <div className="h-64">
             {isLoading ? (
               <div className="h-full flex items-center justify-center text-gray-400">
                 Caricamento in corso...
               </div>
-            ) : distribuzioneBandiData.length > 0 ? (
+            ) : fontDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={distribuzioneBandiData}
+                    data={fontDistribution}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => percent > 0.05 ? `${name}: ${(percent * 100).toFixed(0)}%` : null}
                     outerRadius={80}
                     fill="#8884d8"
-                    dataKey="value"
+                    dataKey="valore"
+                    nameKey="fonte"
                   >
-                    {distribuzioneBandiData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {fontDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
                   <Legend 
