@@ -105,15 +105,15 @@ export interface DataItem {
 // Extending DataItem for specific chart types
 export interface ReportAnalisiTemporale extends DataItem {
   periodo: string;
-  matchGenerati: number;
-  bandiScaduti: number;
+  bandiCreati: number;
+  clientiCreati: number;
+  matchCreati: number;
 }
 
 // Extending DataItem for specific chart types
 export interface ReportPerformanceMatch extends DataItem {
   cliente: string;
-  matchGenerati: number;
-  matchAlta: number;
-  matchMedia: number;
-  matchBassa: number;
+  settore: string;
+  numBandiCompatibili: number;
+  compatibilitaMedia: number;
 }
