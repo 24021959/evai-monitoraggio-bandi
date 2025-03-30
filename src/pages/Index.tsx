@@ -2,30 +2,33 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 const Index = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
+    if (loading) return;
+    
     // Reindirizza alla pagina di login se l'utente non è autenticato
     if (!user) {
       navigate('/login');
     } else {
-      // Altrimenti reindirizza in base al ruolo
+      // Reindirizza direttamente alla pagina di gestione admin se l'utente è admin
       if (userProfile?.role === 'admin') {
         navigate('/app/admin/gestione');
       } else {
         navigate('/app/dashboard');
       }
     }
-  }, [user, userProfile, navigate]);
+  }, [user, userProfile, navigate, loading]);
   
   // Pagina di caricamento mentre si effettua il reindirizzamento
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-50">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+        <LoadingSpinner />
         <p className="mt-4 text-gray-600">Reindirizzamento in corso...</p>
       </div>
     </div>

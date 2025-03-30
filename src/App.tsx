@@ -42,7 +42,17 @@ const App = () => (
                 <Layout />
               </ProtectedRoute>
             }>
-              <Route index element={<Navigate to="/app/dashboard" replace />} />
+              {/* Redirect non-admin users to dashboard and admin users to admin/gestione */}
+              <Route index element={
+                <ProtectedRoute>
+                  {({ isAdmin }) => isAdmin ? 
+                    <Navigate to="/app/admin/gestione" replace /> : 
+                    <Navigate to="/app/dashboard" replace />
+                  }
+                </ProtectedRoute>
+              } />
+              
+              {/* Client routes */}
               <Route path="dashboard" element={
                 <ProtectedRoute clientOnly={true}>
                   <Dashboard />
@@ -93,6 +103,8 @@ const App = () => (
                   <ImportaBandi />
                 </ProtectedRoute>
               } />
+              
+              {/* Admin routes */}
               <Route path="admin" element={
                 <ProtectedRoute adminOnly={true}>
                   <AdminSettings />

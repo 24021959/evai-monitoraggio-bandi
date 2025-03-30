@@ -11,7 +11,8 @@ import {
   Database,
   Settings,
   LogOut,
-  Shield
+  Shield,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -31,13 +32,15 @@ const Header = () => {
     <header className="w-full bg-white shadow-sm py-4 px-8">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
-          <Link to="/app/dashboard" className="flex items-center cursor-pointer">
+          <Link to={isAdmin ? "/app/admin/gestione" : "/app/dashboard"} className="flex items-center cursor-pointer">
             <img 
               src="/lovable-uploads/3dae21e4-3a8f-4f07-b420-97affba19320.png" 
               alt="EV-AI Technologies Logo" 
               className="h-12"
             />
-            <h1 className="ml-4 text-2xl font-semibold text-gray-800">EV-AI Monitoraggio Bandi</h1>
+            <h1 className="ml-4 text-2xl font-semibold text-gray-800">
+              {isAdmin ? "EV-AI Admin Console" : "EV-AI Monitoraggio Bandi"}
+            </h1>
           </Link>
         </div>
         
@@ -55,14 +58,6 @@ const Header = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Il mio account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {isAdmin && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/app/admin/gestione" className="flex items-center gap-2 cursor-pointer">
-                      <Shield className="w-4 h-4" />
-                      <span>Gestione Admin</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2 cursor-pointer text-red-600">
                   <LogOut className="w-4 h-4" />
                   <span>Disconnetti</span>
@@ -76,9 +71,9 @@ const Header = () => {
   );
 };
 
-const Sidebar = () => {
+// Sidebar per utenti client
+const ClientSidebar = () => {
   const location = useLocation();
-  const { isAdmin } = useAuth();
   
   return (
     <div className="flex flex-col h-full">
@@ -177,20 +172,43 @@ const Sidebar = () => {
               Configurazioni
             </div>
           </NavLink>
+        </nav>
+      </div>
+    </div>
+  );
+};
+
+// Sidebar per utenti admin
+const AdminSidebar = () => {
+  const location = useLocation();
+  
+  return (
+    <div className="flex flex-col h-full">
+      <div className="bg-gray-100 flex-grow">
+        <nav className="flex flex-col">          
+          <NavLink
+            to="/app/admin/gestione"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5" />
+              Gestione Utenti
+            </div>
+          </NavLink>
           
-          {isAdmin && (
-            <NavLink
-              to="/app/admin/gestione"
-              className={({ isActive }) =>
-                `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-              }
-            >
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5" />
-                Gestione Admin
-              </div>
-            </NavLink>
-          )}
+          <NavLink
+            to="/app/admin"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5" />
+              Configurazioni
+            </div>
+          </NavLink>
         </nav>
       </div>
     </div>
@@ -198,7 +216,7 @@ const Sidebar = () => {
 };
 
 const Layout = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, isAdmin } = useAuth();
 
   // Se l'organizzazione dell'utente è disattivata, non mostrare il layout regolare
   if (userProfile?.organizationDisabled) {
@@ -227,7 +245,7 @@ const Layout = () => {
       
       <div className="flex flex-1">
         <div className="w-1/5">
-          <Sidebar />
+          {isAdmin ? <AdminSidebar /> : <ClientSidebar />}
         </div>
         <div className="w-4/5 p-8 overflow-auto">
           <Outlet />

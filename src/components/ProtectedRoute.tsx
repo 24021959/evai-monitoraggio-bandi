@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: React.ReactNode | ((props: { isAdmin: boolean }) => React.ReactNode);
   adminOnly?: boolean;
   clientOnly?: boolean;
 }
@@ -49,6 +49,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         </p>
       </div>
     );
+  }
+
+  // Se children è una funzione, passare isAdmin come prop
+  if (typeof children === 'function') {
+    return <>{children({ isAdmin })}</>;
   }
 
   // Se tutto è ok, mostra il contenuto della route
