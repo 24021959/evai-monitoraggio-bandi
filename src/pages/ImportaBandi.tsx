@@ -9,6 +9,7 @@ import { ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { Bando } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import { useBandiData } from '@/hooks/useBandiData';
 
 const ImportaBandi = () => {
   const navigate = useNavigate();
@@ -20,6 +21,9 @@ const ImportaBandi = () => {
     total: number;
     saved: number;
   } | null>(null);
+  
+  // Get the fetchBandi function from useBandiData to refresh the bandi list after import
+  const { fetchBandi } = useBandiData();
   
   const handleImportBandi = async () => {
     // Recupera l'URL del foglio Google dalla configurazione o usa un valore hardcoded per test
@@ -41,10 +45,6 @@ const ImportaBandi = () => {
     
     try {
       console.log('Iniziando importazione da:', googleSheetUrl);
-      
-      // Rimuoviamo i flag di importazione
-      sessionStorage.removeItem('bandiImportatiFlag');
-      sessionStorage.removeItem('bandiImportati');
       
       // Recupera i bandi dal foglio Google
       const bandi = await GoogleSheetsService.fetchBandiFromSheet(googleSheetUrl);
@@ -74,15 +74,19 @@ const ImportaBandi = () => {
         }
         
         try {
-          // Assicurati che tutti i campi richiesti siano presenti
+          // Assicurati che tutti i campi richiesti siano presenti e correttamente formattati
           const bandoCompleto = {
             ...bando,
             fonte: bando.fonte || 'Google Sheet',
             tipo: bando.tipo || 'altro',
-            settori: bando.settori || []
+            settori: bando.settori || [],
+            // Make sure scadenza is in YYYY-MM-DD format for database compatibility
+            scadenza: bando.scadenza || new Date().toISOString().split('T')[0]
           };
           
-          console.log(`Salvataggio bando: ${bandoCompleto.titolo}`);
+          console.log(`Tentativo di salvataggio bando: ${bandoCompleto.titolo}`);
+          console.log('Dati bando per il salvataggio:', JSON.stringify(bandoCompleto));
+          
           const success = await SupabaseBandiService.saveBando(bandoCompleto);
           
           if (success) {
@@ -105,6 +109,9 @@ const ImportaBandi = () => {
         title: "Importazione completata",
         description: `Importati ${contatoreSalvati} bandi su ${bandi.length} dal foglio Google Sheets`,
       });
+      
+      // Refresh the bandi list after import
+      await fetchBandi();
     } catch (error: any) {
       console.error('Errore dettagliato durante l\'importazione:', error);
       setError(error.message || "Errore durante l'importazione");

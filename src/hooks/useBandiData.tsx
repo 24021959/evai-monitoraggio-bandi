@@ -140,4 +140,3 @@ export const useBandiData = () => {
     fetchBandi // Esporre questa funzione per consentire l'aggiornamento dopo l'importazione
   };
 };
-

@@ -18,6 +18,41 @@ class GoogleSheetsService {
     return match ? match[1] : null;
   }
 
+  private static formatDateValue(value: any): string {
+    if (!value) return '';
+    
+    // Check if it's a date string that looks like "Date(year,month,day)"
+    if (typeof value === 'string' && value.startsWith('Date(') && value.endsWith(')')) {
+      try {
+        // Extract the date components
+        const dateContent = value.substring(5, value.length - 1);
+        const [year, month, day] = dateContent.split(',').map(v => parseInt(v.trim(), 10));
+        
+        // JavaScript months are 0-indexed, so we need to subtract 1 from the month
+        const jsDate = new Date(year, month - 1, day);
+        
+        // Format as YYYY-MM-DD for SQL compatibility
+        return jsDate.toISOString().split('T')[0];
+      } catch (err) {
+        console.error('Error parsing date:', value, err);
+        return '';
+      }
+    }
+    
+    // If it's already a proper date string, try to format it
+    try {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    } catch (err) {
+      console.error('Error formatting date:', value, err);
+    }
+    
+    // Return as is if we can't parse it
+    return value;
+  }
+
   private static mapSheetRowsToBandi(table: any): Bando[] {
     if (!table || !table.cols || !table.rows) {
       console.error('I dati del foglio non hanno il formato atteso');
@@ -92,10 +127,14 @@ class GoogleSheetsService {
         // Usa il mapping per determinare a quale campo del bando assegnare questo valore
         const mappedField = fieldMapping[header.toLowerCase()];
         if (mappedField) {
-          bando[mappedField] = String(value).trim();
+          // Gestione speciale per le date
+          if (mappedField === 'scadenza' || mappedField === 'dataEstrazione') {
+            bando[mappedField] = this.formatDateValue(value);
+          } else {
+            bando[mappedField] = String(value).trim();
+          }
         } else {
           // Per campi non mappati, usa direttamente il nome dell'intestazione
-          // Questo ci dà una maggiore flessibilità con strutture di foglio variabili
           bando[header] = String(value).trim();
         }
       });
@@ -126,7 +165,7 @@ class GoogleSheetsService {
         requisiti: bando.requisiti || '',
         modalitaPresentazione: bando.modalitaPresentazione || '',
         ultimiAggiornamenti: bando.ultimiAggiornamenti || '',
-        settori: []
+        settori: Array.isArray(bando.settori) ? bando.settori : []
       };
 
       return mappedBando;
@@ -193,7 +232,7 @@ class GoogleSheetsService {
         } else {
           console.log('Primi 3 bandi estratti:');
           bandi.slice(0, 3).forEach((b, i) => {
-            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}`);
+            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}, Scadenza: ${b.scadenza}`);
           });
         }
         

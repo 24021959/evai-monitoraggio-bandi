@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,6 +15,21 @@ import StatCard from "@/components/StatCard";
 import LineChartCard from "@/components/LineChartCard";
 import BarChartCard from "@/components/BarChartCard";
 import DataTableCard from "@/components/DataTableCard";
+
+interface ReportAnalisiTemporale {
+  [key: string]: any;
+  bandiCreati: number;
+  clientiCreati: number;
+  matchCreati: number;
+}
+
+interface ReportPerformanceMatch {
+  [key: string]: any;
+  cliente: string;
+  settore: string;
+  numBandiCompatibili: number;
+  compatibilitaMedia: number;
+}
 
 const sectorColumns = [
   {
