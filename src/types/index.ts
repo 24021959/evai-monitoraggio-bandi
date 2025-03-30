@@ -108,7 +108,6 @@ export interface ReportAnalisiTemporale extends DataItem {
   bandiCreati: number;
   clientiCreati: number;
   matchCreati: number;
-  [key: string]: string | number | undefined;
 }
 
 // Extending DataItem for specific chart types
@@ -117,5 +116,4 @@ export interface ReportPerformanceMatch extends DataItem {
   settore: string;
   numBandiCompatibili: number;
   compatibilitaMedia: number;
-  [key: string]: string | number | undefined;
 }

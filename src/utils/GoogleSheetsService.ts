@@ -55,31 +55,34 @@ class GoogleSheetsService {
     });
   }
 
-  // We'll use the URL from localStorage directly instead of requiring it to be passed in
+  // Corretto per gestire meglio i dati dal foglio Google
   public static async fetchBandiFromSheet(sheetUrlParam?: string): Promise<Bando[]> {
     try {
-      const sheetUrl = sheetUrlParam || localStorage.getItem('googleSheetUrl');
+      // Ottieni l'URL del foglio Google
+      const sheetUrl = sheetUrlParam || this.getSheetUrl() || '';
       
       if (!sheetUrl) {
         console.error('URL del foglio Google non configurato');
         return [];
       }
       
-      // Extract the sheet ID from the URL
+      // Estrai l'ID del foglio dall'URL
       const sheetId = this.extractSheetId(sheetUrl);
       
       if (!sheetId) {
         console.error('ID del foglio Google non valido');
         return [];
       }
+
+      console.log(`Recupero dati dal foglio Google con ID: ${sheetId}`);
       
-      // Construct the API URL to access the public Google Sheet
+      // Costruisci l'URL dell'API per accedere al foglio Google pubblico
       const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Bandi`;
       
       const response = await fetch(apiUrl);
       const text = await response.text();
       
-      // Cleanups the JSONP-like response to extract the JSON
+      // Pulizia della risposta JSONP-like per estrarre il JSON
       const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
       const data = JSON.parse(jsonString);
       
@@ -88,9 +91,29 @@ class GoogleSheetsService {
         return [];
       }
       
-      // Map Google Sheets data to Bando objects
+      console.log(`Dati recuperati. Righe trovate: ${data.table.rows.length}`);
+      
+      // Mappa i dati del foglio Google agli oggetti Bando
       const bandi: Bando[] = this.mapSheetRowsToBandi(data.table);
-      return bandi;
+      console.log(`Bandi mappati: ${bandi.length}`);
+      
+      // Filtra eventuali bandi non validi (senza titolo o fonte)
+      const bandiFiltrati = bandi.filter(bando => 
+        bando.titolo && bando.titolo.trim() !== '' && 
+        bando.fonte && bando.fonte.trim() !== ''
+      );
+      
+      console.log(`Bandi validi dopo filtro: ${bandiFiltrati.length}`);
+      
+      // Debug dei primi 3 bandi per verificare il corretto mapping
+      if (bandiFiltrati.length > 0) {
+        console.log('Esempio primi 3 bandi:');
+        bandiFiltrati.slice(0, 3).forEach((b, i) => {
+          console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}, Scadenza: ${b.scadenza}`);
+        });
+      }
+      
+      return bandiFiltrati;
     } catch (error) {
       console.error('Errore durante il recupero dei bandi dal foglio Google:', error);
       throw new Error('Impossibile recuperare i dati dal foglio Google');

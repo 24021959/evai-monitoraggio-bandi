@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -74,6 +75,10 @@ const ImportaBandi = () => {
     try {
       console.log('Iniziando importazione da:', googleSheetUrl);
       
+      // Rimuoviamo il flag prima dell'importazione per consentire una nuova importazione
+      sessionStorage.removeItem('bandiImportatiFlag');
+      
+      // Recupera i bandi dal foglio Google
       const bandi = await GoogleSheetsService.fetchBandiFromSheet(googleSheetUrl);
       console.log('Bandi ottenuti dal foglio:', bandi?.length);
       
@@ -88,10 +93,11 @@ const ImportaBandi = () => {
         return;
       }
       
+      // Recupera i bandi esistenti da Supabase
       const bandiEsistenti = await SupabaseBandiService.getBandi();
       console.log('Bandi già esistenti in Supabase:', bandiEsistenti.length);
       
-      // MODIFICA: Miglioriamo la logica di confronto per i duplicati
+      // Miglioriamo la logica di confronto per i duplicati
       // Creiamo un set con combinazioni normalizzate di titolo+fonte per un confronto più accurato
       const titoliFonteEsistenti = new Set();
       
@@ -104,14 +110,22 @@ const ImportaBandi = () => {
         }
       });
       
+      console.log('Set di chiavi uniche esistenti:', titoliFonteEsistenti.size);
+      
       // Filtriamo i bandi per trovare quelli unici
       const bandiUnici = bandi.filter(bando => {
-        if (!bando.titolo || !bando.fonte) return false;
+        if (!bando.titolo || !bando.fonte) {
+          console.log('Bando senza titolo o fonte, saltato.');
+          return false;
+        }
         
         // Normalizziamo i testi dal foglio allo stesso modo
         const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
         const fonteNormalizzata = bando.fonte.trim().toLowerCase();
         const chiave = `${titoloNormalizzato}|${fonteNormalizzata}`;
+        
+        // Debug per verificare la chiave di confronto
+        // console.log(`Verifica bando: "${titoloNormalizzato}" | "${fonteNormalizzata}" => ${!titoliFonteEsistenti.has(chiave) ? 'NUOVO' : 'ESISTENTE'}`);
         
         // Verifichiamo se questo bando è già presente nel set
         return !titoliFonteEsistenti.has(chiave);
@@ -123,9 +137,6 @@ const ImportaBandi = () => {
       if (bandiUnici.length > 0) {
         sessionStorage.setItem('bandiImportati', JSON.stringify(bandiUnici));
         console.log('Bandi salvati in sessionStorage:', bandiUnici.length);
-        
-        // Resettiamo il flag per permettere una nuova importazione
-        sessionStorage.removeItem('bandiImportatiFlag');
         
         let contatoreSalvati = 0;
         for (const bando of bandiUnici) {
