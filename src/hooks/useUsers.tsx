@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
@@ -10,6 +9,11 @@ type UserProfile = {
   email: string;
   role: 'admin' | 'client';
   is_active: boolean;
+};
+
+type UserProfileUpdate = {
+  display_name?: string;
+  role?: 'admin' | 'client';
 };
 
 export const useUsers = () => {
@@ -226,11 +230,42 @@ export const useUsers = () => {
     }
   };
 
+  const updateUserProfile = async (userId: string, updates: UserProfileUpdate) => {
+    try {
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          display_name: updates.display_name,
+          role: updates.role
+        })
+        .eq('id', userId);
+        
+      if (profileError) throw profileError;
+
+      toast({
+        title: 'Utente aggiornato',
+        description: `Il profilo utente è stato aggiornato con successo.`
+      });
+
+      fetchUsers(); // Refresh users list
+      return true;
+    } catch (error: any) {
+      toast({
+        title: 'Errore',
+        description: `Impossibile aggiornare il profilo utente: ${error.message}`,
+        variant: 'destructive'
+      });
+      console.error('Errore dettagliato nell\'aggiornamento del profilo:', error);
+      return false;
+    }
+  };
+
   return {
     users,
     loadingUsers,
     createUser,
     toggleUserActive,
+    updateUserProfile,
     adminClientVerified,
     adminVerificationError,
     verifyAdminClient

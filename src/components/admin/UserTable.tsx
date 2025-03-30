@@ -2,8 +2,10 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Users } from 'lucide-react';
+import { Users, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import UserDetailsDialog from './UserDetailsDialog';
 
 type UserProfile = {
   id: string;
@@ -20,6 +22,14 @@ type UserTableProps = {
 };
 
 const UserTable = ({ users, loadingUsers, toggleUserActive }: UserTableProps) => {
+  const [selectedUser, setSelectedUser] = React.useState<UserProfile | null>(null);
+  const [userDetailsOpen, setUserDetailsOpen] = React.useState(false);
+  
+  const handleViewUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setUserDetailsOpen(true);
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -79,7 +89,18 @@ const UserTable = ({ users, loadingUsers, toggleUserActive }: UserTableProps) =>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {/* Qui potresti aggiungere altre azioni se necessario */}
+                        <div className="flex justify-center">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            onClick={() => handleViewUser(user)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                            aria-label="Visualizza dettagli"
+                            title="Visualizza dettagli utente"
+                          >
+                            <Eye className="h-5 w-5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -89,6 +110,14 @@ const UserTable = ({ users, loadingUsers, toggleUserActive }: UserTableProps) =>
           </div>
         )}
       </CardContent>
+      
+      {selectedUser && (
+        <UserDetailsDialog
+          user={selectedUser}
+          open={userDetailsOpen}
+          onOpenChange={setUserDetailsOpen}
+        />
+      )}
     </Card>
   );
 };
