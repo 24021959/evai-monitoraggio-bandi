@@ -1,3 +1,4 @@
+
 import { Bando } from "@/types";
 
 class GoogleSheetsService {
@@ -32,12 +33,12 @@ class GoogleSheetsService {
         bando[header] = value;
       });
 
-      // Trasforma i nomi delle colonne in camelCase
+      // Trasforma i nomi delle colonne in camelCase e pulisce i valori di testo
       const mappedBando: Bando = {
         id: bando.row_number?.toString() || '',
-        titolo: bando.nome?.toString() || '',
-        descrizione: bando.descrizione?.toString() || '',
-        fonte: bando.fonte?.toString() || '',
+        titolo: bando.nome?.toString().trim() || '',
+        descrizione: bando.descrizione?.toString().trim() || '',
+        fonte: bando.fonte?.toString().trim() || '',
         scadenza: bando.scadenza?.toString() || '',
         tipo: bando.tipo?.toString() || '',
         url: bando.url?.toString() || '',
@@ -45,7 +46,7 @@ class GoogleSheetsService {
         importo_max: bando.importo_max ? parseFloat(bando.importo_max) : undefined,
         budget_disponibile: bando.budget_disponibile?.toString() || '',
         data_estrazione: bando.data_estrazione?.toString() || '',
-        requisiti: bando.requisiti?.toString() || '',
+        requisiti: bando.requisiti?.toString().trim() || '',
         modalita_presentazione: bando.modalita_presentazione?.toString() || '',
         ultimi_aggiornamenti: bando.ultimi_aggiornamenti?.toString() || '',
       };

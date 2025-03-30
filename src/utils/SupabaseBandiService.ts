@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Bando } from '@/types';
 import { FirecrawlService } from './FirecrawlService';
@@ -63,17 +64,24 @@ export class SupabaseBandiService {
         allBandiMap.set(bando.id, bando);
       });
       
-      // Creiamo un set di chiavi univoche basate su titolo+fonte per identificare duplicati
+      // Creiamo un set di chiavi univoche normalizzate basate su titolo+fonte per identificare duplicati
       const titoloFonteSet = new Set(
-        supaBandi.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+        supaBandi.map(b => {
+          const titoloNormalizzato = b.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = b.fonte.trim().toLowerCase();
+          return `${titoloNormalizzato}|${fonteNormalizzata}`;
+        })
       );
       
       // Poi localStorage (solo se non già presenti in Supabase)
       for (const bando of localBandi) {
         // Verifichiamo prima se non c'è già un bando con questo ID
         if (!allBandiMap.has(bando.id)) {
-          // Verifichiamo anche se non esiste già un bando con lo stesso titolo e fonte
-          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          // Verifichiamo anche se non esiste già un bando con lo stesso titolo e fonte normalizzati
+          const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = bando.fonte.trim().toLowerCase();
+          const chiave = `${titoloNormalizzato}|${fonteNormalizzata}`;
+          
           if (!titoloFonteSet.has(chiave)) {
             // Solo in questo caso lo salviamo in Supabase (una tantum)
             try {
@@ -93,7 +101,10 @@ export class SupabaseBandiService {
       const bandiImportatiFlag = sessionStorage.getItem('bandiImportatiFlag');
       if (!bandiImportatiFlag && importedBandi.length > 0) {
         for (const bando of importedBandi) {
-          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = bando.fonte.trim().toLowerCase();
+          const chiave = `${titoloNormalizzato}|${fonteNormalizzata}`;
+          
           if (!titoloFonteSet.has(chiave)) {
             try {
               // Creiamo un ID valido se non esiste
@@ -290,15 +301,23 @@ export class SupabaseBandiService {
       // Recuperiamo prima i bandi esistenti per evitare duplicazioni
       const bandiEsistenti = await this.getBandi();
       const titoliFonteEsistenti = new Set(
-        bandiEsistenti.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
+        bandiEsistenti.map(b => {
+          // Normalizziamo i testi per confronto più accurato
+          const titoloNormalizzato = b.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = b.fonte.trim().toLowerCase(); 
+          return `${titoloNormalizzato}|${fonteNormalizzata}`;
+        })
       );
       
       let contatore = 0;
       
       for (const bando of bandiImportati) {
         try {
-          // Verifichiamo che non esista già un bando con lo stesso titolo e fonte
-          const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+          // Verifichiamo che non esista già un bando con lo stesso titolo e fonte normalizzati
+          const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = bando.fonte.trim().toLowerCase();
+          const chiave = `${titoloNormalizzato}|${fonteNormalizzata}`;
+          
           if (!titoliFonteEsistenti.has(chiave)) {
             // Assicuriamo che ogni bando abbia tutti i campi necessari
             const bandoCompleto = {

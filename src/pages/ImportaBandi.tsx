@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -92,13 +91,29 @@ const ImportaBandi = () => {
       const bandiEsistenti = await SupabaseBandiService.getBandi();
       console.log('Bandi già esistenti in Supabase:', bandiEsistenti.length);
       
-      const titoliFonteEsistenti = new Set(
-        bandiEsistenti.map(b => `${b.titolo.toLowerCase()}|${b.fonte.toLowerCase()}`)
-      );
+      // MODIFICA: Miglioriamo la logica di confronto per i duplicati
+      // Creiamo un set con combinazioni normalizzate di titolo+fonte per un confronto più accurato
+      const titoliFonteEsistenti = new Set();
       
+      bandiEsistenti.forEach(bando => {
+        if (bando.titolo && bando.fonte) {
+          // Normalizziamo i testi: rimuoviamo spazi extra e convertiamo in minuscolo
+          const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = bando.fonte.trim().toLowerCase();
+          titoliFonteEsistenti.add(`${titoloNormalizzato}|${fonteNormalizzata}`);
+        }
+      });
+      
+      // Filtriamo i bandi per trovare quelli unici
       const bandiUnici = bandi.filter(bando => {
         if (!bando.titolo || !bando.fonte) return false;
-        const chiave = `${bando.titolo.toLowerCase()}|${bando.fonte.toLowerCase()}`;
+        
+        // Normalizziamo i testi dal foglio allo stesso modo
+        const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+        const fonteNormalizzata = bando.fonte.trim().toLowerCase();
+        const chiave = `${titoloNormalizzato}|${fonteNormalizzata}`;
+        
+        // Verifichiamo se questo bando è già presente nel set
         return !titoliFonteEsistenti.has(chiave);
       });
       
@@ -108,6 +123,9 @@ const ImportaBandi = () => {
       if (bandiUnici.length > 0) {
         sessionStorage.setItem('bandiImportati', JSON.stringify(bandiUnici));
         console.log('Bandi salvati in sessionStorage:', bandiUnici.length);
+        
+        // Resettiamo il flag per permettere una nuova importazione
+        sessionStorage.removeItem('bandiImportatiFlag');
         
         let contatoreSalvati = 0;
         for (const bando of bandiUnici) {
@@ -132,7 +150,7 @@ const ImportaBandi = () => {
           const clienti = await SupabaseClientiService.getClienti();
           console.log(`Generando match tra ${clienti.length} clienti e ${bandiUnici.length} nuovi bandi...`);
           
-          const matchResults = await SupabaseMatchService.generateAndSaveMatches(clienti, bandiUnici);
+          const matchResults = await SupabaseMatchService.findNewMatches(clienti, bandiUnici);
           console.log(`Generati ${matchResults.length} match per i nuovi bandi`);
           
           // Salviamo i match nella sessione per mostrarli nella UI
