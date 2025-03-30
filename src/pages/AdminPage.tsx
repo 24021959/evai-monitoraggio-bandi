@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { UserPlus, Mail, Key, User, Shield, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ChangePasswordForm from '@/components/admin/ChangePasswordForm';
 
 type UserProfile = {
   id: string;
@@ -262,6 +263,9 @@ const AdminPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Sezione per il cambio password */}
+      <ChangePasswordForm />
 
       {/* Dialog per la creazione di un nuovo utente */}
       <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
