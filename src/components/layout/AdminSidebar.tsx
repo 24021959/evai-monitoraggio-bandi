@@ -1,10 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, Settings } from 'lucide-react';
+import { Users, Settings, Lock } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
+import ChangePasswordForm from '../admin/ChangePasswordForm';
 
 const AdminSidebar = () => {
   const location = useLocation();
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   
   return (
     <div className="flex flex-col h-full">
@@ -13,7 +22,7 @@ const AdminSidebar = () => {
           <NavLink
             to="/app/admin/gestione"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -25,7 +34,7 @@ const AdminSidebar = () => {
           <NavLink
             to="/app/admin"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -33,6 +42,25 @@ const AdminSidebar = () => {
               Configurazioni
             </div>
           </NavLink>
+          
+          <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+            <DialogTrigger asChild>
+              <button 
+                className="p-5 text-black hover:bg-blue-50 w-full text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Lock className="w-5 h-5" />
+                  Cambia Password
+                </div>
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Cambia Password</DialogTitle>
+              </DialogHeader>
+              <ChangePasswordForm onComplete={() => setIsPasswordDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </nav>
       </div>
     </div>

@@ -5,10 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, Save, Eye, EyeOff } from 'lucide-react';
 
-const ChangePasswordForm = () => {
+interface ChangePasswordFormProps {
+  onComplete?: () => void;
+}
+
+const ChangePasswordForm = ({ onComplete }: ChangePasswordFormProps) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -66,6 +69,11 @@ const ChangePasswordForm = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      
+      // Call onComplete callback if provided
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error: any) {
       toast({
         title: "Errore",
@@ -78,89 +86,76 @@ const ChangePasswordForm = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lock className="h-5 w-5 text-blue-500" />
-          Modifica Password
-        </CardTitle>
-        <CardDescription>
-          Modifica la tua password di accesso
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-password">Password Attuale</Label>
-            <div className="relative">
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              >
-                {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="new-password">Nuova Password</Label>
-            <div className="relative">
-              <Input
-                id="new-password"
-                type={showNewPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-              >
-                {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Conferma Nuova Password</Label>
-            <div className="relative">
-              <Input
-                id="confirm-password"
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isSubmitting}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="current-password">Password Attuale</Label>
+        <div className="relative">
+          <Input
+            id="current-password"
+            type={showCurrentPassword ? "text" : "password"}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
           >
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Aggiornamento in corso..." : "Aggiorna Password"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="new-password">Nuova Password</Label>
+        <div className="relative">
+          <Input
+            id="new-password"
+            type={showNewPassword ? "text" : "password"}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            onClick={() => setShowNewPassword(!showNewPassword)}
+          >
+            {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="confirm-password">Conferma Nuova Password</Label>
+        <div className="relative">
+          <Input
+            id="confirm-password"
+            type={showConfirmPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      </div>
+      
+      <Button 
+        type="submit" 
+        className="w-full" 
+        disabled={isSubmitting}
+      >
+        <Save className="mr-2 h-4 w-4" />
+        {isSubmitting ? "Aggiornamento in corso..." : "Aggiorna Password"}
+      </Button>
+    </form>
   );
 };
 
