@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import {
   Search, 
   Filter,
   Calendar,
+  X,
 } from 'lucide-react';
 import {
   Select,
@@ -26,13 +28,14 @@ const Bandi = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [filtro, setFiltro] = useState<string>('');
-  const [settoreFiltro, setSettoreFiltro] = useState<string>('tutti');
+  const [settoreFiltro, setSettoreFiltro] = useState<string>('');
   const [fonteFiltro, setFonteFiltro] = useState<string>('tutte');
   const [scadenzaFiltro, setScadenzaFiltro] = useState<Date | undefined>(undefined);
   const [settoriDisponibili, setSettoriDisponibili] = useState<string[]>([]);
   const [fontiDisponibili, setFontiDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showAllBandi, setShowAllBandi] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchBandi = async () => {
@@ -77,13 +80,18 @@ const Bandi = () => {
   }, [bandi]);
 
   const getBandiFiltrati = () => {
+    // If showAllBandi is true, return all bandi
+    if (showAllBandi) {
+      return bandi;
+    }
+    
     return bandi.filter(bando => {
       const matchTestoRicerca = !filtro || 
         bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.fonte.toLowerCase().includes(filtro.toLowerCase());
         
-      const matchSettore = settoreFiltro === 'tutti' || 
+      const matchSettore = !settoreFiltro || 
         (bando.settori && bando.settori.includes(settoreFiltro));
       
       const matchFonte = fonteFiltro === 'tutte' || 
@@ -109,7 +117,7 @@ const Bandi = () => {
       
       toast({
         title: "Bando eliminato",
-        description: "Il bando �� stato rimosso con successo",
+        description: "Il bando è stato rimosso con successo",
         duration: 3000,
       });
     } else {
@@ -124,9 +132,27 @@ const Bandi = () => {
 
   const handleResetFiltri = () => {
     setFiltro('');
-    setSettoreFiltro('tutti');
+    setSettoreFiltro('');
     setFonteFiltro('tutte');
     setScadenzaFiltro(undefined);
+    setShowAllBandi(false);
+  };
+
+  const handleSearchFocus = () => {
+    setShowAllBandi(true);
+  };
+
+  const handleSearchBlur = () => {
+    if (filtro === '') {
+      setShowAllBandi(false);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFiltro(e.target.value);
+    if (e.target.value === '') {
+      setShowAllBandi(true);
+    }
   };
 
   return (
@@ -148,8 +174,21 @@ const Bandi = () => {
                 placeholder="Cerca bandi..."
                 className="pl-9"
                 value={filtro}
-                onChange={(e) => setFiltro(e.target.value)}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
               />
+              {filtro && (
+                <button
+                  className="absolute right-2.5 top-2.5"
+                  onClick={() => {
+                    setFiltro('');
+                    setShowAllBandi(true);
+                  }}
+                >
+                  <X className="h-4 w-4 text-gray-500" />
+                </button>
+              )}
             </div>
             
             <div className="flex flex-wrap gap-3">
@@ -159,12 +198,11 @@ const Bandi = () => {
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
                       <span className="truncate">
-                        {settoreFiltro === 'tutti' ? "Tutti i settori" : settoreFiltro}
+                        {settoreFiltro ? settoreFiltro : "Settore"}
                       </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tutti">Tutti i settori</SelectItem>
                     {settoriDisponibili.map(settore => (
                       <SelectItem key={settore} value={settore}>
                         {settore}

@@ -107,6 +107,7 @@ export interface ReportAnalisiTemporale extends DataItem {
   periodo: string;
   matchGenerati: number;
   bandiScaduti: number;
+  [key: string]: string | number | undefined;
 }
 
 // Extending DataItem for specific chart types
@@ -116,4 +117,5 @@ export interface ReportPerformanceMatch extends DataItem {
   matchAlta: number;
   matchMedia: number;
   matchBassa: number;
+  [key: string]: string | number | undefined;
 }
