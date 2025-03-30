@@ -5,11 +5,9 @@ import type { Database } from './types';
 // Utilizziamo costanti per la connessione Supabase
 const SUPABASE_URL = "https://yeyfuxtzutciijtsezgc.supabase.co";
 
-// ATTENZIONE: Questa è una chiave Service Role scaduta o non valida.
-// Devi sostituirla con una Service Role Key valida dal pannello di Supabase
-// Vai su https://supabase.com/dashboard/project/yeyfuxtzutciijtsezgc/settings/api
-// Nella sezione "API Keys", copia la "service_role key" (NON la anon key)
-const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWZ1eHR6dXRjaWlqdHNlemdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjUyMTAyOCwiZXhwIjoyMDUyMDk3MDI4fQ.zrFtwX_0KaZ9x10YErb9HAzsfgw4r9gblnFpS4lU-BA";
+// IMPORTANTE: Quando copi la nuova Service Role Key dalla dashboard di Supabase,
+// sostituisci il valore sottostante con la tua chiave
+const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWZ1eHR6dXRjaWlqdHNlemdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzM0MDY2OSwiZXhwIjoyMDU4OTE2NjY5fQ.LdonzIRbqw5-vfqDUxsw2lP7lSlAD2yV_Dmu0HQhLzc";
 
 // Configurazione del client amministrativo
 export const adminClient = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
