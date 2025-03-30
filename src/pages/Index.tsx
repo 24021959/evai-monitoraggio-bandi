@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { BarChart3, FileText, Users, GitCompare, Database } from 'lucide-react';
+import { BarChart3, FileText, Users, GitCompare, Database, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const FeatureCard = ({ 
   icon, 
@@ -42,6 +43,16 @@ const FeatureCard = ({
 };
 
 const Index = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Se l'utente non è autenticato, lo inviamo alla pagina di login
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+  
   return (
     <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
       <div className="text-center mb-12">
