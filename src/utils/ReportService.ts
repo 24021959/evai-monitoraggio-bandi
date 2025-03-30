@@ -51,22 +51,20 @@ class ReportServiceClass {
       // Count active fonti
       const fontiAttive = fontiData.filter(fonte => fonte.stato === 'attivo').length;
       
-      // Calculate average processing time (this would be a placeholder as we don't store this)
-      // In a real app, you might store processing times in the database
-      const tempoMedioElaborazione = 300; // Default value
-      
       // Generate time analysis data - group by month using created_at
       const analisiTemporale = this.generateTimeAnalysis(matchData);
+      
+      // Generate distribuzione per fonte data
+      const distribuzioneFonti = this.generateDistribuzioneFonti(bandiData);
       
       return {
         totaleMatch,
         tassoSuccesso,
         fontiAttive,
-        tempoMedioElaborazione,
+        tempoMedioElaborazione: 0, // We're not using this anymore
         analisiTemporale,
-        // Note: We're removing the performanceMatch and distribuzioneFonti sections as requested
-        performanceMatch: [], 
-        distribuzioneFonti: []
+        performanceMatch: [], // We're not using this anymore
+        distribuzioneFonti
       };
     } catch (error) {
       console.error("Error in getReportData:", error);
@@ -122,6 +120,26 @@ class ReportServiceClass {
     });
     
     return result;
+  }
+
+  // New helper method to generate distribuzione per fonte data
+  private generateDistribuzioneFonti(bandiData: any[]): any[] {
+    // Group bandi by fonte and count
+    const fonteCount: Record<string, number> = {};
+    
+    bandiData.forEach(bando => {
+      if (bando.fonte) {
+        fonteCount[bando.fonte] = (fonteCount[bando.fonte] || 0) + 1;
+      }
+    });
+    
+    // Convert to array with name and value for the pie chart
+    return Object.entries(fonteCount)
+      .map(([fonte, valore]) => ({
+        fonte,
+        valore
+      }))
+      .sort((a, b) => b.valore - a.valore);
   }
 }
 

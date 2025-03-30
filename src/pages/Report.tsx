@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 import { ReportService } from "@/utils/ReportService";
 import { ReportData, ReportAnalisiTemporale } from "@/types/report";
+import StatisticheCard from "@/components/StatisticheCard";
 
 // Definizione dell'interfaccia DataItem per le tabelle e i grafici
 interface DataItem {
@@ -68,38 +69,41 @@ const Report = () => {
     );
   }
 
+  // Transform distribuzioneFonti data for StatisticheCard
+  const pieChartData = reportData.distribuzioneFonti.map(item => ({
+    name: item.fonte,
+    value: item.valore,
+    color: undefined // Will use default colors
+  }));
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Dashboard Report</h1>
-        <Button onClick={fetchReportData} variant="outline" size="sm">
+        <h1 className="text-3xl font-bold text-blue-600">Dashboard Report</h1>
+        <Button onClick={fetchReportData} variant="outline" size="sm" className="bg-blue-500 text-white hover:bg-blue-600">
           <RefreshCw className="mr-2 h-4 w-4" />
           Aggiorna
         </Button>
       </div>
 
       {/* Riepilogo card */}
-      <Card>
+      <Card className="shadow-lg border-blue-100">
         <CardHeader className="pb-2">
-          <h2 className="text-lg font-medium">Riepilogo</h2>
+          <h2 className="text-xl font-semibold text-blue-700">Riepilogo</h2>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-sm text-blue-600">Totale Match</div>
-              <div className="text-2xl font-bold">{reportData.totaleMatch}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-50 p-6 rounded-lg shadow-sm">
+              <div className="text-base text-blue-600 font-medium">Totale Match</div>
+              <div className="text-3xl font-bold text-blue-800 mt-1">{reportData.totaleMatch}</div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-sm text-green-600">Tasso di Successo</div>
-              <div className="text-2xl font-bold">{reportData.tassoSuccesso.toFixed(1)}%</div>
+            <div className="bg-green-50 p-6 rounded-lg shadow-sm">
+              <div className="text-base text-green-600 font-medium">Tasso di Successo</div>
+              <div className="text-3xl font-bold text-green-800 mt-1">{reportData.tassoSuccesso.toFixed(1)}%</div>
             </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="text-sm text-purple-600">Fonti Attive</div>
-              <div className="text-2xl font-bold">{reportData.fontiAttive}</div>
-            </div>
-            <div className="bg-amber-50 p-4 rounded-lg">
-              <div className="text-sm text-amber-600">Tempo Medio</div>
-              <div className="text-2xl font-bold">{reportData.tempoMedioElaborazione.toFixed(0)} ms</div>
+            <div className="bg-purple-50 p-6 rounded-lg shadow-sm">
+              <div className="text-base text-purple-600 font-medium">Fonti Attive</div>
+              <div className="text-3xl font-bold text-purple-800 mt-1">{reportData.fontiAttive}</div>
             </div>
           </div>
         </CardContent>
@@ -126,7 +130,16 @@ const Report = () => {
         />
       </div>
 
-      {/* Note: Performance per fonte section removed as requested */}
+      {/* Distribuzione per fonte pie chart - full width at bottom */}
+      <div className="w-full mt-8">
+        <StatisticheCard
+          title="Distribuzione per fonte"
+          description="Distribuzione dei bandi per fonte"
+          data={pieChartData}
+          height={500} 
+          simplifiedLabels={false}
+        />
+      </div>
     </div>
   );
 };
