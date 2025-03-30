@@ -143,11 +143,24 @@ export class SupabaseBandiService {
    */
   static async saveBando(bando: Bando): Promise<boolean> {
     try {
+      console.log('Tentativo di salvare bando:', bando.titolo);
+      
       // Ensure the bando has a valid UUID ID
       let bandoId = bando.id;
       if (!bandoId || !this.isValidUUID(bandoId)) {
         bandoId = uuidv4();
         console.log(`Generated new UUID for bando: ${bandoId}`);
+      }
+
+      // Ensure date fields are valid or set to null
+      if (!bando.scadenza || bando.scadenza === '') {
+        console.log(`Bando ${bando.titolo}: Manca la data di scadenza, usando la data corrente`);
+        bando.scadenza = new Date().toISOString().split('T')[0];
+      }
+
+      if (!bando.dataEstrazione || bando.dataEstrazione === '') {
+        console.log(`Bando ${bando.titolo}: Manca la data di estrazione, usando la data corrente`);
+        bando.dataEstrazione = new Date().toISOString().split('T')[0];
       }
 
       // Create a copy of the bando with the correct ID
@@ -158,6 +171,14 @@ export class SupabaseBandiService {
 
       // Convert bando to database row format
       const dbBando = this.mapBandoToDbRow(bandoToSave);
+
+      // Log the bando we're about to save for debugging
+      console.log('Bando da salvare:', {
+        id: dbBando.id,
+        titolo: dbBando.titolo,
+        scadenza: dbBando.scadenza,
+        fonte: dbBando.fonte
+      });
 
       // Check if bando already exists in Supabase
       const { data: existingBando } = await supabase
@@ -324,7 +345,10 @@ export class SupabaseBandiService {
               ...bando,
               settori: bando.settori || [],
               fonte: bando.fonte || 'Importato',
-              tipo: bando.tipo || 'altro'
+              tipo: bando.tipo || 'altro',
+              // Assicuriamo che le date siano valide
+              scadenza: bando.scadenza || new Date().toISOString().split('T')[0],
+              dataEstrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0]
             };
             
             const salvato = await this.saveBando(bandoCompleto);

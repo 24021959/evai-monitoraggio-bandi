@@ -25,6 +25,8 @@ export const useBandiData = () => {
     setLoading(true);
     try {
       console.log("useBandiData: Recupero bandi...");
+      // Recupera i bandi direttamente da Supabase, non dai bandi combinati
+      // per assicurarsi che vengano mostrati i nuovi bandi salvati
       const bandiRecuperati = await SupabaseBandiService.getBandi();
       
       // Ordina i bandi per data di creazione (più recenti prima)

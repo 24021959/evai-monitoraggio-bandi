@@ -17,8 +17,8 @@ class GoogleSheetsService {
     return match ? match[1] : null;
   }
 
-  private static formatDateValue(value: any): string {
-    if (!value) return ''; // Se il valore è vuoto, restituisci stringa vuota
+  private static formatDateValue(value: any): string | null {
+    if (!value || value === '') return null; // Return null for empty values instead of empty string
     
     // Se è già una stringa di data nel formato YYYY-MM-DD
     if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -34,7 +34,7 @@ class GoogleSheetsService {
         return jsDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
       } catch (err) {
         console.error('Errore nel parsing della data:', value, err);
-        return '';
+        return null;
       }
     }
     
@@ -48,8 +48,8 @@ class GoogleSheetsService {
       console.error('Errore nella formattazione della data:', value, err);
     }
     
-    // Se non siamo riusciti a formattare la data, restituisci stringa vuota
-    return '';
+    // Se non siamo riusciti a formattare la data, restituisci null invece di stringa vuota
+    return null;
   }
 
   private static mapSheetRowsToBandi(table: any): Bando[] {
@@ -106,7 +106,7 @@ class GoogleSheetsService {
           tipo: 'altro',
           descrizione: '',
           url: '',
-          scadenza: ''
+          scadenza: new Date().toISOString().split('T')[0] // Default to today's date
         };
         
         // Popola il bando con i dati dalla riga
@@ -131,7 +131,7 @@ class GoogleSheetsService {
           if (fieldName) {
             // Gestione speciale per le date
             if (fieldName === 'scadenza' || fieldName === 'dataEstrazione') {
-              bando[fieldName] = this.formatDateValue(value);
+              bando[fieldName] = this.formatDateValue(value) || new Date().toISOString().split('T')[0]; // Use today's date as fallback
             } else {
               bando[fieldName] = String(value).trim();
             }
@@ -151,13 +151,13 @@ class GoogleSheetsService {
           descrizione: bando.descrizione || '',
           descrizioneCompleta: bando.descrizioneCompleta || '',
           fonte: bando.fonte || 'Google Sheet',
-          scadenza: bando.scadenza || '',
+          scadenza: bando.scadenza || new Date().toISOString().split('T')[0], // Default to today's date
           tipo: bando.tipo || 'altro',
           url: bando.url || '',
           importoMin: typeof bando.importoMin !== 'undefined' ? Number(bando.importoMin) : undefined,
           importoMax: typeof bando.importoMax !== 'undefined' ? Number(bando.importoMax) : undefined,
           budgetDisponibile: bando.budgetDisponibile || '',
-          dataEstrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0],
+          dataEstrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0], // Default to today's date
           requisiti: bando.requisiti || '',
           modalitaPresentazione: bando.modalitaPresentazione || '',
           ultimiAggiornamenti: bando.ultimiAggiornamenti || '',
@@ -222,7 +222,7 @@ class GoogleSheetsService {
         if (bandi.length > 0) {
           console.log('Primi 2 bandi estratti:');
           bandi.slice(0, 2).forEach((b, i) => {
-            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}`);
+            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}, Scadenza: ${b.scadenza}`);
           });
         } else {
           console.error('Nessun bando mappato.');

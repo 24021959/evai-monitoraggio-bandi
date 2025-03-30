@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RefreshCw, FileSpreadsheet, ArrowRight } from 'lucide-react';
+import { RefreshCw, ArrowRight } from 'lucide-react';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { Bando } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
@@ -84,17 +84,21 @@ const ImportaBandi = () => {
       
       // Salva i nuovi bandi in Supabase
       let contatoreSalvati = 0;
+      
       for (const bando of nuoviBandi) {
         try {
-          // Assicurati che tutti i campi richiesti siano presenti
-          const bandoCompleto = {
+          // Assicurati che tutti i campi richiesti siano presenti e validi
+          const bandoCompleto: Bando = {
             ...bando,
             fonte: bando.fonte || 'Google Sheet',
             tipo: bando.tipo || 'altro',
-            settori: bando.settori || []
+            settori: bando.settori || [],
+            // Assicurati che le date siano valide
+            scadenza: bando.scadenza || new Date().toISOString().split('T')[0],
+            dataEstrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0]
           };
           
-          console.log(`Salvando bando: ${bandoCompleto.titolo}`);
+          console.log(`Salvando bando: ${bandoCompleto.titolo}, scadenza: ${bandoCompleto.scadenza}`);
           
           const success = await SupabaseBandiService.saveBando(bandoCompleto);
           
@@ -107,6 +111,13 @@ const ImportaBandi = () => {
         } catch (err) {
           console.error(`Errore nel salvataggio del bando: ${bando.titolo}`, err);
         }
+      }
+      
+      // Salva i bandi in sessionStorage per riferimento futuro
+      try {
+        sessionStorage.setItem('bandiImportati', JSON.stringify(nuoviBandi));
+      } catch (err) {
+        console.error('Errore nel salvataggio dei bandi in sessionStorage:', err);
       }
       
       setImportStats({
@@ -154,11 +165,8 @@ const ImportaBandi = () => {
       </div>
       
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center space-x-2">
-          <FileSpreadsheet className="h-5 w-5 text-blue-500" />
-          <div>
-            <h2 className="text-lg font-medium">Importazione Bandi</h2>
-          </div>
+        <CardHeader className="pb-3">
+          <h2 className="text-lg font-medium">Importazione Bandi</h2>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
