@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, Outlet, useLocation, Link, Navigate } from 'react-router-dom';
 import { 
@@ -156,20 +155,6 @@ const ClientSidebar = () => {
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-5 h-5" />
               Importa Bandi
-            </div>
-          </NavLink>
-          
-          <div className="mt-auto"></div>
-          
-          <NavLink
-            to="/app/admin"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5" />
-              Configurazioni
             </div>
           </NavLink>
         </nav>
