@@ -82,7 +82,7 @@ const ImportaBandi = () => {
       // Mostra anteprima dei nuovi bandi
       setBandiAnteprima(nuoviBandi);
       
-      // Salva solo i nuovi bandi in Supabase
+      // Salva i nuovi bandi in Supabase
       let contatoreSalvati = 0;
       for (const bando of nuoviBandi) {
         try {
@@ -91,8 +91,7 @@ const ImportaBandi = () => {
             ...bando,
             fonte: bando.fonte || 'Google Sheet',
             tipo: bando.tipo || 'altro',
-            settori: bando.settori || [],
-            scadenza: bando.scadenza || ''
+            settori: bando.settori || []
           };
           
           console.log(`Salvando bando: ${bandoCompleto.titolo}`);
@@ -204,7 +203,6 @@ const ImportaBandi = () => {
                       <tr className="border-b bg-gray-50">
                         <th className="px-4 py-3 text-left">Titolo</th>
                         <th className="px-4 py-3 text-left">Fonte</th>
-                        <th className="px-4 py-3 text-left">Scadenza</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -212,7 +210,6 @@ const ImportaBandi = () => {
                         <tr key={index} className="border-b">
                           <td className="px-4 py-3">{bando.titolo}</td>
                           <td className="px-4 py-3">{bando.fonte}</td>
-                          <td className="px-4 py-3">{bando.scadenza || 'N/D'}</td>
                         </tr>
                       ))}
                     </tbody>

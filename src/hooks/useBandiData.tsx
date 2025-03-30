@@ -24,11 +24,11 @@ export const useBandiData = () => {
   const fetchBandi = async () => {
     setLoading(true);
     try {
-      console.log("useBandiData: Recupero bandi combinati...");
-      const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
+      console.log("useBandiData: Recupero bandi...");
+      const bandiRecuperati = await SupabaseBandiService.getBandi();
       
       // Ordina i bandi per data di creazione (più recenti prima)
-      const bandiOrdinati = bandiCombinati.sort((a, b) => {
+      const bandiOrdinati = bandiRecuperati.sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
         const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
         return dateB.getTime() - dateA.getTime();

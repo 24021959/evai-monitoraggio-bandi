@@ -1,466 +1,186 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { BarChartCard } from "@/components/charts/BarChartCard";
+import { LineChartCard } from "@/components/charts/LineChartCard";
+import { PieChartCard } from "@/components/charts/PieChartCard";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Download, FileText, FileJson, PieChart as PieChartIcon, BarChart as BarChartIcon, LineChart as LineChartIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import { addDays, format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
-import SupabaseReportService from "@/utils/SupabaseReportService";
-import StatCard from "@/components/StatCard";
-import LineChartCard from "@/components/LineChartCard";
-import BarChartCard from "@/components/BarChartCard";
-import DataTableCard from "@/components/DataTableCard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RefreshCw } from "lucide-react";
+import { ReportService } from "@/utils/ReportService";
+import { 
+  ReportData, 
+  ReportAnalisiTemporale, 
+  ReportPerformanceMatch, 
+  ReportDistribuzioneFonti 
+} from "@/types/report";
 
-interface ReportAnalisiTemporale {
-  [key: string]: any;
-  bandiCreati: number;
-  clientiCreati: number;
-  matchCreati: number;
-}
-
-interface ReportPerformanceMatch {
-  [key: string]: any;
-  cliente: string;
-  settore: string;
-  numBandiCompatibili: number;
-  compatibilitaMedia: number;
-}
-
+// Definizione dell'interfaccia DataItem per le tabelle e i grafici
 interface DataItem {
   [key: string]: any;
 }
 
-const sectorColumns = [
-  {
-    accessorKey: "settore",
-    header: "Settore",
-  },
-  {
-    accessorKey: "numeroBandi",
-    header: "Bandi",
-  },
-  {
-    accessorKey: "numeroClienti",
-    header: "Clienti",
-  },
-  {
-    accessorKey: "numeroMatch",
-    header: "Match",
-  },
-];
-
-const performanceColumns = [
-  {
-    accessorKey: "cliente",
-    header: "Cliente",
-  },
-  {
-    accessorKey: "settore",
-    header: "Settore",
-  },
-  {
-    accessorKey: "numBandiCompatibili",
-    header: "Bandi Compatibili",
-  },
-  {
-    accessorKey: "compatibilitaMedia",
-    header: "Compatibilità Media %",
-  },
-];
-
-const monthlyColumns = [
-  {
-    accessorKey: "periodo",
-    header: "Periodo",
-  },
-  {
-    accessorKey: "bandiCreati",
-    header: "Bandi Creati",
-  },
-  {
-    accessorKey: "clientiCreati",
-    header: "Clienti Creati",
-  },
-  {
-    accessorKey: "matchCreati",
-    header: "Match Creati",
-  },
-];
+// Convertiamo i tipi ReportAnalisiTemporale e ReportPerformanceMatch a DataItem
+const convertToDataItem = <T extends object>(items: T[]): DataItem[] => {
+  return items.map(item => ({ ...item } as DataItem));
+};
 
 const Report = () => {
   const { toast } = useToast();
-  const [startDate, setStartDate] = useState<Date | undefined>(addDays(new Date(), -30));
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
 
-  const { data: reportData, isLoading: isReportLoading, refetch } = useQuery({
-    queryKey: ['advancedReport'],
-    queryFn: () => SupabaseReportService.generateAdvancedReport(startDate, endDate),
-    enabled: false,
-  });
-
-  const generateReport = async () => {
-    setIsGenerating(true);
-    await refetch();
-    setIsGenerating(false);
-    
-    toast({
-      title: "Report generato",
-      description: "Il report è stato generato con successo",
-    });
-  };
-
-  const saveReport = async () => {
-    if (!reportData) {
-      toast({
-        title: "Nessun dato",
-        description: "Genera prima un report",
-        variant: "destructive",
-      });
-      return;
+  // Colonne per la tabella di performance dei match
+  const performanceColumns: ColumnDef<ReportPerformanceMatch>[] = [
+    {
+      accessorKey: "fonte",
+      header: "Fonte",
+    },
+    {
+      accessorKey: "totaleMatch",
+      header: "Totale Match",
+    },
+    {
+      accessorKey: "percentualeSuccesso",
+      header: "% Successo",
+      cell: ({ row }) => {
+        const value = row.getValue("percentualeSuccesso") as number;
+        return `${value.toFixed(1)}%`;
+      },
+    },
+    {
+      accessorKey: "mediaTempoElaborazione",
+      header: "Tempo Medio (ms)",
+      cell: ({ row }) => {
+        const value = row.getValue("mediaTempoElaborazione") as number;
+        return `${value.toFixed(0)} ms`;
+      },
     }
+  ];
 
-    const saved = await SupabaseReportService.saveStatisticsReport(reportData);
+  useEffect(() => {
+    fetchReportData();
+  }, []);
 
-    if (saved) {
-      toast({
-        title: "Report salvato",
-        description: "Il report è stato salvato con successo",
-      });
-    } else {
+  const fetchReportData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await ReportService.getReportData();
+      setReportData(data);
+    } catch (err: any) {
+      console.error("Errore nel recupero dei dati del report:", err);
+      setError(err.message || "Errore nel recupero dei dati del report");
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio del report",
+        description: "Impossibile recuperare i dati del report",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const exportToCSV = () => {
-    if (!reportData) {
-      toast({
-        title: "Nessun dato",
-        description: "Genera prima un report",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
-    const csvContent = SupabaseReportService.exportReportToCSV(reportData);
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Report esportato",
-      description: "Il report è stato esportato in formato CSV",
-    });
-  };
-
-  const exportToJSON = () => {
-    if (!reportData) {
-      toast({
-        title: "Nessun dato",
-        description: "Genera prima un report",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const jsonContent = SupabaseReportService.exportReportToJSON(reportData);
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `report_${format(new Date(), 'yyyy-MM-dd')}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Report esportato",
-      description: "Il report è stato esportato in formato JSON",
-    });
-  };
-
-  const prepareBandiDistributionData = () => {
-    if (!reportData) return [];
-    
-    return [
-      { name: "Europei", value: reportData.distribuzioneBandi.europei },
-      { name: "Statali", value: reportData.distribuzioneBandi.statali },
-      { name: "Regionali", value: reportData.distribuzioneBandi.regionali },
-    ];
-  };
+  if (error || !reportData) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertDescription>
+          {error || "Dati del report non disponibili"}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard Report</h1>
+        <Button onClick={fetchReportData} variant="outline" size="sm">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Aggiorna
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <h2 className="text-lg font-medium">Riepilogo</h2>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="text-sm text-blue-600">Totale Match</div>
+                <div className="text-2xl font-bold">{reportData.totaleMatch}</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="text-sm text-green-600">Tasso di Successo</div>
+                <div className="text-2xl font-bold">{reportData.tassoSuccesso.toFixed(1)}%</div>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="text-sm text-purple-600">Fonti Attive</div>
+                <div className="text-2xl font-bold">{reportData.fontiAttive}</div>
+              </div>
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <div className="text-sm text-amber-600">Tempo Medio</div>
+                <div className="text-2xl font-bold">{reportData.tempoMedioElaborazione.toFixed(0)} ms</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <PieChartCard
+          title="Distribuzione per fonte"
+          data={convertToDataItem(reportData.distribuzioneFonti)}
+          dataKey="valore"
+          nameKey="fonte"
+          colors={["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BarChartCard 
+          title="Distribuzione temporale match"
+          data={convertToDataItem(reportData.analisiTemporale)}
+          xAxisDataKey="periodo"
+          bars={[
+            { dataKey: "totaleMatch", name: "Totale match", color: "#4f46e5" }
+          ]}
+        />
+
+        <LineChartCard
+          title="Andamento tasso di successo"
+          data={convertToDataItem(reportData.analisiTemporale)}
+          xAxisDataKey="periodo"
+          lines={[
+            { dataKey: "tassoSuccesso", name: "Tasso di successo", color: "#10b981" }
+          ]}
+        />
+      </div>
+
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-              <CardTitle className="text-2xl font-bold">Dashboard Report</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Analisi e statistiche dettagliate del sistema
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                onClick={generateReport} 
-                disabled={isGenerating || isReportLoading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {isGenerating ? "Generazione..." : "Genera Report"}
-              </Button>
-              <Button 
-                onClick={saveReport} 
-                disabled={isGenerating || isReportLoading || !reportData}
-                variant="outline"
-              >
-                Salva Report
-              </Button>
-            </div>
-          </div>
+        <CardHeader className="pb-2">
+          <h2 className="text-lg font-medium">Performance per fonte</h2>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Data Inizio</h3>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : <span>Seleziona una data</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Data Fine</h3>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : <span>Seleziona una data</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              onClick={exportToCSV} 
-              disabled={isGenerating || isReportLoading || !reportData}
-              variant="outline"
-              size="sm"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Esporta CSV
-            </Button>
-            <Button 
-              onClick={exportToJSON} 
-              disabled={isGenerating || isReportLoading || !reportData}
-              variant="outline"
-              size="sm"
-            >
-              <FileJson className="mr-2 h-4 w-4" />
-              Esporta JSON
-            </Button>
-          </div>
+        <CardContent>
+          <DataTable
+            columns={performanceColumns}
+            data={reportData.performanceMatch}
+            searchColumn="fonte"
+          />
         </CardContent>
       </Card>
-
-      {isReportLoading || isGenerating ? (
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-1/3" />
-            <Skeleton className="h-4 w-1/2" />
-          </CardHeader>
-          <CardContent className="space-y-8">
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
-              <Skeleton className="h-[100px]" />
-              <Skeleton className="h-[100px]" />
-              <Skeleton className="h-[100px]" />
-            </div>
-            <Skeleton className="h-[350px]" />
-          </CardContent>
-        </Card>
-      ) : reportData ? (
-        <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 grid grid-cols-2 md:grid-cols-3">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <PieChartIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="temporal" className="gap-2">
-              <LineChartIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Temporale</span>
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="gap-2">
-              <BarChartIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Performance</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
-              <StatCard 
-                title="Bandi Attivi" 
-                value={reportData.bandiAttivi} 
-                color="blue" 
-              />
-              <StatCard 
-                title="Clienti Registrati" 
-                value={reportData.numeroClienti} 
-                color="green" 
-              />
-              <StatCard 
-                title="Match Recenti" 
-                value={reportData.matchRecenti} 
-                color="yellow" 
-              />
-            </div>
-
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              <BarChartCard
-                title="Distribuzione Bandi"
-                description="Suddivisione per tipologia"
-                data={prepareBandiDistributionData()}
-                bars={[
-                  { dataKey: "value", fill: "#8884d8", name: "Bandi" }
-                ]}
-                xAxisDataKey="name"
-              />
-
-              <LineChartCard
-                title="Trend Ultimi 6 Mesi"
-                description="Andamento di bandi, clienti e match"
-                data={reportData.analisiTemporale}
-                lines={[
-                  { dataKey: "bandiCreati", stroke: "#8884d8", name: "Bandi" },
-                  { dataKey: "clientiCreati", stroke: "#82ca9d", name: "Clienti" },
-                  { dataKey: "matchCreati", stroke: "#ffc658", name: "Match" }
-                ]}
-                xAxisDataKey="periodo"
-              />
-            </div>
-
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              <DataTableCard
-                title="Top Clienti per Match"
-                description="Clienti con maggior compatibilità"
-                data={reportData.performanceMatch}
-                columns={performanceColumns}
-                searchColumn="cliente"
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="temporal" className="space-y-6">
-            <LineChartCard
-              title="Analisi Temporale"
-              description="Trend dei dati negli ultimi 6 mesi"
-              data={reportData.analisiTemporale}
-              lines={[
-                { dataKey: "bandiCreati", stroke: "#8884d8", name: "Bandi" },
-                { dataKey: "clientiCreati", stroke: "#82ca9d", name: "Clienti" },
-                { dataKey: "matchCreati", stroke: "#ffc658", name: "Match" }
-              ]}
-              xAxisDataKey="periodo"
-            />
-
-            <DataTableCard
-              title="Dettaglio Mensile"
-              description="Dati mensili di bandi, clienti e match"
-              data={reportData.analisiTemporale}
-              columns={monthlyColumns}
-            />
-          </TabsContent>
-
-          <TabsContent value="performance" className="space-y-6">
-            <BarChartCard
-              title="Performance di Match"
-              description="Analisi delle prestazioni dei match per cliente"
-              data={reportData.performanceMatch}
-              bars={[
-                { dataKey: "numBandiCompatibili", fill: "#8884d8", name: "Bandi Compatibili", yAxisId: "left" },
-                { dataKey: "compatibilitaMedia", fill: "#82ca9d", name: "Compatibilità Media %", yAxisId: "right" }
-              ]}
-              xAxisDataKey="cliente"
-              xAxisAngle={-45}
-              showSecondYAxis={true}
-            />
-
-            <DataTableCard
-              title="Dettaglio Performance"
-              description="Dati dettagliati delle performance per ogni cliente"
-              data={reportData.performanceMatch}
-              columns={performanceColumns}
-              searchColumn="cliente"
-            />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <Card className="bg-slate-50 border-dashed">
-          <CardHeader>
-            <CardTitle>Benvenuto nella pagina dei Report</CardTitle>
-            <CardDescription>Genera un report per visualizzare analisi dettagliate dei dati del sistema.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-            <PieChartIcon className="h-16 w-16 mb-6 text-blue-500 opacity-70" />
-            <p className="mb-4 text-slate-600 max-w-md">
-              Seleziona un intervallo di date e clicca su "Genera Report" per visualizzare statistiche e analisi interattive.
-            </p>
-            <Button 
-              onClick={generateReport} 
-              disabled={isGenerating}
-              size="lg"
-              className="mt-2 bg-blue-600 hover:bg-blue-700"
-            >
-              {isGenerating ? "Generazione..." : "Genera Report"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

@@ -222,7 +222,7 @@ class GoogleSheetsService {
         if (bandi.length > 0) {
           console.log('Primi 2 bandi estratti:');
           bandi.slice(0, 2).forEach((b, i) => {
-            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}, Scadenza: ${b.scadenza}`);
+            console.log(`Bando ${i+1}: Titolo: ${b.titolo}, Fonte: ${b.fonte}`);
           });
         } else {
           console.error('Nessun bando mappato.');
