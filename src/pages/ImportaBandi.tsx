@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +10,10 @@ import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { Bando } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
 import { useBandiData } from '@/hooks/useBandiData';
+import SupabaseMatchService from '@/utils/SupabaseMatchService';
+import SupabaseClientiService from '@/utils/SupabaseClientiService';
+import MatchDialog from '@/components/MatchDialog';
+import { MatchResult } from '@/utils/MatchService';
 
 const ImportaBandi = () => {
   const navigate = useNavigate();
@@ -21,6 +26,10 @@ const ImportaBandi = () => {
     saved: number;
     nuovi: number;
   } | null>(null);
+  
+  // Stato per il dialogo dei match
+  const [showMatchDialog, setShowMatchDialog] = useState<boolean>(false);
+  const [matchesFound, setMatchesFound] = useState<MatchResult[]>([]);
   
   // Otteniamo la funzione fetchBandi da useBandiData per aggiornare l'elenco dopo l'importazione
   const { fetchBandi, bandi: bandiEsistenti } = useBandiData();
@@ -133,6 +142,11 @@ const ImportaBandi = () => {
       // Aggiorna l'elenco dei bandi nella pagina principale
       await fetchBandi();
       
+      // Se ci sono nuovi bandi salvati, cerca match con i clienti esistenti
+      if (contatoreSalvati > 0 && nuoviBandi.length > 0) {
+        await findAndShowMatches(nuoviBandi);
+      }
+      
     } catch (error: any) {
       console.error('Errore durante l\'importazione:', error);
       setError(error.message || "Errore durante l'importazione");
@@ -146,8 +160,46 @@ const ImportaBandi = () => {
     }
   };
 
+  // Nuova funzione per trovare e mostrare i match
+  const findAndShowMatches = async (nuoviBandi: Bando[]) => {
+    try {
+      // Recupera tutti i clienti
+      const clienti = await SupabaseClientiService.getClienti();
+      
+      if (!clienti || clienti.length === 0) {
+        console.log('Nessun cliente trovato per generare match');
+        return;
+      }
+      
+      console.log(`Cercando match tra ${nuoviBandi.length} nuovi bandi e ${clienti.length} clienti...`);
+      
+      // Usa il servizio per trovare i nuovi match
+      const nuoviMatch = await SupabaseMatchService.findNewMatches(clienti, nuoviBandi);
+      
+      console.log(`Trovati ${nuoviMatch.length} nuovi match potenziali`);
+      
+      // Se ci sono match, mostra il dialogo
+      if (nuoviMatch.length > 0) {
+        setMatchesFound(nuoviMatch);
+        setShowMatchDialog(true);
+        
+        // Notifica all'utente
+        toast({
+          title: "Match trovati",
+          description: `Abbiamo trovato ${nuoviMatch.length} potenziali match con i tuoi clienti`,
+        });
+      }
+    } catch (error) {
+      console.error('Errore nella ricerca di match:', error);
+    }
+  };
+
   const handleViewBandi = () => {
     navigate('/bandi');
+  };
+  
+  const handleCloseMatchDialog = () => {
+    setShowMatchDialog(false);
   };
   
   return (
@@ -234,6 +286,14 @@ const ImportaBandi = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Dialog per mostrare i match trovati */}
+      <MatchDialog 
+        isOpen={showMatchDialog} 
+        onClose={handleCloseMatchDialog} 
+        matches={matchesFound}
+        totalBandi={importStats?.saved || 0}
+      />
     </div>
   );
 };
