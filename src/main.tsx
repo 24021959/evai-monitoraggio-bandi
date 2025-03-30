@@ -1,7 +1,9 @@
 
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
+import { AuthProvider } from './contexts/AuthContext'
 
 // Rimuovi completamente il badge di Lovable
 window.addEventListener('load', () => {
@@ -43,4 +45,10 @@ window.addEventListener('load', () => {
   }, 5000);
 });
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <BrowserRouter>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </BrowserRouter>
+);
