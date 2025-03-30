@@ -1,4 +1,3 @@
-
 import { Bando } from "@/types";
 
 class GoogleSheetsService {
@@ -19,7 +18,7 @@ class GoogleSheetsService {
   }
 
   private static formatDateValue(value: any): string {
-    if (!value) return '';
+    if (!value) return ''; // Se il valore è vuoto, restituisci stringa vuota
     
     // Se è già una stringa di data nel formato YYYY-MM-DD
     if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -49,7 +48,8 @@ class GoogleSheetsService {
       console.error('Errore nella formattazione della data:', value, err);
     }
     
-    return String(value);
+    // Se non siamo riusciti a formattare la data, restituisci stringa vuota
+    return '';
   }
 
   private static mapSheetRowsToBandi(table: any): Bando[] {

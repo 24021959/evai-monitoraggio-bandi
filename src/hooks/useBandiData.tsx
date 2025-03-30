@@ -142,6 +142,6 @@ export const useBandiData = () => {
     handleResetFiltri,
     fontiCombinate: getFontiCombinate(),
     fontiUniche,
-    fetchBandi  // Esportiamo questa funzione per consentire l'aggiornamento dopo l'importazione
+    fetchBandi
   };
 };
