@@ -116,12 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        toast({
-          title: "Errore di accesso",
-          description: error.message,
-          variant: "destructive"
-        });
-        console.error('Errore di login:', error);
+        throw error;
       } else if (data.user) {
         const { data: profileData, error: profileError } = await supabase
           .from('user_profiles')
@@ -145,12 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (error: any) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il login",
-        variant: "destructive"
-      });
       console.error('Errore durante il processo di login:', error);
+      throw error;
     } finally {
       setLoading(false);
     }

@@ -7,13 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, LogIn, Shield, Lock } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Shield, Lock, RefreshCw } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { signIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -26,6 +29,7 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
     
     if (!email || !password) {
       toast({
@@ -40,8 +44,23 @@ const LoginPage = () => {
     
     try {
       await signIn(email, password);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore durante il login:', error);
+      
+      let errorMessage = 'Si è verificato un errore durante il login';
+      
+      if (error.code === 'invalid_credentials') {
+        errorMessage = 'Email o password non validi. Verifica le tue credenziali.';
+      } else if (error.message) {
+        errorMessage = `Errore: ${error.message}`;
+      }
+      
+      setLoginError(errorMessage);
+      toast({
+        title: 'Errore di accesso',
+        description: errorMessage,
+        variant: 'destructive'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -73,6 +92,13 @@ const LoginPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            {loginError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{loginError}</AlertDescription>
+              </Alert>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -144,25 +170,5 @@ const LoginPage = () => {
     </div>
   );
 };
-
-const RefreshCw: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-    <path d="M21 3v5h-5" />
-    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-    <path d="M3 21v-5h5" />
-  </svg>
-);
 
 export default LoginPage;
