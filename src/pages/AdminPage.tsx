@@ -1,6 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { adminClient } from '@/integrations/supabase/adminClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,8 +51,8 @@ const AdminPage: React.FC = () => {
         
       if (profilesError) throw profilesError;
 
-      // Otteniamo gli utenti da auth.users (gli admin hanno accesso)
-      const { data, error: usersError } = await supabase.auth.admin.listUsers();
+      // Otteniamo gli utenti da auth.users usando il client admin
+      const { data, error: usersError } = await adminClient.auth.admin.listUsers();
       
       if (usersError) throw usersError;
 
@@ -77,6 +77,7 @@ const AdminPage: React.FC = () => {
         description: `Impossibile recuperare gli utenti: ${error.message}`,
         variant: 'destructive'
       });
+      console.error('Errore nel recupero degli utenti:', error);
     } finally {
       setLoadingUsers(false);
     }
@@ -94,8 +95,8 @@ const AdminPage: React.FC = () => {
     }
 
     try {
-      // Creare un nuovo utente tramite Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Creare un nuovo utente tramite Supabase Auth utilizzando adminClient
+      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email: newUserEmail,
         password: newUserPassword,
         email_confirm: true,
@@ -134,6 +135,7 @@ const AdminPage: React.FC = () => {
         description: `Impossibile creare l'utente: ${error.message}`,
         variant: 'destructive'
       });
+      console.error('Errore nella creazione dell\'utente:', error);
     }
   };
 
