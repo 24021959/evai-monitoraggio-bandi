@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,36 +34,61 @@ const Bandi = () => {
   const { fonti } = useFonti();
 
   const [fontiUniche, setFontiUniche] = useState<string[]>([]);
+  const [searchResults, setSearchResults] = useState<Bando[]>([]);
+  const [isBandoDropdownOpen, setIsBandoDropdownOpen] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchBandi = async () => {
-      setLoading(true);
-      try {
-        const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
-        const bandiOrdinati = bandiCombinati.sort((a, b) => {
-          const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
-          const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
-          return dateB.getTime() - dateA.getTime();
-        });
-        setBandi(bandiOrdinati);
-        console.log("Bandi page: Caricati bandi combinati:", bandiOrdinati.length);
-        
-        const setFontiDaiBandi = new Set(bandiOrdinati.map(bando => bando.fonte));
-        setFontiUniche(Array.from(setFontiDaiBandi).sort());
-      } catch (error) {
-        console.error("Errore nel recupero dei bandi:", error);
-        toast({
-          title: "Errore",
-          description: "Impossibile recuperare i bandi dal database",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+    fetchBandi();
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && 
+          !dropdownRef.current.contains(event.target as Node) && 
+          searchInputRef.current && 
+          !searchInputRef.current.contains(event.target as Node)) {
+        setIsBandoDropdownOpen(false);
       }
     };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
-    fetchBandi();
-  }, [toast]);
+  // Effect to initialize searchResults with all bandi when component mounts
+  useEffect(() => {
+    if (bandi.length > 0) {
+      setSearchResults(bandi);
+    }
+  }, [bandi]);
+
+  const fetchBandi = async () => {
+    setLoading(true);
+    try {
+      const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
+      const bandiOrdinati = bandiCombinati.sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+        const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setBandi(bandiOrdinati);
+      console.log("Bandi page: Caricati bandi combinati:", bandiOrdinati.length);
+      
+      const setFontiDaiBandi = new Set(bandiOrdinati.map(bando => bando.fonte));
+      setFontiUniche(Array.from(setFontiDaiBandi).sort());
+    } catch (error) {
+      console.error("Errore nel recupero dei bandi:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile recuperare i bandi dal database",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getBandiFiltrati = () => {
     // Sempre mostrare tutti i bandi quando showAllBandi è true e non ci sono filtri attivi
@@ -116,24 +141,33 @@ const Bandi = () => {
     setShowAllBandi(true);
   };
 
-  const handleSearchFocus = () => {
-    // Quando l'utente clicca sulla casella di ricerca, 
-    // mostro tutti i bandi in ordine dal più recente
-    setShowAllBandi(true);
-  };
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const term = event.target.value;
+    setFiltro(term);
 
-  const handleSearchBlur = () => {
-    // Non nascondiamo i bandi quando l'utente esce dal focus
-    // solo se c'è un filtro attivo o se c'è una ricerca attiva
-    if (filtro === '' && fonteFiltro === 'tutte') {
-      // Manteniamo la visualizzazione per dare un'anteprima all'utente
-      setShowAllBandi(true);
+    if (term) {
+      const results = bandi.filter(bando =>
+        bando.titolo.toLowerCase().includes(term.toLowerCase())
+      );
+      setSearchResults(results);
+    } else {
+      setSearchResults(bandi);
     }
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFiltro(e.target.value);
-    setShowAllBandi(true); // Mostriamo sempre i risultati durante la ricerca
+  const handleBandoClick = (bando: Bando) => {
+    setFiltro(bando.titolo);
+    setIsBandoDropdownOpen(false);
+  };
+
+  const clearSearch = () => {
+    setFiltro('');
+    setSearchResults(bandi); // Show all bandi when cleared
+  };
+
+  const handleBandoInputFocus = () => {
+    setIsBandoDropdownOpen(true);
+    setSearchResults(bandi); // Show all bandi when input is focused
   };
 
   const getFontiCombinate = () => {
@@ -173,30 +207,73 @@ const Bandi = () => {
         <CardContent className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="relative flex-grow">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Cerca bandi..."
-                className="pl-9"
-                value={filtro}
-                onChange={handleSearchChange}
-                onFocus={handleSearchFocus}
-                onBlur={handleSearchBlur}
-              />
-              {filtro && (
-                <button
-                  className="absolute right-2.5 top-2.5"
-                  onClick={() => {
-                    setFiltro('');
-                    setShowAllBandi(true);
-                  }}
-                >
-                  <X className="h-4 w-4 text-gray-500" />
-                </button>
+              <label htmlFor="bando" className="text-sm font-medium mb-1 block text-slate-700">Cerca</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  id="bando"
+                  placeholder="Cerca bando per titolo..."
+                  value={filtro}
+                  onChange={handleSearch}
+                  onFocus={handleBandoInputFocus}
+                  onClick={handleBandoInputFocus}
+                  className="pl-10 pr-10"
+                  autoComplete="off"
+                />
+                {filtro && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-1 top-1 h-8 w-8 text-slate-400 hover:text-slate-600"
+                    onClick={clearSearch}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              {isBandoDropdownOpen && (
+                <div ref={dropdownRef} className="absolute z-50 w-full">
+                  <Card className="mt-1 shadow-lg">
+                    <CardContent className="p-1">
+                      <div className="max-h-60 overflow-y-auto">
+                        {searchResults.length > 0 ? (
+                          <ul className="divide-y divide-slate-100">
+                            {searchResults.map(bando => (
+                              <li
+                                key={bando.id}
+                                className="hover:bg-slate-50 p-2 cursor-pointer rounded-md text-sm"
+                                onClick={() => handleBandoClick(bando)}
+                              >
+                                <div className="font-medium text-slate-800">{bando.titolo}</div>
+                                <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                  <span className={`inline-block w-2 h-2 rounded-full ${
+                                    bando.tipo === 'europeo' ? 'bg-blue-500' : 
+                                    bando.tipo === 'statale' ? 'bg-green-500' :
+                                    bando.tipo === 'regionale' ? 'bg-teal-500' : 'bg-gray-500'
+                                  }`}></span>
+                                  {bando.fonte} · Scadenza: {new Date(bando.scadenza).toLocaleDateString('it-IT')}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="p-4 text-center text-slate-500">
+                            Nessun bando trovato
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </div>
             
             <div className="w-full md:w-48">
-              <p className="text-sm font-medium mb-1">Seleziona fonte</p>
+              <p className="text-sm font-medium mb-1 block text-slate-700">Seleziona fonte</p>
               <Select value={fonteFiltro} onValueChange={handleFonteChange}>
                 <SelectTrigger>
                   <div className="flex items-center gap-2">
