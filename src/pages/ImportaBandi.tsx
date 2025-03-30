@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,11 +26,9 @@ const ImportaBandi = () => {
     nuovi: number;
   } | null>(null);
   
-  // Stato per il dialogo dei match
   const [showMatchDialog, setShowMatchDialog] = useState<boolean>(false);
   const [matchesFound, setMatchesFound] = useState<MatchResult[]>([]);
   
-  // Otteniamo la funzione fetchBandi da useBandiData per aggiornare l'elenco dopo l'importazione
   const { fetchBandi, bandi: bandiEsistenti } = useBandiData();
   
   const handleImportBandi = async () => {
@@ -40,7 +37,6 @@ const ImportaBandi = () => {
     setImportStats(null);
     
     try {
-      // Recupera l'URL salvato nell'area privata
       const googleSheetUrl = GoogleSheetsService.getSheetUrl();
       
       if (!googleSheetUrl) {
@@ -56,7 +52,6 @@ const ImportaBandi = () => {
       
       console.log('Iniziando importazione da URL salvato');
       
-      // Recupera i bandi dal foglio Google
       const bandi = await GoogleSheetsService.fetchBandiFromSheet();
       console.log('Bandi ottenuti dal foglio:', bandi?.length);
       
@@ -71,15 +66,12 @@ const ImportaBandi = () => {
         return;
       }
       
-      // Filtro per trovare solo i nuovi bandi (non presenti in bandiEsistenti)
-      // Creo una mappa dei bandi esistenti usando titolo+fonte come chiave
       const bandiEsistentiMap = new Map();
       bandiEsistenti.forEach(bando => {
         const chiave = `${bando.titolo.toLowerCase().trim()}|${bando.fonte.toLowerCase().trim()}`;
         bandiEsistentiMap.set(chiave, true);
       });
       
-      // Filtro i nuovi bandi
       const nuoviBandi = bandi.filter(bando => {
         const chiave = `${bando.titolo.toLowerCase().trim()}|${bando.fonte.toLowerCase().trim()}`;
         return !bandiEsistentiMap.has(chiave);
@@ -87,21 +79,17 @@ const ImportaBandi = () => {
       
       console.log(`Trovati ${nuoviBandi.length} nuovi bandi su ${bandi.length} totali`);
       
-      // Mostra anteprima dei nuovi bandi
       setBandiAnteprima(nuoviBandi);
       
-      // Salva i nuovi bandi in Supabase
       let contatoreSalvati = 0;
       
       for (const bando of nuoviBandi) {
         try {
-          // Assicurati che tutti i campi richiesti siano presenti e validi
           const bandoCompleto: Bando = {
             ...bando,
             fonte: bando.fonte || 'Google Sheet',
             tipo: bando.tipo || 'altro',
             settori: bando.settori || [],
-            // Assicurati che le date siano valide
             scadenza: bando.scadenza || new Date().toISOString().split('T')[0],
             dataEstrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0]
           };
@@ -121,7 +109,6 @@ const ImportaBandi = () => {
         }
       }
       
-      // Salva i bandi in sessionStorage per riferimento futuro
       try {
         sessionStorage.setItem('bandiImportati', JSON.stringify(nuoviBandi));
       } catch (err) {
@@ -139,13 +126,9 @@ const ImportaBandi = () => {
         description: `Importati ${contatoreSalvati} nuovi bandi su ${nuoviBandi.length} trovati`,
       });
       
-      // Aggiorna l'elenco dei bandi nella pagina principale
       await fetchBandi();
       
-      // Se ci sono nuovi bandi salvati, cerca match con i clienti esistenti
-      if (contatoreSalvati > 0 && nuoviBandi.length > 0) {
-        await findAndShowMatches(nuoviBandi);
-      }
+      await findAndShowMatches(nuoviBandi);
       
     } catch (error: any) {
       console.error('Errore durante l\'importazione:', error);
@@ -160,30 +143,27 @@ const ImportaBandi = () => {
     }
   };
 
-  // Nuova funzione per trovare e mostrare i match
   const findAndShowMatches = async (nuoviBandi: Bando[]) => {
     try {
-      // Recupera tutti i clienti
       const clienti = await SupabaseClientiService.getClienti();
       
       if (!clienti || clienti.length === 0) {
         console.log('Nessun cliente trovato per generare match');
+        setMatchesFound([]);
+        setShowMatchDialog(true);
         return;
       }
       
       console.log(`Cercando match tra ${nuoviBandi.length} nuovi bandi e ${clienti.length} clienti...`);
       
-      // Usa il servizio per trovare i nuovi match
       const nuoviMatch = await SupabaseMatchService.findNewMatches(clienti, nuoviBandi);
       
       console.log(`Trovati ${nuoviMatch.length} nuovi match potenziali`);
       
-      // Se ci sono match, mostra il dialogo
+      setMatchesFound(nuoviMatch);
+      setShowMatchDialog(true);
+      
       if (nuoviMatch.length > 0) {
-        setMatchesFound(nuoviMatch);
-        setShowMatchDialog(true);
-        
-        // Notifica all'utente
         toast({
           title: "Match trovati",
           description: `Abbiamo trovato ${nuoviMatch.length} potenziali match con i tuoi clienti`,
@@ -191,6 +171,8 @@ const ImportaBandi = () => {
       }
     } catch (error) {
       console.error('Errore nella ricerca di match:', error);
+      setMatchesFound([]);
+      setShowMatchDialog(true);
     }
   };
 
@@ -287,7 +269,6 @@ const ImportaBandi = () => {
         </CardContent>
       </Card>
       
-      {/* Dialog per mostrare i match trovati */}
       <MatchDialog 
         isOpen={showMatchDialog} 
         onClose={handleCloseMatchDialog} 
