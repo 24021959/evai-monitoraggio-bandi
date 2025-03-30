@@ -83,13 +83,13 @@ const LoginPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">EV-AI Monitoraggio Bandi</h1>
         </div>
 
-        <Card className="shadow-lg border-gray-100 bg-gray-100">
-          <CardHeader className="bg-gray-100 border-b border-gray-200">
-            <CardTitle className="text-center flex items-center justify-center text-blue-800 gap-2">
+        <Card className="shadow-lg border-gray-200 bg-white">
+          <CardHeader className="bg-white border-b border-gray-100">
+            <CardTitle className="text-center flex items-center justify-center text-gray-800 gap-2">
               <Lock className="h-5 w-5" />
               Accesso Riservato
             </CardTitle>
-            <CardDescription className="text-center text-blue-600">
+            <CardDescription className="text-center text-blue-400">
               Solo gli utenti autorizzati possono accedere a questa piattaforma
             </CardDescription>
           </CardHeader>
@@ -103,7 +103,7 @@ const LoginPage = () => {
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-gray-700">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -116,7 +116,7 @@ const LoginPage = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-gray-700">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -138,14 +138,14 @@ const LoginPage = () => {
               </div>
               
               <div className="text-right">
-                <Link to="/reset-password" className="text-sm text-blue-600 hover:underline">
+                <Link to="/reset-password" className="text-sm text-blue-400 hover:underline">
                   Password dimenticata?
                 </Link>
               </div>
               
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-400 hover:bg-blue-500"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -166,7 +166,7 @@ const LoginPage = () => {
             <p>
               Per richiedere un account, contatta l'amministratore del sistema
             </p>
-            <div className="flex items-center justify-center gap-1 text-blue-600">
+            <div className="flex items-center justify-center gap-1 text-blue-400">
               <Shield size={14} />
               <span>Sistema ad accesso riservato</span>
             </div>

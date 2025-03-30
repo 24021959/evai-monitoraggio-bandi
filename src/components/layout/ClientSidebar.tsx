@@ -1,17 +1,17 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Users, BarChart2, FileText, Database, Settings, Search, ArrowUpDown, Wrench, Lock } from 'lucide-react';
+import { Users, BarChart2, FileText, Database, ArrowUpDown, Lock } from 'lucide-react';
 
 const ClientSidebar = () => {
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-gray-100 flex-grow">
+      <div className="bg-white flex-grow shadow-sm">
         <nav className="flex flex-col">          
           <NavLink
             to="/app/dashboard"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -23,7 +23,7 @@ const ClientSidebar = () => {
           <NavLink
             to="/app/bandi"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -35,7 +35,7 @@ const ClientSidebar = () => {
           <NavLink
             to="/app/clienti"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -47,7 +47,7 @@ const ClientSidebar = () => {
           <NavLink
             to="/app/fonti"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -59,7 +59,7 @@ const ClientSidebar = () => {
           <NavLink
             to="/app/match"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -71,7 +71,7 @@ const ClientSidebar = () => {
           <NavLink
             to="/app/report"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
             }
           >
             <div className="flex items-center gap-3">
@@ -80,68 +80,12 @@ const ClientSidebar = () => {
             </div>
           </NavLink>
           
-          <div className="pt-4 pb-2 px-5 text-sm font-medium text-gray-500">
-            Configurazioni
-          </div>
-          
-          <NavLink
-            to="/app/configurazioni/scraping"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5" />
-              Config. Scraping
-            </div>
-          </NavLink>
-          
-          <NavLink
-            to="/app/configurazioni/notifiche"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5" />
-              Config. Notifiche
-            </div>
-          </NavLink>
-          
-          <div className="pt-4 pb-2 px-5 text-sm font-medium text-gray-500">
-            Strumenti
-          </div>
-          
-          <NavLink
-            to="/app/strumenti/importa-bandi"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Wrench className="w-5 h-5" />
-              Importa Bandi
-            </div>
-          </NavLink>
-          
-          <NavLink
-            to="/app/strumenti/risultati-scraping"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Search className="w-5 h-5" />
-              Risultati Scraping
-            </div>
-          </NavLink>
-          
           {/* Change Password option added at the bottom */}
           <div className="mt-auto"></div>
           <NavLink
             to="/app/change-password"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
             }
           >
             <div className="flex items-center gap-3">

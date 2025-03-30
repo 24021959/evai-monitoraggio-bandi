@@ -19,10 +19,7 @@ import NuovoCliente from '@/pages/NuovoCliente';
 import Fonti from '@/pages/Fonti';
 import Match from '@/pages/Match';
 import Report from '@/pages/Report';
-import ConfigScraping from '@/pages/ConfigScraping';
-import ConfiguraNotifiche from '@/pages/ConfiguraNotifiche';
 import ImportaBandi from '@/pages/ImportaBandi';
-import RisultatiScraping from '@/pages/RisultatiScraping';
 import AdminSettings from '@/pages/AdminSettings';
 import AdminPage from '@/pages/AdminPage';
 import ChangePasswordPage from '@/pages/ChangePasswordPage';
@@ -48,10 +45,7 @@ function App() {
           <Route path="fonti" element={<Fonti />} />
           <Route path="match" element={<Match />} />
           <Route path="report" element={<Report />} />
-          <Route path="configurazioni/scraping" element={<ConfigScraping />} />
-          <Route path="configurazioni/notifiche" element={<ConfiguraNotifiche />} />
           <Route path="strumenti/importa-bandi" element={<ImportaBandi />} />
-          <Route path="strumenti/risultati-scraping" element={<RisultatiScraping />} />
           <Route path="change-password" element={<ChangePasswordPage />} />
           
           {/* Admin Routes */}
