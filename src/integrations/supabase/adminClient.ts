@@ -7,7 +7,7 @@ const SUPABASE_URL = "https://yeyfuxtzutciijtsezgc.supabase.co";
 
 // IMPORTANTE: Quando copi la nuova Service Role Key dalla dashboard di Supabase,
 // sostituisci il valore sottostante con la tua chiave
-const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWZ1eHR6dXRjaWlqdHNlemdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzM0MDY2OSwiZXhwIjoyMDU4OTE2NjY5fQ.LdonzIRbqw5-vfqDUxsw2lP7lSlAD2yV_Dmu0HQhLzc";
+const SERVICE_ROLE_KEY = "la_tua_service_role_key"; // Sostituisci con la tua service_role key da Supabase
 
 // Configurazione del client amministrativo
 export const adminClient = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
