@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,6 @@ const Bandi = () => {
   const [showAllBandi, setShowAllBandi] = useState<boolean>(false);
   const { fonti } = useFonti();
 
-  // Array per tenere traccia delle fonti disponibili, senza duplicati
   const [fontiUniche, setFontiUniche] = useState<string[]>([]);
 
   useEffect(() => {
@@ -41,7 +39,6 @@ const Bandi = () => {
       setLoading(true);
       try {
         const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
-        // Ordina i bandi dal più recente al meno recente
         const bandiOrdinati = bandiCombinati.sort((a, b) => {
           const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
           const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
@@ -50,7 +47,6 @@ const Bandi = () => {
         setBandi(bandiOrdinati);
         console.log("Bandi page: Caricati bandi combinati:", bandiOrdinati.length);
         
-        // Estrai le fonti uniche dai bandi
         const setFontiDaiBandi = new Set(bandiOrdinati.map(bando => bando.fonte));
         setFontiUniche(Array.from(setFontiDaiBandi).sort());
       } catch (error) {
@@ -69,19 +65,16 @@ const Bandi = () => {
   }, [toast]);
 
   const getBandiFiltrati = () => {
-    // Se showAllBandi è true o non ci sono filtri, mostra tutti i bandi
     if (showAllBandi && filtro === '' && fonteFiltro === 'tutte') {
       return bandi;
     }
     
     return bandi.filter(bando => {
-      // Filtro per testo di ricerca
       const matchTestoRicerca = !filtro || 
         bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.fonte.toLowerCase().includes(filtro.toLowerCase());
       
-      // Filtro per fonte
       const matchFonte = fonteFiltro === 'tutte' || 
         bando.fonte === fonteFiltro;
       
@@ -122,45 +115,35 @@ const Bandi = () => {
   };
 
   const handleSearchFocus = () => {
-    // Quando l'utente clicca sulla casella di ricerca, mostra tutti i bandi
     setShowAllBandi(true);
   };
 
   const handleSearchBlur = () => {
-    // Non resettiamo showAllBandi quando si sfoca l'input
-    // In questo modo i bandi rimangono visibili
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFiltro(e.target.value);
     
-    // Se l'utente sta cercando qualcosa, applica il filtro
     if (e.target.value) {
       setShowAllBandi(false);
     } else {
-      // Se la ricerca è vuota, mostra tutti i bandi
       setShowAllBandi(true);
     }
   };
 
-  // Combina le fonti dai bandi e dalle configurazioni delle fonti
   const getFontiCombinate = () => {
-    // Inizia con le fonti uniche dai bandi
     const fonteCombinate = new Map<string, string>();
     
-    // Aggiungi le fonti dai bandi
     fontiUniche.forEach(fonte => {
       fonteCombinate.set(fonte.toLowerCase(), fonte);
     });
     
-    // Aggiungi le fonti dalla configurazione
     fonti.forEach(fonte => {
       if (fonte.nome) {
         fonteCombinate.set(fonte.nome.toLowerCase(), fonte.nome);
       }
     });
     
-    // Converti la mappa in array e ordina
     return Array.from(fonteCombinate.values()).sort();
   };
 
@@ -168,12 +151,9 @@ const Bandi = () => {
 
   const handleFonteChange = (value: string) => {
     setFonteFiltro(value);
-    // Quando si seleziona una fonte specifica, disattiviamo showAllBandi
-    // per mostrare solo i bandi filtrati per quella fonte
     if (value !== 'tutte') {
       setShowAllBandi(false);
     } else {
-      // Se si seleziona "tutte le fonti", torniamo a mostrare tutti i bandi
       setShowAllBandi(true);
     }
   };
@@ -190,7 +170,7 @@ const Bandi = () => {
           <CardDescription>Ricerca e filtra i bandi in base ai tuoi criteri</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="relative flex-grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
@@ -214,28 +194,26 @@ const Bandi = () => {
               )}
             </div>
             
-            <div className="flex flex-wrap gap-3">
-              <div className="w-48">
-                <p className="text-sm font-medium mb-1">Seleziona fonte</p>
-                <Select value={fonteFiltro} onValueChange={handleFonteChange}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      <span className="truncate">
-                        {fonteFiltro === 'tutte' ? "Tutte le fonti" : fonteFiltro}
-                      </span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tutte">Tutte le fonti</SelectItem>
-                    {fontiCombinate.map((fonte, index) => (
-                      <SelectItem key={`fonte-${index}`} value={fonte}>
-                        {fonte}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="w-48">
+              <p className="text-sm font-medium mb-1">Seleziona fonte</p>
+              <Select value={fonteFiltro} onValueChange={handleFonteChange}>
+                <SelectTrigger>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span className="truncate">
+                      {fonteFiltro === 'tutte' ? "Tutte le fonti" : fonteFiltro}
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tutte">Tutte le fonti</SelectItem>
+                  {fontiCombinate.map((fonte, index) => (
+                    <SelectItem key={`fonte-${index}`} value={fonte}>
+                      {fonte}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
