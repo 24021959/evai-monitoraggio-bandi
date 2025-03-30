@@ -72,8 +72,9 @@ export const useBandiData = () => {
         (bando.descrizione && bando.descrizione.toLowerCase().includes(filtro.toLowerCase())) ||
         bando.fonte.toLowerCase().includes(filtro.toLowerCase());
       
+      // Modifica qui: confronta le fonti in modo case-insensitive
       const matchFonte = fonteFiltro === 'tutte' || 
-        bando.fonte === fonteFiltro;
+        bando.fonte.toLowerCase() === fonteFiltro.toLowerCase();
       
       return matchTestoRicerca && matchFonte;
     });
