@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Users, BarChart2, FileText, Database, Settings, Search, ArrowUpDown, Tool, Lock } from 'lucide-react';
+import { Users, BarChart2, FileText, Database, Settings, Search, ArrowUpDown, Wrench, Lock } from 'lucide-react';
 
 const ClientSidebar = () => {
   return (
@@ -119,7 +119,7 @@ const ClientSidebar = () => {
             }
           >
             <div className="flex items-center gap-3">
-              <Tool className="w-5 h-5" />
+              <Wrench className="w-5 h-5" />
               Importa Bandi
             </div>
           </NavLink>
