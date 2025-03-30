@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,12 +66,13 @@ const Bandi = () => {
   }, [toast]);
 
   const getBandiFiltrati = () => {
+    // Sempre mostrare tutti i bandi quando showAllBandi è true e non ci sono filtri attivi
     if (showAllBandi && filtro === '' && fonteFiltro === 'tutte') {
       return bandi;
     }
     
     return bandi.filter(bando => {
-      const matchTestoRicerca = !filtro || 
+      const matchTestoRicerca = filtro === '' || 
         bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.fonte.toLowerCase().includes(filtro.toLowerCase());
@@ -115,20 +117,23 @@ const Bandi = () => {
   };
 
   const handleSearchFocus = () => {
+    // Quando l'utente clicca sulla casella di ricerca, 
+    // mostro tutti i bandi in ordine dal più recente
     setShowAllBandi(true);
   };
 
   const handleSearchBlur = () => {
+    // Non nascondiamo i bandi quando l'utente esce dal focus
+    // solo se c'è un filtro attivo o se c'è una ricerca attiva
+    if (filtro === '' && fonteFiltro === 'tutte') {
+      // Manteniamo la visualizzazione per dare un'anteprima all'utente
+      setShowAllBandi(true);
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFiltro(e.target.value);
-    
-    if (e.target.value) {
-      setShowAllBandi(false);
-    } else {
-      setShowAllBandi(true);
-    }
+    setShowAllBandi(true); // Mostriamo sempre i risultati durante la ricerca
   };
 
   const getFontiCombinate = () => {
@@ -151,11 +156,7 @@ const Bandi = () => {
 
   const handleFonteChange = (value: string) => {
     setFonteFiltro(value);
-    if (value !== 'tutte') {
-      setShowAllBandi(false);
-    } else {
-      setShowAllBandi(true);
-    }
+    setShowAllBandi(true); // Mostriamo sempre i risultati quando si cambia la fonte
   };
 
   return (
@@ -194,7 +195,7 @@ const Bandi = () => {
               )}
             </div>
             
-            <div className="w-48">
+            <div className="w-full md:w-48">
               <p className="text-sm font-medium mb-1">Seleziona fonte</p>
               <Select value={fonteFiltro} onValueChange={handleFonteChange}>
                 <SelectTrigger>
