@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -165,10 +164,7 @@ const ImportaBandi = () => {
       </div>
       
       <Card>
-        <CardHeader className="pb-3">
-          <h2 className="text-lg font-medium">Importazione Bandi</h2>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-6">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-2">
               <Button 
