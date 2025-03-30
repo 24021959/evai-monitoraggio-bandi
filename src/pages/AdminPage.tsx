@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Shield, UserPlus, AlertTriangle, AlertCircle, RefreshCcw } from 'lucide-react';
+import { Shield, UserPlus, AlertTriangle, RefreshCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import UserTable from '@/components/admin/UserTable';
 import CreateUserDialog from '@/components/admin/CreateUserDialog';
@@ -118,15 +118,6 @@ const AdminPage: React.FC = () => {
                 {isVerifying ? 'Verifica in corso...' : 'Riprova verifica'}
               </Button>
             </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {adminClientVerified === true && (
-        <Alert className="bg-green-50 border-green-200">
-          <AlertCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription>
-            API amministrative configurate correttamente. È possibile creare nuovi utenti.
           </AlertDescription>
         </Alert>
       )}
