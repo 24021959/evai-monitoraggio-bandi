@@ -46,7 +46,7 @@ const Index = () => {
     <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold text-gray-800 mb-2">
-          Gestione Completa dei Bandi
+          Gestione Bandi
         </h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
           Monitora, analizza e trova i bandi più adatti ai tuoi clienti
