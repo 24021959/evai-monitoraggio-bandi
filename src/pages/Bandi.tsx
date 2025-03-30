@@ -8,6 +8,7 @@ import { Bando } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
+import { useFonti } from '@/hooks/useFonti';
 import { 
   FileText, 
   Search, 
@@ -27,10 +28,10 @@ const Bandi = () => {
   const navigate = useNavigate();
   const [filtro, setFiltro] = useState<string>('');
   const [fonteFiltro, setFonteFiltro] = useState<string>('tutte');
-  const [fontiDisponibili, setFontiDisponibili] = useState<string[]>([]);
   const [bandi, setBandi] = useState<Bando[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showAllBandi, setShowAllBandi] = useState<boolean>(false);
+  const { fonti } = useFonti();
 
   useEffect(() => {
     const fetchBandi = async () => {
@@ -54,21 +55,9 @@ const Bandi = () => {
     fetchBandi();
   }, [toast]);
 
-  useEffect(() => {
-    const fonti = new Set<string>();
-    
-    bandi.forEach(bando => {
-      if (bando.fonte) {
-        fonti.add(bando.fonte);
-      }
-    });
-    
-    setFontiDisponibili(Array.from(fonti).sort());
-  }, [bandi]);
-
   const getBandiFiltrati = () => {
-    // If showAllBandi is true, return all bandi
-    if (showAllBandi) {
+    // Se showAllBandi è true o non ci sono filtri, mostra tutti i bandi
+    if (showAllBandi || (!filtro && fonteFiltro === 'tutte')) {
       return bandi;
     }
     
@@ -114,7 +103,7 @@ const Bandi = () => {
   const handleResetFiltri = () => {
     setFiltro('');
     setFonteFiltro('tutte');
-    setShowAllBandi(false);
+    setShowAllBandi(true);
   };
 
   const handleSearchFocus = () => {
@@ -122,17 +111,18 @@ const Bandi = () => {
   };
 
   const handleSearchBlur = () => {
-    if (filtro === '') {
-      setShowAllBandi(false);
-    }
+    // Non resettiamo showAllBandi quando si sfoca l'input
+    // In questo modo i bandi rimangono visibili
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFiltro(e.target.value);
-    if (e.target.value === '') {
-      setShowAllBandi(true);
-    }
+    // Manteniamo sempre showAllBandi a true per mostrare tutti i bandi
+    setShowAllBandi(true);
   };
+
+  // Estrai tutte le fonti dai bandi per il filtro
+  const fontiBandi = Array.from(new Set(bandi.map(bando => bando.fonte))).sort();
 
   return (
     <div className="space-y-6">
@@ -183,9 +173,9 @@ const Bandi = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="tutte">Tutte le fonti</SelectItem>
-                    {fontiDisponibili.map(fonte => (
-                      <SelectItem key={fonte} value={fonte}>
-                        {fonte}
+                    {fonti.map(fonte => (
+                      <SelectItem key={fonte.id} value={fonte.nome}>
+                        {fonte.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>

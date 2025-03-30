@@ -117,3 +117,4 @@ export interface ReportPerformanceMatch extends DataItem {
   numBandiCompatibili: number;
   compatibilitaMedia: number;
 }
+
