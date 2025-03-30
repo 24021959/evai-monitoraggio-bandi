@@ -1,18 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  BarChart3, 
-  FileText, 
-  Users, 
-  GitCompare, 
-  FileBarChart, 
-  FileSpreadsheet,
-  Database
-} from 'lucide-react';
+import { Users, Settings, Lock } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
+import ChangePasswordForm from '../admin/ChangePasswordForm';
 
 const ClientSidebar = () => {
   const location = useLocation();
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   
   return (
     <div className="flex flex-col h-full">
@@ -21,80 +22,25 @@ const ClientSidebar = () => {
           <NavLink
             to="/app/dashboard"
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <BarChart3 className="w-5 h-5" />
-              Dashboard
-            </div>
-          </NavLink>
-          <NavLink
-            to="/app/bandi"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5" />
-              Bandi
-            </div>
-          </NavLink>
-          <NavLink
-            to="/app/clienti"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
             }
           >
             <div className="flex items-center gap-3">
               <Users className="w-5 h-5" />
-              Clienti
+              Dashboard
             </div>
           </NavLink>
-          <NavLink
-            to="/app/match"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <GitCompare className="w-5 h-5" />
-              Match
-            </div>
-          </NavLink>
-          <NavLink
-            to="/app/report"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <FileBarChart className="w-5 h-5" />
-              Report
-            </div>
-          </NavLink>
-          <NavLink
-            to="/app/fonti"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : ''}`
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Database className="w-5 h-5" />
-              Fonti
-            </div>
-          </NavLink>
-          <div className="border-t border-gray-300 my-5"></div>
           
           <NavLink
-            to="/app/importa-bandi"
+            to="/app/change-password"
+            end
             className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
             }
           >
             <div className="flex items-center gap-3">
-              <FileSpreadsheet className="w-5 h-5" />
-              Importa Bandi
+              <Lock className="w-5 h-5" />
+              Cambia Password
             </div>
           </NavLink>
         </nav>

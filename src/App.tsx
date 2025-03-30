@@ -1,127 +1,67 @@
+import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@/components/ui/theme-provider';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./components/Layout";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Bandi from "./pages/Bandi";
-import DettaglioBando from "./pages/DettaglioBando";
-import Clienti from "./pages/Clienti";
-import NuovoCliente from "./pages/NuovoCliente";
-import DettaglioCliente from "./pages/DettaglioCliente";
-import Match from "./pages/Match";
-import Report from "./pages/Report";
-import Fonti from "./pages/Fonti";
-import ImportaBandi from './pages/ImportaBandi';
-import NotFound from "./pages/NotFound";
-import AdminSettings from "./pages/AdminSettings";
-import LoginPage from "./pages/LoginPage";
-import AdminPage from "./pages/AdminPage";
-import { AuthProvider } from "./contexts/AuthContext";
-import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { Toaster } from '@/components/ui/toaster';
 
-const queryClient = new QueryClient();
+// Pages
+import Index from '@/pages/Index';
+import LoginPage from '@/pages/LoginPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import Dashboard from '@/pages/Dashboard';
+import Bandi from '@/pages/Bandi';
+import DettaglioBando from '@/pages/DettaglioBando';
+import Clienti from '@/pages/Clienti';
+import DettaglioCliente from '@/pages/DettaglioCliente';
+import NuovoCliente from '@/pages/NuovoCliente';
+import Fonti from '@/pages/Fonti';
+import Match from '@/pages/Match';
+import Report from '@/pages/Report';
+import ConfigScraping from '@/pages/ConfigScraping';
+import ConfiguraNotifiche from '@/pages/ConfiguraNotifiche';
+import ImportaBandi from '@/pages/ImportaBandi';
+import RisultatiScraping from '@/pages/RisultatiScraping';
+import AdminSettings from '@/pages/AdminSettings';
+import AdminPage from '@/pages/AdminPage';
+import ChangePasswordPage from '@/pages/ChangePasswordPage';
+import NotFound from '@/pages/NotFound';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+function App() {
+  return (
+    <ThemeProvider defaultTheme="system" storageKey="vite-react-theme">
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Redirect from root to login page */}
-            <Route path="/" element={<Index />} />
-            
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/app" element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }>
-              {/* Redirect non-admin users to dashboard and admin users to admin/gestione */}
-              <Route index element={
-                <ProtectedRoute>
-                  {({ isAdmin }) => isAdmin ? 
-                    <Navigate to="/app/admin/gestione" replace /> : 
-                    <Navigate to="/app/dashboard" replace />
-                  }
-                </ProtectedRoute>
-              } />
-              
-              {/* Client routes */}
-              <Route path="dashboard" element={
-                <ProtectedRoute clientOnly={true}>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="bandi" element={
-                <ProtectedRoute clientOnly={true}>
-                  <Bandi />
-                </ProtectedRoute>
-              } />
-              <Route path="bandi/:id" element={
-                <ProtectedRoute clientOnly={true}>
-                  <DettaglioBando />
-                </ProtectedRoute>
-              } />
-              <Route path="clienti" element={
-                <ProtectedRoute clientOnly={true}>
-                  <Clienti />
-                </ProtectedRoute>
-              } />
-              <Route path="clienti/nuovo" element={
-                <ProtectedRoute clientOnly={true}>
-                  <NuovoCliente />
-                </ProtectedRoute>
-              } />
-              <Route path="clienti/:id" element={
-                <ProtectedRoute clientOnly={true}>
-                  <DettaglioCliente />
-                </ProtectedRoute>
-              } />
-              <Route path="match" element={
-                <ProtectedRoute clientOnly={true}>
-                  <Match />
-                </ProtectedRoute>
-              } />
-              <Route path="report" element={
-                <ProtectedRoute clientOnly={true}>
-                  <Report />
-                </ProtectedRoute>
-              } />
-              <Route path="fonti" element={
-                <ProtectedRoute clientOnly={true}>
-                  <Fonti />
-                </ProtectedRoute>
-              } />
-              <Route path="importa-bandi" element={
-                <ProtectedRoute clientOnly={true}>
-                  <ImportaBandi />
-                </ProtectedRoute>
-              } />
-              
-              {/* Admin routes */}
-              <Route path="admin" element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminSettings />
-                </ProtectedRoute>
-              } />
-              <Route path="admin/gestione" element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminPage />
-                </ProtectedRoute>
-              } />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        
+        {/* Protected Routes */}
+        <Route path="/app" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="bandi" element={<Bandi />} />
+          <Route path="bandi/:id" element={<DettaglioBando />} />
+          <Route path="clienti" element={<Clienti />} />
+          <Route path="clienti/:id" element={<DettaglioCliente />} />
+          <Route path="clienti/nuovo" element={<NuovoCliente />} />
+          <Route path="fonti" element={<Fonti />} />
+          <Route path="match" element={<Match />} />
+          <Route path="report" element={<Report />} />
+          <Route path="configurazioni/scraping" element={<ConfigScraping />} />
+          <Route path="configurazioni/notifiche" element={<ConfiguraNotifiche />} />
+          <Route path="strumenti/importa-bandi" element={<ImportaBandi />} />
+          <Route path="strumenti/risultati-scraping" element={<RisultatiScraping />} />
+          <Route path="change-password" element={<ChangePasswordPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="admin" element={<AdminSettings />} />
+          <Route path="admin/gestione" element={<AdminPage />} />
+        </Route>
+        
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ThemeProvider>
+  );
+}
 
 export default App;
