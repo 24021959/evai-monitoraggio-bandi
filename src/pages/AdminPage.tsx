@@ -95,15 +95,25 @@ const AdminPage: React.FC = () => {
           <AlertDescription className="flex flex-col gap-2">
             <p className="font-semibold">Impossibile creare nuovi utenti: problemi di configurazione con le API admin.</p>
             <p className="text-sm">
-              {adminVerificationError || 'Il client amministrativo non è configurato correttamente. Verificare la chiave Service Role in Supabase.'}
+              È necessario aggiornare la chiave Service Role di Supabase nel file adminClient.ts con una chiave valida.
+              {adminVerificationError && <span className="block mt-1 text-red-600">{adminVerificationError}</span>}
             </p>
-            <div className="mt-2">
+            <div className="mt-2 flex flex-col gap-2">
+              <p className="text-xs text-gray-700">
+                Per ottenere una nuova chiave Service Role:
+                <ol className="list-decimal pl-5 mt-1">
+                  <li>Vai alla dashboard di Supabase del progetto</li>
+                  <li>Vai su Settings &gt; API</li>
+                  <li>Copia la "service_role key" (NON la anon key)</li>
+                  <li>Sostituisci la chiave nel file src/integrations/supabase/adminClient.ts</li>
+                </ol>
+              </p>
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={handleRetryVerification}
                 disabled={isVerifying}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 mt-2 w-fit"
               >
                 <RefreshCcw className={`h-3 w-3 ${isVerifying ? 'animate-spin' : ''}`} />
                 {isVerifying ? 'Verifica in corso...' : 'Riprova verifica'}

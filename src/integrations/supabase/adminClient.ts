@@ -5,7 +5,10 @@ import type { Database } from './types';
 // Utilizziamo costanti per la connessione Supabase
 const SUPABASE_URL = "https://yeyfuxtzutciijtsezgc.supabase.co";
 
-// Utilizziamo direttamente la chiave di servizio senza riferimento a process.env
+// ATTENZIONE: Questa è una chiave Service Role scaduta o non valida.
+// Devi sostituirla con una Service Role Key valida dal pannello di Supabase
+// Vai su https://supabase.com/dashboard/project/yeyfuxtzutciijtsezgc/settings/api
+// Nella sezione "API Keys", copia la "service_role key" (NON la anon key)
 const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWZ1eHR6dXRjaWlqdHNlemdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjUyMTAyOCwiZXhwIjoyMDUyMDk3MDI4fQ.zrFtwX_0KaZ9x10YErb9HAzsfgw4r9gblnFpS4lU-BA";
 
 // Configurazione del client amministrativo
