@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Shield, UserPlus } from 'lucide-react';
+import { Shield, UserPlus, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import ChangePasswordForm from '@/components/admin/ChangePasswordForm';
 import UserTable from '@/components/admin/UserTable';
 import CreateUserDialog from '@/components/admin/CreateUserDialog';
@@ -16,7 +17,7 @@ const AdminPage: React.FC = () => {
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   
   const { isAdmin } = useAuth();
-  const { users, loadingUsers, createUser, toggleUserActive } = useUsers();
+  const { users, loadingUsers, createUser, toggleUserActive, adminClientVerified } = useUsers();
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,11 +48,25 @@ const AdminPage: React.FC = () => {
           <Shield className="h-5 w-5 text-blue-600" />
           Gestione Utenti
         </h1>
-        <Button onClick={() => setShowCreateUserDialog(true)} className="flex gap-2 items-center">
+        <Button 
+          onClick={() => setShowCreateUserDialog(true)} 
+          className="flex gap-2 items-center"
+          disabled={adminClientVerified === false}
+        >
           <UserPlus className="h-4 w-4" />
           Crea Nuovo Utente
         </Button>
       </div>
+
+      {adminClientVerified === false && (
+        <Alert variant="destructive" className="bg-red-50 border-red-200">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Impossibile creare nuovi utenti: problemi di configurazione con le API admin. 
+            Contattare l'amministratore di sistema.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <UserTable
         users={users}

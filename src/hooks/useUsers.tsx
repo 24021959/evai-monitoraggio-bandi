@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { adminClient } from '@/integrations/supabase/adminClient';
+import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
 import { useToast } from '@/components/ui/use-toast';
 
 type UserProfile = {
@@ -15,12 +15,32 @@ type UserProfile = {
 export const useUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [adminClientVerified, setAdminClientVerified] = useState<boolean | null>(null);
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
+  // Verify admin client on hook initialization
+  useEffect(() => {
+    async function checkAdminAccess() {
+      const verified = await verifyAdminClientAccess();
+      setAdminClientVerified(verified);
+      
+      if (!verified) {
+        toast({
+          title: 'Errore di configurazione',
+          description: 'Il client amministrativo non è configurato correttamente. Contattare l\'amministratore di sistema.',
+          variant: 'destructive'
+        });
+      }
+    }
+    
+    checkAdminAccess();
+  }, [toast]);
+
+  const fetchUsers = useCallback(async () => {
     try {
       setLoadingUsers(true);
       
+      // Step 1: Get user profiles from public schema
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select(`
@@ -30,24 +50,38 @@ export const useUsers = () => {
         
       if (profilesError) throw profilesError;
 
-      const { data, error: usersError } = await adminClient.auth.admin.listUsers();
-      
-      if (usersError) throw usersError;
+      // Step 2: Only fetch auth users if admin client is verified
+      if (adminClientVerified) {
+        const { data, error: usersError } = await adminClient.auth.admin.listUsers();
+        
+        if (usersError) throw usersError;
 
-      const authUsers = data?.users || [];
+        const authUsers = data?.users || [];
 
-      const combinedUsers = profiles?.map(profile => {
-        const authUser = authUsers.find(u => u.id === profile.id);
-        return {
+        const combinedUsers = profiles?.map(profile => {
+          const authUser = authUsers.find(u => u.id === profile.id);
+          return {
+            id: profile.id,
+            display_name: profile.display_name,
+            email: authUser?.email || 'N/A',
+            role: profile.role,
+            is_active: profile.organizations?.is_active !== false
+          };
+        }) || [];
+
+        setUsers(combinedUsers);
+      } else {
+        // Fallback to just profiles if admin client isn't available
+        const basicUsers = profiles?.map(profile => ({
           id: profile.id,
           display_name: profile.display_name,
-          email: authUser?.email || 'N/A',
+          email: 'N/A', // Can't access emails without admin access
           role: profile.role,
           is_active: profile.organizations?.is_active !== false
-        };
-      }) || [];
-
-      setUsers(combinedUsers);
+        })) || [];
+        
+        setUsers(basicUsers);
+      }
     } catch (error: any) {
       toast({
         title: 'Errore',
@@ -58,7 +92,7 @@ export const useUsers = () => {
     } finally {
       setLoadingUsers(false);
     }
-  };
+  }, [adminClientVerified, toast]);
 
   const createUser = async (
     email: string, 
@@ -70,6 +104,15 @@ export const useUsers = () => {
       toast({
         title: 'Dati mancanti',
         description: 'Compila tutti i campi per creare un nuovo utente',
+        variant: 'destructive'
+      });
+      return false;
+    }
+
+    if (!adminClientVerified) {
+      toast({
+        title: 'Errore di configurazione',
+        description: 'Impossibile creare utenti: client amministrativo non configurato correttamente.',
         variant: 'destructive'
       });
       return false;
@@ -165,12 +208,13 @@ export const useUsers = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   return {
     users,
     loadingUsers,
     createUser,
-    toggleUserActive
+    toggleUserActive,
+    adminClientVerified
   };
 };
