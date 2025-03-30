@@ -31,6 +31,10 @@ interface ReportPerformanceMatch {
   compatibilitaMedia: number;
 }
 
+interface DataItem {
+  [key: string]: any;
+}
+
 const sectorColumns = [
   {
     accessorKey: "settore",

@@ -24,15 +24,18 @@ export const useBandiData = () => {
   const fetchBandi = async () => {
     setLoading(true);
     try {
+      console.log("useBandiData: Recupero bandi combinati...");
       const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
+      
+      // Ordina i bandi per data di creazione (più recenti prima)
       const bandiOrdinati = bandiCombinati.sort((a, b) => {
-        // Prima ordina per data di creazione (se disponibile)
         const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
         const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
         return dateB.getTime() - dateA.getTime();
       });
+      
       setBandi(bandiOrdinati);
-      console.log("Bandi page: Caricati bandi combinati:", bandiOrdinati.length);
+      console.log(`useBandiData: Caricati ${bandiOrdinati.length} bandi`);
       
       // Estrai le fonti uniche dai bandi e ordina alfabeticamente
       const setFontiDaiBandi = new Set(
@@ -40,7 +43,9 @@ export const useBandiData = () => {
           .filter(bando => bando.fonte && bando.fonte.trim() !== '')
           .map(bando => bando.fonte)
       );
+      
       setFontiUniche(Array.from(setFontiDaiBandi).sort());
+      console.log(`useBandiData: Trovate ${setFontiDaiBandi.size} fonti uniche`);
     } catch (error) {
       console.error("Errore nel recupero dei bandi:", error);
       toast({
@@ -137,6 +142,6 @@ export const useBandiData = () => {
     handleResetFiltri,
     fontiCombinate: getFontiCombinate(),
     fontiUniche,
-    fetchBandi // Esporre questa funzione per consentire l'aggiornamento dopo l'importazione
+    fetchBandi  // Esportiamo questa funzione per consentire l'aggiornamento dopo l'importazione
   };
 };
