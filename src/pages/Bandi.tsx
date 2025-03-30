@@ -41,11 +41,17 @@ const Bandi = () => {
       setLoading(true);
       try {
         const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
-        setBandi(bandiCombinati);
-        console.log("Bandi page: Caricati bandi combinati:", bandiCombinati.length);
+        // Ordina i bandi dal più recente al meno recente
+        const bandiOrdinati = bandiCombinati.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+          const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+        setBandi(bandiOrdinati);
+        console.log("Bandi page: Caricati bandi combinati:", bandiOrdinati.length);
         
         // Estrai le fonti uniche dai bandi
-        const setFontiDaiBandi = new Set(bandiCombinati.map(bando => bando.fonte));
+        const setFontiDaiBandi = new Set(bandiOrdinati.map(bando => bando.fonte));
         setFontiUniche(Array.from(setFontiDaiBandi).sort());
       } catch (error) {
         console.error("Errore nel recupero dei bandi:", error);
@@ -64,16 +70,18 @@ const Bandi = () => {
 
   const getBandiFiltrati = () => {
     // Se showAllBandi è true o non ci sono filtri, mostra tutti i bandi
-    if (showAllBandi || (!filtro && fonteFiltro === 'tutte')) {
+    if (showAllBandi && filtro === '') {
       return bandi;
     }
     
     return bandi.filter(bando => {
+      // Filtro per testo di ricerca
       const matchTestoRicerca = !filtro || 
         bando.titolo.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.descrizione?.toLowerCase().includes(filtro.toLowerCase()) ||
         bando.fonte.toLowerCase().includes(filtro.toLowerCase());
       
+      // Filtro per fonte
       const matchFonte = fonteFiltro === 'tutte' || 
         bando.fonte === fonteFiltro;
       
@@ -114,6 +122,7 @@ const Bandi = () => {
   };
 
   const handleSearchFocus = () => {
+    // Quando l'utente clicca sulla casella di ricerca, mostra tutti i bandi
     setShowAllBandi(true);
   };
 
@@ -124,8 +133,14 @@ const Bandi = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFiltro(e.target.value);
-    // Manteniamo sempre showAllBandi a true per mostrare tutti i bandi
-    setShowAllBandi(true);
+    
+    // Se l'utente sta cercando qualcosa, applica il filtro
+    if (e.target.value) {
+      setShowAllBandi(false);
+    } else {
+      // Se la ricerca è vuota, mostra tutti i bandi
+      setShowAllBandi(true);
+    }
   };
 
   // Combina le fonti dai bandi e dalle configurazioni delle fonti
