@@ -93,6 +93,12 @@ const ImportaBandi = () => {
         return;
       }
       
+      // Stampa per debug dei titoli
+      console.log('Titoli dei bandi nel foglio:');
+      bandi.slice(0, 5).forEach((b, i) => {
+        console.log(`${i+1}. ${b.titolo} (${b.fonte || 'fonte non specificata'})`);
+      });
+      
       // Recupera i bandi esistenti da Supabase
       const bandiEsistenti = await SupabaseBandiService.getBandi();
       console.log('Bandi già esistenti in Supabase:', bandiEsistenti.length);
@@ -102,11 +108,24 @@ const ImportaBandi = () => {
       const titoliFonteEsistenti = new Set();
       
       bandiEsistenti.forEach(bando => {
-        if (bando.titolo && bando.fonte) {
-          // Normalizziamo i testi: rimuoviamo spazi extra e convertiamo in minuscolo
-          const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
-          const fonteNormalizzata = bando.fonte.trim().toLowerCase();
+        if (bando.titolo) {
+          // Normalizziamo i testi: rimuoviamo spazi extra, caratteri speciali e convertiamo in minuscolo
+          const titoloNormalizzato = bando.titolo
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s]/g, '');
+          
+          const fonteNormalizzata = bando.fonte 
+            ? bando.fonte.trim().toLowerCase().replace(/\s+/g, ' ')
+            : '';
+            
           titoliFonteEsistenti.add(`${titoloNormalizzato}|${fonteNormalizzata}`);
+          
+          // Aggiungiamo anche solo il titolo per catturare più duplicati
+          if (titoloNormalizzato.length > 10) { // solo se il titolo è sufficientemente distintivo
+            titoliFonteEsistenti.add(titoloNormalizzato);
+          }
         }
       });
       
@@ -114,21 +133,37 @@ const ImportaBandi = () => {
       
       // Filtriamo i bandi per trovare quelli unici
       const bandiUnici = bandi.filter(bando => {
-        if (!bando.titolo || !bando.fonte) {
-          console.log('Bando senza titolo o fonte, saltato.');
+        if (!bando.titolo) {
+          console.log('Bando senza titolo, saltato.');
           return false;
         }
         
         // Normalizziamo i testi dal foglio allo stesso modo
-        const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
-        const fonteNormalizzata = bando.fonte.trim().toLowerCase();
-        const chiave = `${titoloNormalizzato}|${fonteNormalizzata}`;
+        const titoloNormalizzato = bando.titolo
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .replace(/[^\w\s]/g, '');
+        
+        const fonteNormalizzata = bando.fonte 
+          ? bando.fonte.trim().toLowerCase().replace(/\s+/g, ' ')
+          : '';
+        
+        const chiaveCombinata = `${titoloNormalizzato}|${fonteNormalizzata}`;
+        
+        // Verifica se questo bando è già presente usando la combinazione titolo+fonte
+        const esiste = titoliFonteEsistenti.has(chiaveCombinata);
+        
+        // Se non esiste già con la combinazione titolo+fonte, controlla anche solo per titolo
+        // ma solo per titoli abbastanza distintivi
+        const esisteSoloTitolo = titoloNormalizzato.length > 10 && 
+                                titoliFonteEsistenti.has(titoloNormalizzato);
         
         // Debug per verificare la chiave di confronto
-        // console.log(`Verifica bando: "${titoloNormalizzato}" | "${fonteNormalizzata}" => ${!titoliFonteEsistenti.has(chiave) ? 'NUOVO' : 'ESISTENTE'}`);
+        console.log(`Verifica bando: "${titoloNormalizzato}" | "${fonteNormalizzata}" => ${!esiste && !esisteSoloTitolo ? 'NUOVO' : 'ESISTENTE'}`);
         
-        // Verifichiamo se questo bando è già presente nel set
-        return !titoliFonteEsistenti.has(chiave);
+        // È un bando nuovo solo se non è stato trovato in nessuno dei due controlli
+        return !esiste && !esisteSoloTitolo;
       });
       
       console.log(`Filtrati ${bandi.length - bandiUnici.length} bandi duplicati`);
@@ -140,14 +175,18 @@ const ImportaBandi = () => {
         
         let contatoreSalvati = 0;
         for (const bando of bandiUnici) {
-          if (!bando.titolo || !bando.fonte) {
-            console.warn('Bando senza titolo o fonte, saltato:', bando);
+          if (!bando.titolo) {
+            console.warn('Bando senza titolo, saltato:', bando);
             continue;
           }
+          
+          // Debug di ogni bando prima del salvataggio
+          console.log(`Salvataggio bando: ${bando.titolo}`);
           
           const success = await SupabaseBandiService.saveBando(bando);
           if (success) {
             contatoreSalvati++;
+            console.log(`Bando salvato con successo: ${bando.titolo}`);
           } else {
             console.error('Errore nel salvataggio del bando in Supabase:', bando.titolo);
           }

@@ -26,6 +26,7 @@ export const useBandiData = () => {
     try {
       const bandiCombinati = await SupabaseBandiService.getBandiCombinati();
       const bandiOrdinati = bandiCombinati.sort((a, b) => {
+        // Prima ordina per data di creazione (se disponibile)
         const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
         const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
         return dateB.getTime() - dateA.getTime();
@@ -33,7 +34,12 @@ export const useBandiData = () => {
       setBandi(bandiOrdinati);
       console.log("Bandi page: Caricati bandi combinati:", bandiOrdinati.length);
       
-      const setFontiDaiBandi = new Set(bandiOrdinati.map(bando => bando.fonte));
+      // Estrai le fonti uniche dai bandi e ordina alfabeticamente
+      const setFontiDaiBandi = new Set(
+        bandiOrdinati
+          .filter(bando => bando.fonte && bando.fonte.trim() !== '')
+          .map(bando => bando.fonte)
+      );
       setFontiUniche(Array.from(setFontiDaiBandi).sort());
     } catch (error) {
       console.error("Errore nel recupero dei bandi:", error);
@@ -99,10 +105,14 @@ export const useBandiData = () => {
   const getFontiCombinate = () => {
     const fonteCombinate = new Map<string, string>();
     
+    // Aggiungi fonti dai bandi
     fontiUniche.forEach(fonte => {
-      fonteCombinate.set(fonte.toLowerCase(), fonte);
+      if (fonte) {
+        fonteCombinate.set(fonte.toLowerCase(), fonte);
+      }
     });
     
+    // Aggiungi fonti dalle configurazioni
     fonti.forEach(fonte => {
       if (fonte.nome) {
         fonteCombinate.set(fonte.nome.toLowerCase(), fonte.nome);
