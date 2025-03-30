@@ -7,9 +7,14 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   adminOnly?: boolean;
+  clientOnly?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  adminOnly = false,
+  clientOnly = false 
+}) => {
   const { user, loading, userProfile, isAdmin } = useAuth();
   const location = useLocation();
 
@@ -25,10 +30,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
 
   // Se la route richiede privilegi admin e l'utente non è admin, reindirizza
   if (adminOnly && !isAdmin) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/app/dashboard" replace />;
+  }
+  
+  // Se la route è solo per client e l'utente è admin, reindirizza
+  if (clientOnly && isAdmin) {
+    return <Navigate to="/app/admin/gestione" replace />;
   }
 
-  // Se l'utente appartiene a un'organizzazione disattivata (verifica tramite context)
+  // Se l'utente appartiene a un'organizzazione disattivata
   if (userProfile?.organizationDisabled) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-red-50 p-8 text-center">

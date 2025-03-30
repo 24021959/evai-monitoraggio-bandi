@@ -34,7 +34,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             {/* Redirect from root to login page */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Index />} />
             
             <Route path="/login" element={<LoginPage />} />
             <Route path="/app" element={
@@ -43,16 +43,56 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route index element={<Navigate to="/app/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="bandi" element={<Bandi />} />
-              <Route path="bandi/:id" element={<DettaglioBando />} />
-              <Route path="clienti" element={<Clienti />} />
-              <Route path="clienti/nuovo" element={<NuovoCliente />} />
-              <Route path="clienti/:id" element={<DettaglioCliente />} />
-              <Route path="match" element={<Match />} />
-              <Route path="report" element={<Report />} />
-              <Route path="fonti" element={<Fonti />} />
-              <Route path="importa-bandi" element={<ImportaBandi />} />
+              <Route path="dashboard" element={
+                <ProtectedRoute clientOnly={true}>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="bandi" element={
+                <ProtectedRoute clientOnly={true}>
+                  <Bandi />
+                </ProtectedRoute>
+              } />
+              <Route path="bandi/:id" element={
+                <ProtectedRoute clientOnly={true}>
+                  <DettaglioBando />
+                </ProtectedRoute>
+              } />
+              <Route path="clienti" element={
+                <ProtectedRoute clientOnly={true}>
+                  <Clienti />
+                </ProtectedRoute>
+              } />
+              <Route path="clienti/nuovo" element={
+                <ProtectedRoute clientOnly={true}>
+                  <NuovoCliente />
+                </ProtectedRoute>
+              } />
+              <Route path="clienti/:id" element={
+                <ProtectedRoute clientOnly={true}>
+                  <DettaglioCliente />
+                </ProtectedRoute>
+              } />
+              <Route path="match" element={
+                <ProtectedRoute clientOnly={true}>
+                  <Match />
+                </ProtectedRoute>
+              } />
+              <Route path="report" element={
+                <ProtectedRoute clientOnly={true}>
+                  <Report />
+                </ProtectedRoute>
+              } />
+              <Route path="fonti" element={
+                <ProtectedRoute clientOnly={true}>
+                  <Fonti />
+                </ProtectedRoute>
+              } />
+              <Route path="importa-bandi" element={
+                <ProtectedRoute clientOnly={true}>
+                  <ImportaBandi />
+                </ProtectedRoute>
+              } />
               <Route path="admin" element={
                 <ProtectedRoute adminOnly={true}>
                   <AdminSettings />

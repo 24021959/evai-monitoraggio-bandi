@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -12,10 +12,14 @@ const Index = () => {
     if (!user) {
       navigate('/login');
     } else {
-      // Altrimenti reindirizza alla dashboard con il percorso corretto
-      navigate('/app/dashboard');
+      // Altrimenti reindirizza in base al ruolo
+      if (userProfile?.role === 'admin') {
+        navigate('/app/admin/gestione');
+      } else {
+        navigate('/app/dashboard');
+      }
     }
-  }, [user, navigate]);
+  }, [user, userProfile, navigate]);
   
   // Pagina di caricamento mentre si effettua il reindirizzamento
   return (

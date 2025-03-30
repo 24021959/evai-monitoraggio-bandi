@@ -9,76 +9,44 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
-import { PlusCircle, Trash2, Users, Shield, UserPlus, Mail, Key } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-type Organization = {
-  id: string;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  userCount?: number;
-};
+import { UserPlus, Mail, Key, User, Shield, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type UserProfile = {
   id: string;
   display_name: string;
   email: string;
   role: 'admin' | 'client';
-  organization_id: string;
+  is_active: boolean;
 };
 
 const AdminPage: React.FC = () => {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [newOrgName, setNewOrgName] = useState('');
-  const [loadingOrgs, setLoadingOrgs] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserName, setNewUserName] = useState('');
-  const [newUserOrg, setNewUserOrg] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'client'>('client');
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   
   const { isAdmin } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchOrganizations();
     fetchUsers();
   }, []);
-
-  const fetchOrganizations = async () => {
-    try {
-      setLoadingOrgs(true);
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-
-      setOrganizations(data || []);
-    } catch (error: any) {
-      toast({
-        title: 'Errore',
-        description: `Impossibile recuperare le organizzazioni: ${error.message}`,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoadingOrgs(false);
-    }
-  };
 
   const fetchUsers = async () => {
     try {
       setLoadingUsers(true);
       
-      // Otteniamo prima i profili utente
+      // Otteniamo i profili utente
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
-        .select('*');
+        .select(`
+          *,
+          organizations(is_active)
+        `);
         
       if (profilesError) throw profilesError;
 
@@ -97,20 +65,11 @@ const AdminPage: React.FC = () => {
           display_name: profile.display_name,
           email: authUser?.email || 'N/A',
           role: profile.role,
-          organization_id: profile.organization_id
+          is_active: profile.organizations?.is_active !== false // Se non è esplicitamente false, consideriamo l'utente attivo
         };
       }) || [];
 
       setUsers(combinedUsers);
-
-      // Aggiorna le organizzazioni con il conteggio degli utenti
-      if (combinedUsers && organizations.length > 0) {
-        const orgWithCounts = organizations.map(org => ({
-          ...org,
-          userCount: combinedUsers.filter(u => u.organization_id === org.id).length
-        }));
-        setOrganizations(orgWithCounts);
-      }
     } catch (error: any) {
       toast({
         title: 'Errore',
@@ -122,96 +81,9 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const handleCreateOrg = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newOrgName.trim()) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('organizations')
-        .insert([{ name: newOrgName.trim() }])
-        .select();
-
-      if (error) throw error;
-
-      toast({
-        title: 'Organizzazione creata',
-        description: `L'organizzazione ${newOrgName} è stata creata con successo.`
-      });
-
-      setNewOrgName('');
-      fetchOrganizations();
-    } catch (error: any) {
-      toast({
-        title: 'Errore',
-        description: `Impossibile creare l'organizzazione: ${error.message}`,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleDeleteOrg = async (id: string, name: string) => {
-    try {
-      // Controlla se ci sono utenti associati
-      const orgUsers = users.filter(u => u.organization_id === id);
-      if (orgUsers.length > 0) {
-        toast({
-          title: 'Impossibile eliminare',
-          description: `Questa organizzazione ha ${orgUsers.length} utenti associati. Rimuovi prima gli utenti.`,
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      const { error } = await supabase
-        .from('organizations')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Organizzazione eliminata',
-        description: `L'organizzazione ${name} è stata eliminata.`
-      });
-
-      fetchOrganizations();
-    } catch (error: any) {
-      toast({
-        title: 'Errore',
-        description: `Impossibile eliminare l'organizzazione: ${error.message}`,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleToggleOrgActive = async (org: Organization) => {
-    try {
-      const { error } = await supabase
-        .from('organizations')
-        .update({ is_active: !org.is_active })
-        .eq('id', org.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Stato aggiornato',
-        description: `L'organizzazione ${org.name} è ora ${!org.is_active ? 'attiva' : 'disattivata'}.`
-      });
-
-      fetchOrganizations();
-    } catch (error: any) {
-      toast({
-        title: 'Errore',
-        description: `Impossibile aggiornare lo stato dell'organizzazione: ${error.message}`,
-        variant: 'destructive'
-      });
-    }
-  };
-
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserEmail || !newUserPassword || !newUserName || !newUserOrg) {
+    if (!newUserEmail || !newUserPassword || !newUserName) {
       toast({
         title: 'Dati mancanti',
         description: 'Compila tutti i campi per creare un nuovo utente',
@@ -233,16 +105,16 @@ const AdminPage: React.FC = () => {
 
       if (authError) throw authError;
 
-      // Il trigger handle_new_user dovrebbe creare automaticamente il profilo utente
-      // Possiamo aggiornare l'organizzazione se necessario
-      if (newUserOrg !== 'default') {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .update({ organization_id: newUserOrg })
-          .eq('id', authData.user.id);
+      // Aggiorniamo il profilo utente con il ruolo corretto
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          role: newUserRole,
+          display_name: newUserName
+        })
+        .eq('id', authData.user.id);
 
-        if (profileError) throw profileError;
-      }
+      if (profileError) throw profileError;
 
       toast({
         title: 'Utente creato',
@@ -252,12 +124,47 @@ const AdminPage: React.FC = () => {
       setNewUserEmail('');
       setNewUserPassword('');
       setNewUserName('');
+      setNewUserRole('client');
       setShowCreateUserDialog(false);
       fetchUsers();
     } catch (error: any) {
       toast({
         title: 'Errore',
         description: `Impossibile creare l'utente: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const toggleUserActive = async (userId: string, isCurrentlyActive: boolean, userName: string) => {
+    try {
+      // Recupera l'organization_id dell'utente
+      const { data: userProfile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError) throw profileError;
+      
+      // Aggiorna lo stato dell'organizzazione
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({ is_active: !isCurrentlyActive })
+        .eq('id', userProfile.organization_id);
+        
+      if (updateError) throw updateError;
+
+      toast({
+        title: 'Stato utente aggiornato',
+        description: `L'utente ${userName} è ora ${!isCurrentlyActive ? 'attivo' : 'disattivato'}.`
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: 'Errore',
+        description: `Impossibile aggiornare lo stato dell'utente: ${error.message}`,
         variant: 'destructive'
       });
     }
@@ -275,132 +182,25 @@ const AdminPage: React.FC = () => {
   return (
     <div className="space-y-8 p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gestione Amministratore</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Shield className="h-5 w-5 text-blue-600" />
+          Gestione Utenti
+        </h1>
         <Button onClick={() => setShowCreateUserDialog(true)} className="flex gap-2 items-center">
           <UserPlus className="h-4 w-4" />
           Crea Nuovo Utente
         </Button>
       </div>
 
-      {/* Gestione Organizzazioni */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" /> 
-            Organizzazioni
-          </CardTitle>
-          <CardDescription>
-            Gestisci le organizzazioni clienti nella piattaforma
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <form onSubmit={handleCreateOrg} className="flex gap-4">
-              <div className="flex-1">
-                <Label htmlFor="organization-name" className="sr-only">
-                  Nome Organizzazione
-                </Label>
-                <Input
-                  id="organization-name"
-                  placeholder="Nome nuova organizzazione"
-                  value={newOrgName}
-                  onChange={(e) => setNewOrgName(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="flex gap-1">
-                <PlusCircle className="h-4 w-4" />
-                Aggiungi
-              </Button>
-            </form>
-
-            {loadingOrgs ? (
-              <div className="text-center py-4">Caricamento organizzazioni...</div>
-            ) : (
-              <div className="rounded-md border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Stato</TableHead>
-                      <TableHead>Utenti</TableHead>
-                      <TableHead>Data creazione</TableHead>
-                      <TableHead className="text-right">Azioni</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {organizations.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4 text-gray-500">
-                          Nessuna organizzazione trovata
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      organizations.map((org) => (
-                        <TableRow key={org.id}>
-                          <TableCell className="font-medium">{org.name}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Switch 
-                                checked={org.is_active} 
-                                onCheckedChange={() => handleToggleOrgActive(org)}
-                              />
-                              <span className={org.is_active ? "text-green-600" : "text-red-600"}>
-                                {org.is_active ? "Attiva" : "Disattivata"}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{org.userCount || 0} utenti</TableCell>
-                          <TableCell>
-                            {new Date(org.created_at).toLocaleDateString('it-IT')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Elimina organizzazione</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Sei sicuro di voler eliminare l'organizzazione "{org.name}"?
-                                    Questa azione non può essere annullata.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Annulla</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-red-500 hover:bg-red-600"
-                                    onClick={() => handleDeleteOrg(org.id, org.name)}
-                                  >
-                                    Elimina
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Gestione Utenti */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" /> 
-            Utenti
+            Utenti del Sistema
           </CardTitle>
           <CardDescription>
-            Gestisci gli utenti registrati nella piattaforma
+            Gestisci gli utenti della piattaforma
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -414,13 +214,14 @@ const AdminPage: React.FC = () => {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Ruolo</TableHead>
-                    <TableHead>Organizzazione</TableHead>
+                    <TableHead>Stato</TableHead>
+                    <TableHead>Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                      <TableCell colSpan={5} className="text-center py-4 text-gray-500">
                         Nessun utente trovato
                       </TableCell>
                     </TableRow>
@@ -439,7 +240,18 @@ const AdminPage: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          {organizations.find(o => o.id === user.organization_id)?.name || 'N/A'}
+                          <div className="flex items-center space-x-2">
+                            <Switch 
+                              checked={user.is_active} 
+                              onCheckedChange={() => toggleUserActive(user.id, user.is_active, user.display_name)}
+                            />
+                            <span className={user.is_active ? "text-green-600" : "text-red-600"}>
+                              {user.is_active ? "Attivo" : "Disattivato"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {/* Qui potresti aggiungere altre azioni se necessario */}
                         </TableCell>
                       </TableRow>
                     ))
@@ -467,7 +279,7 @@ const AdminPage: React.FC = () => {
             <div className="space-y-2">
               <Label htmlFor="new-user-name">Nome Completo</Label>
               <div className="flex">
-                <Users className="h-4 w-4 mr-2 mt-3 text-gray-500" />
+                <User className="h-4 w-4 mr-2 mt-3 text-gray-500" />
                 <Input
                   id="new-user-name"
                   value={newUserName}
@@ -510,20 +322,16 @@ const AdminPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="new-user-org">Organizzazione</Label>
+              <Label htmlFor="new-user-role">Ruolo</Label>
               <select
-                id="new-user-org"
+                id="new-user-role"
                 className="w-full border border-gray-300 rounded-md p-2"
-                value={newUserOrg}
-                onChange={(e) => setNewUserOrg(e.target.value)}
+                value={newUserRole}
+                onChange={(e) => setNewUserRole(e.target.value as 'admin' | 'client')}
                 required
               >
-                <option value="" disabled>Seleziona un'organizzazione</option>
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id} disabled={!org.is_active}>
-                    {org.name} {!org.is_active && "(Disattivata)"}
-                  </option>
-                ))}
+                <option value="client">Cliente</option>
+                <option value="admin">Amministratore</option>
               </select>
             </div>
             

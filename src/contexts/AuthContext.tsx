@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,11 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Controlla se l'utente ha ruolo admin
   const isAdmin = userProfile?.role === 'admin';
 
   useEffect(() => {
-    // Imposta il listener per i cambiamenti di autenticazione prima di controllare la sessione
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       console.log('Auth state changed:', event);
       setSession(currentSession);
@@ -48,19 +45,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserProfile(null);
       }
 
-      // Se l'utente è autenticato, ottieni il suo profilo
       if (currentSession?.user) {
         fetchUserProfile(currentSession.user.id);
       }
     });
 
-    // Controlla se c'è una sessione attiva
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log('Sessione corrente:', currentSession ? 'Presente' : 'Assente');
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
-      // Se l'utente è autenticato, ottieni il suo profilo
       if (currentSession?.user) {
         fetchUserProfile(currentSession.user.id);
       } else {
@@ -77,9 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
-      // Piccolo delay per evitare problemi di sincronizzazione
       setTimeout(async () => {
-        // Otteniamo il profilo utente e anche le informazioni sull'organizzazione
         const { data, error } = await supabase
           .from('user_profiles')
           .select(`
@@ -131,12 +123,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         console.error('Errore di login:', error);
       } else if (data.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Errore nel recupero del ruolo:', profileError);
+        }
+        
         toast({
           title: "Accesso effettuato",
           description: `Benvenuto`,
         });
-        // Correggiamo il percorso di reindirizzamento
-        navigate('/app/dashboard');
+        
+        if (profileData && profileData.role === 'admin') {
+          navigate('/app/admin/gestione');
+        } else {
+          navigate('/app/dashboard');
+        }
       }
     } catch (error: any) {
       toast({
