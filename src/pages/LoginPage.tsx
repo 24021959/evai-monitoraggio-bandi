@@ -70,7 +70,7 @@ const LoginPage = () => {
   console.log('Rendering LoginPage, user:', user);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
@@ -81,11 +81,10 @@ const LoginPage = () => {
             />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">EV-AI Monitoraggio Bandi</h1>
-          <p className="text-gray-600 mt-2">Accedi per gestire i bandi e i clienti</p>
         </div>
 
-        <Card className="shadow-lg border-gray-100 bg-white">
-          <CardHeader className="bg-white border-b border-gray-100">
+        <Card className="shadow-lg border-gray-100 bg-gray-100">
+          <CardHeader className="bg-gray-100 border-b border-gray-200">
             <CardTitle className="text-center flex items-center justify-center text-blue-800 gap-2">
               <Lock className="h-5 w-5" />
               Accesso Riservato
@@ -112,6 +111,7 @@ const LoginPage = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="bg-white"
                 />
               </div>
               
@@ -125,6 +125,7 @@ const LoginPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="bg-white"
                   />
                   <button
                     type="button"
