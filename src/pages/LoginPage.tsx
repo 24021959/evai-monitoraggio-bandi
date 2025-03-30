@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,13 +14,13 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn, user, isAdmin } = useAuth();
+  const { signIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     }
   }, [user, navigate]);
 
@@ -146,7 +145,6 @@ const LoginPage = () => {
   );
 };
 
-// Componente per l'icona di refresh
 const RefreshCw: React.FC<{ className?: string }> = ({ className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

@@ -12,7 +12,7 @@ const Index = () => {
     if (!user) {
       navigate('/login');
     } else {
-      // Altrimenti reindirizza alla dashboard
+      // Altrimenti reindirizza alla dashboard con il percorso corretto
       navigate('/app/dashboard');
     }
   }, [user, navigate]);

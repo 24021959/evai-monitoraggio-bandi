@@ -135,7 +135,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Accesso effettuato",
           description: `Benvenuto`,
         });
-        navigate('/dashboard');
+        // Correggiamo il percorso di reindirizzamento
+        navigate('/app/dashboard');
       }
     } catch (error: any) {
       toast({
