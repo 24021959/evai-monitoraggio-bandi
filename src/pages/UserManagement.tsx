@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUsers } from "@/hooks/useUsers";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { UserProfile, UserProfileUpdate } from '@/types';
 import UserTable from '@/components/admin/UserTable';
 import VerifyAdminAccess from '@/components/admin/VerifyAdminAccess';
+import { Button } from "@/components/ui/button";
+import { UserPlus } from 'lucide-react';
 
 const UserManagement = () => {
   const { toast } = useToast();
@@ -22,6 +24,13 @@ const UserManagement = () => {
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+
+  // Effettua una verifica automatica all'avvio se lo stato è null
+  useEffect(() => {
+    if (adminClientVerified === null) {
+      verifyAdminClient();
+    }
+  }, [adminClientVerified, verifyAdminClient]);
 
   const handleUserCreated = (userData: any) => {
     toast({
@@ -68,12 +77,14 @@ const UserManagement = () => {
     <div className="space-y-6 py-6 animate-fade-in max-w-7xl mx-auto px-4 sm:px-6">
       <div className="flex items-center justify-between pb-4 border-b">
         <h1 className="text-2xl font-bold">Gestione Utenti</h1>
-        <button
+        <Button
           onClick={() => setShowCreateDialog(true)}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white h-10 px-4 py-2 hover:bg-blue-700"
+          disabled={!adminClientVerified}
+          className="inline-flex items-center gap-2 justify-center rounded-md text-sm font-medium bg-blue-600 text-white h-10 px-4 py-2 hover:bg-blue-700"
         >
+          <UserPlus className="h-4 w-4" />
           Crea Nuovo Utente
-        </button>
+        </Button>
       </div>
 
       {/* Componente verifica accesso admin */}

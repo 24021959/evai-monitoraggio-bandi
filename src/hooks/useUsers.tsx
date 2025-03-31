@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { adminClient } from '@/integrations/supabase/adminClient';
+import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
 import { useToast } from '@/components/ui/use-toast';
 import { UserProfile } from '@/types';
 
@@ -15,30 +15,35 @@ export const useUsers = () => {
   const [adminClientVerified, setAdminClientVerified] = useState<boolean | null>(null);
   const { toast } = useToast();
 
-  // Verificare l'accesso amministrativo all'inizializzazione del hook
   const verifyAdminClient = async () => {
     try {
       console.log("Verifica dell'accesso amministrativo in corso...");
       
-      // Effettua un test semplice per verificare l'accesso admin
-      const { data, error } = await adminClient.auth.admin.listUsers({
-        perPage: 1,
-        page: 1
-      });
+      const isVerified = await verifyAdminClientAccess();
       
-      if (error) {
-        console.error("Errore di verifica client amministrativo:", error);
-        setAdminClientVerified(false);
-        return false;
+      setAdminClientVerified(isVerified);
+      
+      if (isVerified) {
+        console.log("Client amministrativo verificato correttamente");
+        fetchUsers(); // Ricarica gli utenti dopo la verifica
+      } else {
+        console.error("Verifica del client amministrativo fallita");
+        toast({
+          title: 'Errore di verifica',
+          description: 'Non è stato possibile verificare il client amministrativo. Alcune funzionalità potrebbero essere limitate.',
+          variant: 'destructive'
+        });
       }
       
-      console.log("Client amministrativo verificato con successo:", data);
-      setAdminClientVerified(true);
-      fetchUsers(); // Ricarica gli utenti dopo la verifica
-      return true;
+      return isVerified;
     } catch (error: any) {
       console.error(`Errore durante la verifica del client amministrativo: ${error.message}`);
       setAdminClientVerified(false);
+      toast({
+        title: 'Errore',
+        description: `Verifica fallita: ${error.message}`,
+        variant: 'destructive'
+      });
       return false;
     }
   };
@@ -51,7 +56,6 @@ export const useUsers = () => {
     try {
       setLoadingUsers(true);
       
-      // Step 1: Recupera i profili utente dallo schema pubblico
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select(`
@@ -61,7 +65,6 @@ export const useUsers = () => {
         
       if (profilesError) throw profilesError;
 
-      // Step 2: Recupera gli utenti autenticati solo se il client admin è verificato
       if (adminClientVerified) {
         console.log("Recupero utenti con adminClient");
         const { data: authData, error: usersError } = await adminClient.auth.admin.listUsers();
@@ -74,7 +77,6 @@ export const useUsers = () => {
         const authUsers = authData?.users || [];
         console.log("Utenti auth recuperati:", authUsers.length);
 
-        // Combiniamo i dati dai profili con le email degli utenti autenticati
         const combinedUsers = profiles?.map(profile => {
           const authUser = authUsers.find(u => u.id === profile.id);
           
@@ -91,11 +93,10 @@ export const useUsers = () => {
         console.log("Utenti combinati recuperati:", combinedUsers.length);
         setUsers(combinedUsers);
       } else {
-        // Mostra un messaggio più chiaro quando non c'è accesso admin
         toast({
           title: 'Client amministrativo non verificato',
-          description: 'Per visualizzare le email degli utenti, assicurati che il client amministrativo sia configurato correttamente',
-          variant: 'destructive'
+          description: 'Per visualizzare le email degli utenti, verifica l\'accesso amministrativo',
+          variant: 'warning'
         });
         
         const basicUsers = profiles?.map(profile => ({
@@ -185,7 +186,6 @@ export const useUsers = () => {
         description: `L'utente ${email} è stato creato con successo.`
       });
 
-      // Update users list
       fetchUsers();
       return true;
 
@@ -249,7 +249,7 @@ export const useUsers = () => {
         description: `Il profilo utente è stato aggiornato con successo.`
       });
 
-      fetchUsers(); // Refresh users list
+      fetchUsers();
       return true;
     } catch (error: any) {
       toast({
