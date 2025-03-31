@@ -1,146 +1,194 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Shield, UserPlus, AlertTriangle, RefreshCcw } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import UserTable from '@/components/admin/UserTable';
-import CreateUserDialog from '@/components/admin/CreateUserDialog';
-import { useUsers } from '@/hooks/useUsers';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Users, ShieldCheck, Database, Settings } from "lucide-react";
+import { UserTable } from "@/components/admin/UserTable";
+import { useUsers } from "@/hooks/useUsers";
+import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
+import { UserDetailsDialog } from "@/components/admin/UserDetailsDialog";
 import { useToast } from '@/components/ui/use-toast';
+import { FontiTabContent } from '@/components/fonti/FontiTabContent';
+import { AggiungiTabContent } from '@/components/fonti/AggiungiTabContent';
+import { useFonti } from '@/hooks/useFonti';
 
-const AdminPage: React.FC = () => {
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState('');
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'admin' | 'client'>('client');
-  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  
-  const { isAdmin } = useAuth();
+const AdminPage = () => {
   const { toast } = useToast();
-  const { 
-    users, 
-    loadingUsers, 
-    createUser, 
-    toggleUserActive, 
-    adminClientVerified, 
-    adminVerificationError,
-    verifyAdminClient
-  } = useUsers();
+  const { users, createUser, updateUser, deleteUser, resetPassword, isLoading } = useUsers();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("users");
+  const [activeFontiTab, setActiveFontiTab] = useState("fonti");
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const success = await createUser(newUserEmail, newUserPassword, newUserName, newUserRole);
-    
-    if (success) {
-      setNewUserEmail('');
-      setNewUserPassword('');
-      setNewUserName('');
-      setNewUserRole('client');
-      setShowCreateUserDialog(false);
-    }
+  // Utilizziamo lo stesso hook useFonti che viene usato nella pagina utente
+  const {
+    fonti,
+    isLoading: fontiLoading,
+    handleDelete,
+    handleAddSource,
+  } = useFonti();
+
+  const handleUserCreated = (userData) => {
+    toast({
+      title: "Utente creato",
+      description: `L'utente ${userData.email} è stato creato con successo.`,
+    });
+    setShowCreateDialog(false);
   };
 
-  const handleRetryVerification = async () => {
-    setIsVerifying(true);
-    const success = await verifyAdminClient();
-    setIsVerifying(false);
-    
-    if (success) {
-      toast({
-        title: "Verifica completata",
-        description: "Il client amministrativo è stato configurato correttamente.",
-        variant: "default"
-      });
-    } else {
-      toast({
-        title: "Verifica fallita",
-        description: "Problema con la configurazione del client amministrativo. Verificare la chiave Service Role in Supabase.",
-        variant: "destructive"
-      });
-    }
+  const handleUserUpdated = () => {
+    toast({
+      title: "Utente aggiornato",
+      description: "Le informazioni dell'utente sono state aggiornate con successo.",
+    });
+    setSelectedUser(null);
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="p-8 text-center">
-        <h1 className="text-2xl font-bold text-red-500">Accesso negato</h1>
-        <p className="mt-2">Non hai i permessi per visualizzare questa pagina.</p>
-      </div>
-    );
-  }
+  const handleUserDeleted = () => {
+    toast({
+      title: "Utente eliminato",
+      description: "L'utente è stato eliminato con successo.",
+    });
+    setSelectedUser(null);
+  };
+
+  const handlePasswordReset = () => {
+    toast({
+      title: "Reset password inviato",
+      description: "Email per il reset della password inviata con successo.",
+    });
+  };
+
+  const showUserDetails = (user) => {
+    setSelectedUser(user);
+  };
+
+  // Aggiungo fonte handler che cambia anche la tab attiva
+  const onAddSource = async (newSource) => {
+    const success = await handleAddSource(newSource);
+    if (success) {
+      setActiveFontiTab("fonti");
+    }
+    return success;
+  };
 
   return (
-    <div className="space-y-8 p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="h-5 w-5 text-blue-600" />
-          Gestione Utenti
+          <ShieldCheck className="h-6 w-6 text-blue-500" />
+          Pannello Amministrazione
         </h1>
-        <Button 
-          onClick={() => setShowCreateUserDialog(true)} 
-          className="flex gap-2 items-center"
-          disabled={adminClientVerified === false}
-        >
-          <UserPlus className="h-4 w-4" />
+        <Button onClick={() => setShowCreateDialog(true)} className="flex items-center">
+          <Users className="mr-2 h-4 w-4" />
           Crea Nuovo Utente
         </Button>
       </div>
 
-      {adminClientVerified === false && (
-        <Alert variant="destructive" className="bg-red-50 border-red-200">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="flex flex-col gap-2">
-            <p className="font-semibold">Impossibile creare nuovi utenti: problemi di configurazione con le API admin.</p>
-            <p className="text-sm">
-              È necessario aggiornare la chiave Service Role di Supabase nel file adminClient.ts con una chiave valida.
-              {adminVerificationError && <span className="block mt-1 text-red-600">{adminVerificationError}</span>}
-            </p>
-            <div className="mt-2 flex flex-col gap-2">
-              <p className="text-xs text-gray-700">
-                Per ottenere una nuova chiave Service Role:
-                <ol className="list-decimal pl-5 mt-1">
-                  <li>Vai alla dashboard di Supabase del progetto</li>
-                  <li>Vai su Settings &gt; API</li>
-                  <li>Copia la "service_role key" (NON la anon key)</li>
-                  <li>Sostituisci la chiave nel file src/integrations/supabase/adminClient.ts</li>
-                </ol>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-3 mb-6">
+          <TabsTrigger value="users" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+            <Users className="mr-2 h-4 w-4" />
+            Gestione Utenti
+          </TabsTrigger>
+          <TabsTrigger value="data-sources" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+            <Database className="mr-2 h-4 w-4" />
+            Fonti di Dati
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+            <Settings className="mr-2 h-4 w-4" />
+            Impostazioni
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="users">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Gestione Utenti</CardTitle>
+              <CardDescription>
+                Gestisci gli utenti della piattaforma, resetta le password e modifica i permessi.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserTable 
+                users={users} 
+                isLoading={isLoading}
+                onShowDetails={showUserDetails}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="data-sources">
+          <Tabs value={activeFontiTab} onValueChange={setActiveFontiTab} className="w-full">
+            <TabsList className="grid grid-cols-2 mb-6">
+              <TabsTrigger value="fonti" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Fonti Configurate</TabsTrigger>
+              <TabsTrigger value="aggiungi" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Aggiungi Fonte</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="fonti">
+              <FontiTabContent 
+                fonti={fonti} 
+                isLoading={fontiLoading}
+                onDelete={handleDelete}
+              />
+            </TabsContent>
+            
+            <TabsContent value="aggiungi">
+              <AggiungiTabContent 
+                onAddSource={onAddSource} 
+                fonti={fonti}
+              />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+        
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Impostazioni</CardTitle>
+              <CardDescription>
+                Configura le impostazioni globali della piattaforma.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Per configurare le impostazioni avanzate come le connessioni API e i webhook, utilizza la pagina 
+                <a href="/app/admin/settings" className="text-blue-600 hover:underline ml-1">Impostazioni Avanzate</a>.
               </p>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleRetryVerification}
-                disabled={isVerifying}
-                className="flex items-center gap-1 mt-2 w-fit"
-              >
-                <RefreshCcw className={`h-3 w-3 ${isVerifying ? 'animate-spin' : ''}`} />
-                {isVerifying ? 'Verifica in corso...' : 'Riprova verifica'}
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
+              
+              <p className="text-sm text-muted-foreground">
+                La configurazione del foglio Google per l'importazione/esportazione delle fonti può essere gestita dalle 
+                <a href="/app/admin/settings" className="text-blue-600 hover:underline ml-1">Impostazioni Avanzate</a>.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Dialog per creare un nuovo utente */}
+      <CreateUserDialog 
+        open={showCreateDialog} 
+        onOpenChange={setShowCreateDialog} 
+        onUserCreated={handleUserCreated}
+        createUser={createUser}
+      />
+      
+      {/* Dialog per i dettagli utente */}
+      {selectedUser && (
+        <UserDetailsDialog 
+          open={!!selectedUser} 
+          onOpenChange={() => setSelectedUser(null)}
+          user={selectedUser}
+          updateUser={updateUser}
+          deleteUser={deleteUser}
+          resetPassword={resetPassword}
+          onUserUpdated={handleUserUpdated}
+          onUserDeleted={handleUserDeleted}
+          onPasswordReset={handlePasswordReset}
+        />
       )}
-
-      <UserTable
-        users={users}
-        loadingUsers={loadingUsers}
-        toggleUserActive={toggleUserActive}
-      />
-
-      <CreateUserDialog
-        open={showCreateUserDialog}
-        onOpenChange={setShowCreateUserDialog}
-        onCreateUser={handleCreateUser}
-        newUserEmail={newUserEmail}
-        setNewUserEmail={setNewUserEmail}
-        newUserPassword={newUserPassword}
-        setNewUserPassword={setNewUserPassword}
-        newUserName={newUserName}
-        setNewUserName={setNewUserName}
-        newUserRole={newUserRole}
-        setNewUserRole={setNewUserRole}
-      />
     </div>
   );
 };
