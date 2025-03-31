@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
+import { adminClient } from '@/integrations/supabase/adminClient';
 import { useToast } from '@/components/ui/use-toast';
 import { UserProfile } from '@/types';
 
@@ -14,32 +13,32 @@ export const useUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [adminClientVerified, setAdminClientVerified] = useState<boolean | null>(null);
-  const [adminVerificationError, setAdminVerificationError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Verify admin client access on hook initialization
+  // Verificare l'accesso amministrativo all'inizializzazione del hook
   const verifyAdminClient = async () => {
     try {
       console.log("Verifica dell'accesso amministrativo in corso...");
-      const verified = await verifyAdminClientAccess();
-      setAdminClientVerified(verified);
       
-      if (!verified) {
-        const errorMsg = 'Il client amministrativo non è configurato correttamente. Verificare la chiave Service Role.';
-        setAdminVerificationError(errorMsg);
-        console.error(errorMsg);
+      // Effettua un test semplice per verificare l'accesso admin
+      const { data, error } = await adminClient.auth.admin.listUsers({
+        perPage: 1,
+        page: 1
+      });
+      
+      if (error) {
+        console.error("Errore di verifica client amministrativo:", error);
+        setAdminClientVerified(false);
         return false;
-      } else {
-        console.log("Client amministrativo verificato con successo");
-        setAdminVerificationError(null);
-        fetchUsers(); // Reload users after successful verification
-        return true;
       }
+      
+      console.log("Client amministrativo verificato con successo:", data);
+      setAdminClientVerified(true);
+      fetchUsers(); // Ricarica gli utenti dopo la verifica
+      return true;
     } catch (error: any) {
-      const errorMsg = `Errore durante la verifica del client amministrativo: ${error.message}`;
-      setAdminVerificationError(errorMsg);
+      console.error(`Errore durante la verifica del client amministrativo: ${error.message}`);
       setAdminClientVerified(false);
-      console.error(errorMsg);
       return false;
     }
   };
@@ -52,7 +51,7 @@ export const useUsers = () => {
     try {
       setLoadingUsers(true);
       
-      // Step 1: Retrieve user profiles from the public schema
+      // Step 1: Recupera i profili utente dallo schema pubblico
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select(`
@@ -62,18 +61,18 @@ export const useUsers = () => {
         
       if (profilesError) throw profilesError;
 
-      // Step 2: Retrieve authenticated users only if admin client is verified
+      // Step 2: Recupera gli utenti autenticati solo se il client admin è verificato
       if (adminClientVerified) {
-        console.log("Tentativo di recupero utenti con adminClient");
-        const { data, error: usersError } = await adminClient.auth.admin.listUsers();
+        console.log("Recupero utenti con adminClient");
+        const { data: authData, error: usersError } = await adminClient.auth.admin.listUsers();
         
         if (usersError) {
           console.error("Errore nel recupero degli utenti auth:", usersError);
           throw usersError;
         }
 
-        const authUsers = data?.users || [];
-        console.log("Utenti auth recuperati:", authUsers);
+        const authUsers = authData?.users || [];
+        console.log("Utenti auth recuperati:", authUsers.length);
 
         // Combiniamo i dati dai profili con le email degli utenti autenticati
         const combinedUsers = profiles?.map(profile => {
@@ -82,27 +81,27 @@ export const useUsers = () => {
           return {
             id: profile.id,
             display_name: profile.display_name,
-            email: authUser?.email || '', // Usiamo l'email dell'utente autenticato
+            email: authUser?.email || 'Email non trovata',
             role: profile.role,
             is_active: profile.organizations?.is_active !== false,
-            disabled: authUser ? !authUser.email_confirmed_at : true // Consideriamo disabilitati gli utenti non confermati
+            disabled: authUser ? !authUser.email_confirmed_at : true
           };
         }) || [];
 
-        console.log("Utenti combinati recuperati:", combinedUsers);
+        console.log("Utenti combinati recuperati:", combinedUsers.length);
         setUsers(combinedUsers);
       } else {
-        // Se non abbiamo accesso al client admin, non possiamo recuperare le email
+        // Mostra un messaggio più chiaro quando non c'è accesso admin
         toast({
-          title: 'Attenzione',
-          description: 'Client amministrativo non configurato. Impossibile visualizzare le email degli utenti.',
+          title: 'Client amministrativo non verificato',
+          description: 'Per visualizzare le email degli utenti, assicurati che il client amministrativo sia configurato correttamente',
           variant: 'destructive'
         });
         
         const basicUsers = profiles?.map(profile => ({
           id: profile.id,
           display_name: profile.display_name,
-          email: 'Email non disponibile (accesso admin richiesto)', // Messaggo chiaro sul perché l'email non è disponibile
+          email: 'Email non disponibile - Verifica accesso admin',
           role: profile.role,
           is_active: profile.organizations?.is_active !== false
         })) || [];
@@ -139,7 +138,7 @@ export const useUsers = () => {
     if (!adminClientVerified) {
       toast({
         title: 'Errore di configurazione',
-        description: adminVerificationError || 'Impossibile creare utenti: client amministrativo non configurato correttamente.',
+        description: 'Client amministrativo non configurato. Impossibile creare utenti.',
         variant: 'destructive'
       });
       return false;
@@ -270,7 +269,6 @@ export const useUsers = () => {
     toggleUserActive,
     updateUserProfile,
     adminClientVerified,
-    adminVerificationError,
     verifyAdminClient
   };
 };

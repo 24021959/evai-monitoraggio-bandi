@@ -1,21 +1,29 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users, Shield } from "lucide-react";
 import { useUsers } from "@/hooks/useUsers";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
 import { useToast } from '@/components/ui/use-toast';
 import { UserProfile, UserProfileUpdate } from '@/types';
+import UserTable from '@/components/admin/UserTable';
+import VerifyAdminAccess from '@/components/admin/VerifyAdminAccess';
 
 const UserManagement = () => {
   const { toast } = useToast();
-  const { users, createUser, updateUserProfile, toggleUserActive, loadingUsers } = useUsers();
+  const { 
+    users, 
+    createUser, 
+    updateUserProfile, 
+    toggleUserActive, 
+    loadingUsers, 
+    adminClientVerified,
+    verifyAdminClient
+  } = useUsers();
+  
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
-  const handleUserCreated = (userData) => {
+  const handleUserCreated = (userData: any) => {
     toast({
       title: "Utente creato",
       description: `L'utente ${userData.email} è stato creato con successo.`,
@@ -57,83 +65,31 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="h-6 w-6 text-blue-500" />
-          Gestione Utenti
-        </h1>
-        <Button onClick={() => setShowCreateDialog(true)} className="flex items-center">
-          <Users className="mr-2 h-4 w-4" />
+    <div className="space-y-6 py-6 animate-fade-in max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="flex items-center justify-between pb-4 border-b">
+        <h1 className="text-2xl font-bold">Gestione Utenti</h1>
+        <button
+          onClick={() => setShowCreateDialog(true)}
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white h-10 px-4 py-2 hover:bg-blue-700"
+        >
           Crea Nuovo Utente
-        </Button>
+        </button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Gestione Utenti</CardTitle>
-          <CardDescription>
-            Gestisci gli utenti della piattaforma, resetta le password e modifica i permessi.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingUsers ? (
-            <div className="flex justify-center p-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 text-left">
-                    <th className="p-3">Utente</th>
-                    <th className="p-3">Email</th>
-                    <th className="p-3">Ruolo</th>
-                    <th className="p-3">Stato</th>
-                    <th className="p-3">Azioni</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users && users.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3 font-medium">{user.display_name || "-"}</td>
-                      <td className="p-3 text-gray-600">{user.email}</td>
-                      <td className="p-3">
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                          user.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"
-                        }`}>
-                          {user.role === "admin" ? "Admin" : "Cliente"}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                          !user.disabled && user.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}>
-                          {!user.disabled && user.is_active ? "Attivo" : "Disabilitato"}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex space-x-2">
-                          <Button size="sm" variant="outline" onClick={() => showUserDetails(user)}>
-                            Dettagli
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant={user.disabled || !user.is_active ? "default" : "destructive"}
-                            onClick={() => toggleUserActive(user.id, !(user.disabled || !user.is_active), user.display_name || "")}
-                          >
-                            {user.disabled || !user.is_active ? "Attiva" : "Disattiva"}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Componente verifica accesso admin */}
+      <VerifyAdminAccess 
+        verifyAdminClient={verifyAdminClient}
+        adminClientVerified={adminClientVerified}
+      />
+
+      {/* Tabella utenti */}
+      <UserTable 
+        users={users}
+        loadingUsers={loadingUsers}
+        adminClientVerified={adminClientVerified}
+        toggleUserActive={toggleUserActive}
+        onShowDetails={showUserDetails}
+      />
       
       {/* Dialog per creare un nuovo utente */}
       <CreateUserDialog 
