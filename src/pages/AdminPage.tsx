@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ShieldCheck, Database, Settings, FileSpreadsheet, Webhook } from "lucide-react";
+import { Users, ShieldCheck, Database, Settings, FileSpreadsheet, Webhook, UserPlus } from "lucide-react";
 import { useUsers } from "@/hooks/useUsers";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
@@ -14,18 +14,13 @@ import { useFonti } from '@/hooks/useFonti';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-// Definizione del tipo per gli aggiornamenti del profilo utente
-type UserProfileUpdate = {
-  display_name?: string;
-  role?: 'admin' | 'client';
-};
+import { UserProfile, UserProfileUpdate } from '@/types';
 
 const AdminPage = () => {
   const { toast } = useToast();
   const { users, createUser, updateUserProfile, toggleUserActive, loadingUsers } = useUsers();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState("users");
   const [activeFontiTab, setActiveFontiTab] = useState("fonti");
   const [googleSheetUrl, setGoogleSheetUrl] = useState(localStorage.getItem('googleSheetUrl') || '');
@@ -70,7 +65,7 @@ const AdminPage = () => {
     });
   };
 
-  const showUserDetails = (user) => {
+  const showUserDetails = (user: UserProfile) => {
     setSelectedUser(user);
   };
 
@@ -115,7 +110,7 @@ const AdminPage = () => {
           Pannello Amministrazione
         </h1>
         <Button onClick={() => setShowCreateDialog(true)} className="flex items-center">
-          <Users className="mr-2 h-4 w-4" />
+          <UserPlus className="mr-2 h-4 w-4" />
           Crea Nuovo Utente
         </Button>
       </div>
@@ -188,7 +183,7 @@ const AdminPage = () => {
                               <Button 
                                 size="sm" 
                                 variant={user.disabled ? "default" : "destructive"}
-                                onClick={() => toggleUserActive(user.id, user.disabled)}
+                                onClick={() => toggleUserActive(user.id, !!user.disabled)}
                               >
                                 {user.disabled ? "Attiva" : "Disattiva"}
                               </Button>
@@ -205,27 +200,28 @@ const AdminPage = () => {
         </TabsContent>
         
         <TabsContent value="data-sources">
-          <Tabs value={activeFontiTab} onValueChange={setActiveFontiTab} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="fonti" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Fonti Configurate</TabsTrigger>
-              <TabsTrigger value="aggiungi" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Aggiungi Fonte</TabsTrigger>
-            </TabsList>
+          <div className="space-y-6">
+            <FontiTabContent 
+              fonti={fonti} 
+              isLoading={fontiLoading}
+              onDelete={handleDelete}
+            />
             
-            <TabsContent value="fonti">
-              <FontiTabContent 
-                fonti={fonti} 
-                isLoading={fontiLoading}
-                onDelete={handleDelete}
-              />
-            </TabsContent>
-            
-            <TabsContent value="aggiungi">
-              <AggiungiTabContent 
-                onAddSource={onAddSource} 
-                fonti={fonti}
-              />
-            </TabsContent>
-          </Tabs>
+            <Card>
+              <CardHeader>
+                <CardTitle>Aggiungi Nuova Fonte</CardTitle>
+                <CardDescription>
+                  Configura una nuova fonte di dati per il monitoraggio dei bandi
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AggiungiTabContent 
+                  onAddSource={onAddSource} 
+                  fonti={fonti}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="settings">

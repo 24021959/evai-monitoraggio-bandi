@@ -17,7 +17,7 @@ const Index = () => {
     } else {
       // Reindirizza direttamente alla pagina di gestione admin se l'utente è admin
       if (userProfile?.role === 'admin') {
-        navigate('/app/admin/gestione');
+        navigate('/app/admin');
       } else {
         navigate('/app/dashboard');
       }

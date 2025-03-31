@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Shield } from "lucide-react";
@@ -7,13 +7,13 @@ import { useUsers } from "@/hooks/useUsers";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
 import { useToast } from '@/components/ui/use-toast';
-import { UserProfileUpdate } from '@/types';
+import { UserProfile, UserProfileUpdate } from '@/types';
 
 const UserManagement = () => {
   const { toast } = useToast();
   const { users, createUser, updateUserProfile, toggleUserActive, loadingUsers } = useUsers();
-  const [showCreateDialog, setShowCreateDialog] = React.useState(false);
-  const [selectedUser, setSelectedUser] = React.useState(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   const handleUserCreated = (userData) => {
     toast({
@@ -46,7 +46,7 @@ const UserManagement = () => {
     });
   };
 
-  const showUserDetails = (user) => {
+  const showUserDetails = (user: UserProfile) => {
     setSelectedUser(user);
   };
 
@@ -120,7 +120,7 @@ const UserManagement = () => {
                           <Button 
                             size="sm" 
                             variant={user.disabled ? "default" : "destructive"}
-                            onClick={() => toggleUserActive(user.id, user.disabled)}
+                            onClick={() => toggleUserActive(user.id, !!user.disabled)}
                           >
                             {user.disabled ? "Attiva" : "Disattiva"}
                           </Button>

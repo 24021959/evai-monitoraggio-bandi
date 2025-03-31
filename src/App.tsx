@@ -22,10 +22,10 @@ import DettaglioCliente from './pages/DettaglioCliente';
 import NotFound from './pages/NotFound';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import AdminPage from './pages/AdminPage';
+import UserManagement from './pages/UserManagement';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ImportaBandi from './pages/ImportaBandi';
 import BandiImportati from './pages/BandiImportati';
-import UserManagement from './pages/UserManagement';
 
 function App() {
   return (
@@ -50,10 +50,15 @@ function App() {
           <Route path="/app/strumenti/importa-bandi" element={<ImportaBandi />} />
           <Route path="/app/strumenti/bandi-importati" element={<BandiImportati />} />
           
-          {/* Simplified admin routes - using the same layout but without sidebar */}
+          {/* Admin routes */}
           <Route path="/app/admin" element={
             <AdminProtectedRoute>
               <AdminPage />
+            </AdminProtectedRoute>
+          } />
+          <Route path="/app/admin/gestione" element={
+            <AdminProtectedRoute>
+              <UserManagement />
             </AdminProtectedRoute>
           } />
         </Route>

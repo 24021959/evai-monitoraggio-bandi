@@ -112,3 +112,14 @@ export interface UserProfileUpdate {
   display_name?: string;
   role?: 'admin' | 'client';
 }
+
+// Aggiungiamo un'interfaccia estesa per gli utenti del pannello admin
+export interface UserProfile {
+  id: string;
+  email: string;
+  disabled?: boolean;
+  profile?: {
+    display_name?: string;
+    role?: 'admin' | 'client';
+  };
+}
