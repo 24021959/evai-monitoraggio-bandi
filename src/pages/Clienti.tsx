@@ -161,7 +161,7 @@ const Clienti = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gestione Clienti</h1>
         <Button 
-          onClick={() => navigate('/clienti/nuovo')}
+          onClick={() => navigate('/app/nuovo-cliente')}
           className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white"
         >
           <PlusCircle className="h-4 w-4" />
