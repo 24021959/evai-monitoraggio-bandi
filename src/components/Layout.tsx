@@ -39,14 +39,7 @@ const Layout = () => {
       <Header />
       
       <div className="flex flex-1">
-        {/* Mostra la sidebar admin per le pagine admin */}
-        {isAdminRoute && isAdmin && (
-          <div className="w-1/5">
-            <AdminSidebar />
-          </div>
-        )}
-        
-        {/* Mostra la sidebar client per le pagine client */}
+        {/* Mostra la sidebar client solo per le pagine client */}
         {!isAdminRoute && !isAdmin && (
           <div className="w-1/5">
             <ClientSidebar />
