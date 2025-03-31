@@ -36,46 +36,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAdmin = userProfile?.role === 'admin';
 
-  useEffect(() => {
-    // First, set up the auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      console.log('Auth state changed:', event);
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (event === 'SIGNED_OUT') {
-        setUserProfile(null);
-      }
-
-      if (currentSession?.user) {
-        // Use setTimeout to prevent potential deadlocks with Supabase client
-        setTimeout(() => {
-          fetchUserProfile(currentSession.user.id);
-        }, 0);
-      }
-    });
-
-    // Then check for an existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log('Sessione corrente:', currentSession ? 'Presente' : 'Assente');
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (currentSession?.user) {
-        fetchUserProfile(currentSession.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
+  // Function to fetch user profile data
   const fetchUserProfile = async (userId: string) => {
     try {
-      setLoading(true);
+      console.log('Fetching user profile for:', userId);
       
       const { data, error } = await supabase
         .from('user_profiles')
@@ -89,13 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('Errore nel recupero del profilo:', error);
+        console.error('Error fetching user profile:', error);
         setLoading(false);
         return;
       }
 
       if (data) {
-        console.log('Profilo utente recuperato:', data);
+        console.log('User profile retrieved:', data);
         const organizationDisabled = data.organizations ? !data.organizations.is_active : false;
         
         setUserProfile({
@@ -109,36 +73,105 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setLoading(false);
     } catch (error) {
-      console.error('Errore durante il recupero del profilo utente:', error);
+      console.error('Error during user profile retrieval:', error);
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    // Track if component is mounted to prevent state updates after unmount
+    let isMounted = true;
+    
+    const setupAuthListener = async () => {
+      // First set up the auth listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+        console.log('Auth state changed:', event, 'User:', newSession?.user?.id);
+        
+        if (!isMounted) return;
+        
+        // Update auth state
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        // Handle signout
+        if (event === 'SIGNED_OUT') {
+          setUserProfile(null);
+          // No need to navigate here, let the components handle it
+        }
+        
+        // If we have a new user, fetch their profile
+        if (newSession?.user && event !== 'TOKEN_REFRESHED') {
+          // Use setTimeout to prevent potential deadlocks
+          setTimeout(() => {
+            if (isMounted) {
+              fetchUserProfile(newSession.user.id);
+            }
+          }, 0);
+        }
+      });
+
+      // Then check for existing session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      
+      console.log('Current session check:', currentSession ? 'Present' : 'Absent');
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        fetchUserProfile(currentSession.user.id);
+      } else {
+        setLoading(false);
+      }
+      
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+
+    const cleanup = setupAuthListener();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      // Properly handle promise returned by setupAuthListener if needed
+      if (cleanup instanceof Promise) {
+        cleanup.then(unsubscribe => {
+          if (unsubscribe) unsubscribe();
+        });
+      }
+    };
+  }, []);
+
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      console.log('Tentativo di login con email:', email);
+      console.log('Attempting login with email:', email);
       
-      // Clear any existing session first to avoid conflicts
+      // Sign out first to clear any stale session state
       await supabase.auth.signOut();
       
-      // Small delay to ensure signOut completes
+      // Give it a moment to complete signout
       await new Promise(resolve => setTimeout(resolve, 100));
       
+      // Now attempt to sign in
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        console.error('Errore durante il login:', error);
+        console.error('Login error:', error);
         throw error;
-      } else if (data.user) {
-        console.log('Login riuscito:', data.user.id);
+      }
+      
+      if (data.user) {
+        console.log('Login successful for user:', data.user.id);
         
+        // Notify the user
         toast({
           title: "Accesso effettuato",
-          description: `Benvenuto`,
+          description: "Benvenuto",
         });
         
-        // Fetch user profile directly here to ensure it's loaded before redirect
+        // Fetch user profile directly to ensure we have role information before redirect
         const { data: profileData, error: profileError } = await supabase
           .from('user_profiles')
           .select(`
@@ -153,21 +186,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
         
         if (profileError) {
-          console.error('Errore nel recupero del profilo dopo login:', profileError);
+          console.error('Error fetching profile after login:', profileError);
+          // Default redirect if we can't determine role
           navigate('/app/dashboard');
           return;
         }
         
-        console.log('Profilo dopo login:', profileData);
+        console.log('Profile after login:', profileData);
         
+        // Redirect based on role
         if (profileData?.role === 'admin') {
+          console.log('Redirecting to admin page');
           navigate('/app/admin/gestione');
         } else {
+          console.log('Redirecting to dashboard');
           navigate('/app/dashboard');
         }
       }
     } catch (error: any) {
-      console.error('Errore durante il processo di login:', error);
+      console.error('Error during login process:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -193,7 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: error.message,
           variant: "destructive"
         });
-        console.error('Errore di registrazione:', error);
+        console.error('Registration error:', error);
       } else {
         toast({
           title: "Registrazione completata",
@@ -206,7 +243,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Si è verificato un errore durante la registrazione",
         variant: "destructive"
       });
-      console.error('Errore durante il processo di registrazione:', error);
+      console.error('Error during registration process:', error);
     } finally {
       setLoading(false);
     }
@@ -216,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       await supabase.auth.signOut();
-      navigate('/login');
+      // No need to navigate here, let the auth state change event handle redirection
       toast({
         title: "Logout effettuato",
         description: "Hai effettuato il logout con successo",
@@ -227,9 +264,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Si è verificato un errore durante il logout",
         variant: "destructive"
       });
-      console.error('Errore durante il logout:', error);
+      console.error('Error during logout:', error);
     } finally {
       setLoading(false);
+      // Ensure we navigate to login even if there's an error
+      navigate('/login');
     }
   };
 

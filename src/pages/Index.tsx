@@ -5,26 +5,44 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 const Index = () => {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, session } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
+    // Only proceed with redirection when auth state is fully loaded
     if (loading) return;
     
-    // Reindirizza alla pagina di login se l'utente non è autenticato
-    if (!user) {
+    console.log('Index page - Auth state loaded:', 
+      'User:', user ? 'exists' : 'null',
+      'Session:', session ? 'exists' : 'null',
+      'Profile:', userProfile ? userProfile.role : 'null'
+    );
+    
+    // Redirect to login if the user is not authenticated
+    if (!user || !session) {
+      console.log('No authenticated user, redirecting to login');
       navigate('/login');
-    } else {
-      // Reindirizza direttamente alla pagina di gestione admin se l'utente è admin
-      if (userProfile?.role === 'admin') {
-        navigate('/app/admin');
+      return;
+    }
+    
+    // User is authenticated, redirect based on role
+    if (userProfile) {
+      if (userProfile.role === 'admin') {
+        console.log('Admin user detected, redirecting to admin page');
+        navigate('/app/admin/gestione');
       } else {
+        console.log('Client user detected, redirecting to dashboard');
         navigate('/app/dashboard');
       }
+    } else {
+      // Profile not loaded yet but user is authenticated, default to dashboard
+      console.log('User profile not yet loaded, redirecting to dashboard');
+      navigate('/app/dashboard');
     }
-  }, [user, userProfile, navigate, loading]);
+    
+  }, [user, userProfile, navigate, loading, session]);
   
-  // Pagina di caricamento mentre si effettua il reindirizzamento
+  // Loading page while redirection occurs
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-50">
       <div className="text-center">

@@ -17,18 +17,19 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const { signIn, user } = useAuth();
+  const { signIn, user, session } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  console.log('Rendering LoginPage, user:', user);
+  console.log('Rendering LoginPage, user:', user, 'session:', session ? 'exists' : 'null');
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (user) {
+    if (user && session) {
+      console.log('User already logged in, redirecting');
       navigate('/app/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,11 +47,11 @@ const LoginPage = () => {
     setIsSubmitting(true);
     
     try {
-      console.log('Tentativo di login con:', email);
+      console.log('Attempting login with:', email);
       await signIn(email, password);
-      // Il reindirizzamento viene gestito all'interno della funzione signIn
+      // Redirection is handled inside the signIn function
     } catch (error: any) {
-      console.error('Errore durante il login:', error);
+      console.error('Login error:', error);
       
       let errorMessage = 'Si è verificato un errore durante il login';
       
