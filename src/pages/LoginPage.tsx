@@ -21,6 +21,9 @@ const LoginPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Aggiungiamo dei log per debug
+  console.log('Rendering LoginPage, user:', user);
+
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
@@ -44,6 +47,7 @@ const LoginPage = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('Tentativo di login con:', email);
       await signIn(email, password);
       // Il reindirizzamento viene gestito all'interno della funzione signIn
     } catch (error: any) {
@@ -67,9 +71,6 @@ const LoginPage = () => {
       setIsSubmitting(false);
     }
   };
-
-  // Aggiungiamo dei log per debug
-  console.log('Rendering LoginPage, user:', user);
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">

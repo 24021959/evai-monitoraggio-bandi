@@ -117,6 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log('Tentativo di login con email:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
@@ -128,18 +130,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: `Benvenuto`,
         });
         
-        // Recuperiamo il profilo utente per determinare dove reindirizzare l'utente
-        const { data: profileData, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (profileError) {
-          console.error('Errore nel recupero del ruolo:', profileError);
-        }
+        // Attendiamo il caricamento del profilo utente
+        await new Promise(resolve => {
+          const checkProfile = () => {
+            if (userProfile) {
+              resolve(null);
+            } else {
+              setTimeout(checkProfile, 100);
+            }
+          };
+          checkProfile();
+        });
         
-        if (profileData && profileData.role === 'admin') {
+        // Reindirizzo basato sul ruolo
+        if (userProfile?.role === 'admin') {
           navigate('/app/admin/gestione');
         } else {
           navigate('/app/dashboard');
