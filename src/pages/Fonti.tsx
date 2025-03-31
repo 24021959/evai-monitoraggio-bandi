@@ -31,8 +31,11 @@ const Fonti = () => {
             </div>
           ) : (
             <ul className="divide-y divide-gray-100">
-              {fonti.map(fonte => (
-                <li key={fonte.id} className="py-4 px-2 hover:bg-blue-50 transition-colors rounded-md">
+              {fonti.map((fonte, index) => (
+                <li 
+                  key={fonte.id} 
+                  className={`py-4 px-2 hover:bg-blue-50 transition-colors rounded-md ${index % 2 === 0 ? 'bg-white' : 'bg-amber-50'}`}
+                >
                   <div className="flex items-center">
                     <div className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white h-10 w-10 rounded-full flex items-center justify-center mr-4">
                       <span className="font-semibold">{fonte.nome.charAt(0).toUpperCase()}</span>
