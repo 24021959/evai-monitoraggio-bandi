@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
 import { Cliente } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
 import {
   Select,
   SelectContent,
@@ -80,7 +80,6 @@ const NuovoCliente = () => {
       return;
     }
 
-    // Add interessi and userId fields when creating a new client
     const newCliente: Cliente = {
       id: v4(),
       nome: formData.nome,
@@ -105,8 +104,8 @@ const NuovoCliente = () => {
       competenzeDipendenti: formData.competenzeDipendenti || [],
       partnership: formData.partnership || [],
       certificazioni: formData.certificazioni || [],
-      interessi: formData.interessiSettoriali || [], // Use interessiSettoriali as default for interessi
-      userId: "" // Add empty userId as it will be populated server-side
+      interessi: formData.interessiSettoriali || [],
+      userId: user.id || ""
     };
 
     try {

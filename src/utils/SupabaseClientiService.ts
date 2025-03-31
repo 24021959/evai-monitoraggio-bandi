@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Cliente } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -120,15 +121,17 @@ export class SupabaseClientiService {
       formaGiuridica: row.formagiuridica,
       codiceATECO: row.codiceateco,
       esperienzaFinanziamenti: row.esperienzafinanziamenti,
-      tecnologieSpecifiche: row.tecnologiespecifiche,
-      criteriESG: row.criteriESG,
+      tecnologieSpecifiche: row.tecnologiespecifiche || [],
+      criteriESG: row.criteriESG || [],
       capacitaRD: row.capacitaRD,
       presenzaInternazionale: row.presenzainternazionale,
       faseDiCrescita: row.fasedicrescita,
       stabilitaFinanziaria: row.stabilitafinanziaria,
-      competenzeDipendenti: row.competenzedipendenti,
-      partnership: row.partnership,
-      certificazioni: row.certificazioni
+      competenzeDipendenti: row.competenzedipendenti || [],
+      partnership: row.partnership || [],
+      certificazioni: row.certificazioni || [],
+      interessi: row.interessi || [],
+      userId: row.userId || ''
     };
   }
 
@@ -151,15 +154,17 @@ export class SupabaseClientiService {
       formagiuridica: cliente.formaGiuridica,
       codiceateco: cliente.codiceATECO,
       esperienzafinanziamenti: cliente.esperienzaFinanziamenti,
-      tecnologiespecifiche: cliente.tecnologieSpecifiche,
-      criteriESG: cliente.criteriESG,
+      tecnologiespecifiche: cliente.tecnologieSpecifiche || [],
+      criteriESG: cliente.criteriESG || [],
       capacitaRD: cliente.capacitaRD,
       presenzainternazionale: cliente.presenzaInternazionale,
       fasedicrescita: cliente.faseDiCrescita,
       stabilitafinanziaria: cliente.stabilitaFinanziaria,
-      competenzedipendenti: cliente.competenzeDipendenti,
-      partnership: cliente.partnership,
-      certificazioni: cliente.certificazioni
+      competenzedipendenti: cliente.competenzeDipendenti || [],
+      partnership: cliente.partnership || [],
+      certificazioni: cliente.certificazioni || [],
+      interessi: cliente.interessi || [],
+      userId: cliente.userId || ''
     };
   }
 
@@ -181,13 +186,13 @@ export class SupabaseClientiService {
       annoFondazione: data.annofondazione || data.annoFondazione,
       formaGiuridica: data.formagiuridica || data.formaGiuridica,
       codiceATECO: data.codiceateco || data.codiceATECO,
-      esperienzaFinanziamenti: data.esperienzaFinanziamenti,
+      esperienzaFinanziamenti: data.esperienzaFinanziamenti || '',
       tecnologieSpecifiche: data.tecnologieSpecifiche || [],
       criteriESG: data.criteriESG || [],
-      capacitaRD: data.capacitaRD,
-      presenzaInternazionale: data.presenzaInternazionale,
-      faseDiCrescita: data.faseDiCrescita,
-      stabilitaFinanziaria: data.stabilitaFinanziaria,
+      capacitaRD: data.capacitaRD || '',
+      presenzaInternazionale: data.presenzaInternazionale || '',
+      faseDiCrescita: data.faseDiCrescita || '',
+      stabilitaFinanziaria: data.stabilitaFinanziaria || '',
       competenzeDipendenti: data.competenzeDipendenti || [],
       partnership: data.partnership || [],
       certificazioni: data.certificazioni || [],
