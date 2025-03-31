@@ -187,8 +187,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (profileError) {
           console.error('Error fetching profile after login:', profileError);
-          // Default redirect if we can't determine role
-          navigate('/app/dashboard');
+          // Default redirect to Index, which will handle proper routing
+          navigate('/', { replace: true });
           return;
         }
         
@@ -197,10 +197,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Redirect based on role
         if (profileData?.role === 'admin') {
           console.log('Redirecting to admin page');
-          navigate('/app/admin/gestione');
+          navigate('/app/admin/gestione', { replace: true });
         } else {
           console.log('Redirecting to dashboard');
-          navigate('/app/dashboard');
+          navigate('/app/dashboard', { replace: true });
         }
       }
     } catch (error: any) {
@@ -268,7 +268,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
       // Ensure we navigate to login even if there's an error
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
   };
 

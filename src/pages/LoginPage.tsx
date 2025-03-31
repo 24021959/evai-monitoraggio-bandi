@@ -27,7 +27,7 @@ const LoginPage = () => {
   useEffect(() => {
     if (user && session) {
       console.log('User already logged in, redirecting');
-      navigate('/app/dashboard');
+      navigate('/', { replace: true });
     }
   }, [user, session, navigate]);
 
@@ -49,7 +49,7 @@ const LoginPage = () => {
     try {
       console.log('Attempting login with:', email);
       await signIn(email, password);
-      // Redirection is handled inside the signIn function
+      // Redirection is handled by the Index component
     } catch (error: any) {
       console.error('Login error:', error);
       

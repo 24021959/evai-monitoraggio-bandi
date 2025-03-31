@@ -29,15 +29,15 @@ const Index = () => {
     if (userProfile) {
       if (userProfile.role === 'admin') {
         console.log('Admin user detected, redirecting to admin page');
-        navigate('/app/admin/gestione');
+        navigate('/app/admin/gestione', { replace: true });
       } else {
         console.log('Client user detected, redirecting to dashboard');
-        navigate('/app/dashboard');
+        navigate('/app/dashboard', { replace: true });
       }
     } else {
       // Profile not loaded yet but user is authenticated, default to dashboard
       console.log('User profile not yet loaded, redirecting to dashboard');
-      navigate('/app/dashboard');
+      navigate('/app/dashboard', { replace: true });
     }
     
   }, [user, userProfile, navigate, loading, session]);
