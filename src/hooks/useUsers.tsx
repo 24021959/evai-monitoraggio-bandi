@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
@@ -97,8 +96,7 @@ export const useUsers = () => {
         toast({
           title: 'Client amministrativo non verificato',
           description: 'Per visualizzare le email degli utenti, verifica l\'accesso amministrativo',
-          // CORREZIONE DELL'ERRORE QUI: "warning" non è un tipo valido per variant
-          variant: 'destructive' // Cambiato da 'warning' a 'destructive'
+          variant: 'destructive'
         });
         
         const basicUsers = profiles?.map(profile => ({
