@@ -3,7 +3,7 @@ import React from 'react';
 import { FontiHeader } from '@/components/fonti/FontiHeader';
 import { FontiLoadingState } from '@/components/fonti/FontiLoadingState';
 import { useFonti } from '@/hooks/useFonti';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Fonti = () => {
   const { fonti, isLoading } = useFonti();
@@ -15,11 +15,7 @@ const Fonti = () => {
       {isLoading && <FontiLoadingState />}
       
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Fonti Configurate</CardTitle>
-          <CardDescription>Lista delle fonti da cui vengono estratti i bandi</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
