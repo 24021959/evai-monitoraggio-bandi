@@ -21,6 +21,7 @@ const LoginPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
       navigate('/app/dashboard');
@@ -44,6 +45,7 @@ const LoginPage = () => {
     
     try {
       await signIn(email, password);
+      // Il reindirizzamento viene gestito all'interno della funzione signIn
     } catch (error: any) {
       console.error('Errore durante il login:', error);
       

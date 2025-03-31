@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = userProfile?.role === 'admin';
 
   useEffect(() => {
+    // First, set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       console.log('Auth state changed:', event);
       setSession(currentSession);
@@ -46,10 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (currentSession?.user) {
-        fetchUserProfile(currentSession.user.id);
+        // Use setTimeout to prevent potential deadlocks with Supabase client
+        setTimeout(() => {
+          fetchUserProfile(currentSession.user.id);
+        }, 0);
       }
     });
 
+    // Then check for an existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log('Sessione corrente:', currentSession ? 'Presente' : 'Assente');
       setSession(currentSession);
@@ -71,39 +77,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
-      setTimeout(async () => {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select(`
-            *,
-            organizations:organization_id (
-              is_active
-            )
-          `)
-          .eq('id', userId)
-          .single();
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select(`
+          *,
+          organizations:organization_id (
+            is_active
+          )
+        `)
+        .eq('id', userId)
+        .single();
 
-        if (error) {
-          console.error('Errore nel recupero del profilo:', error);
-          setLoading(false);
-          return;
-        }
-
-        if (data) {
-          console.log('Profilo utente recuperato:', data);
-          const organizationDisabled = data.organizations ? !data.organizations.is_active : false;
-          
-          setUserProfile({
-            id: data.id,
-            role: data.role,
-            organization_id: data.organization_id,
-            display_name: data.display_name || 'Utente',
-            organizationDisabled
-          });
-        }
-        
+      if (error) {
+        console.error('Errore nel recupero del profilo:', error);
         setLoading(false);
-      }, 0);
+        return;
+      }
+
+      if (data) {
+        console.log('Profilo utente recuperato:', data);
+        const organizationDisabled = data.organizations ? !data.organizations.is_active : false;
+        
+        setUserProfile({
+          id: data.id,
+          role: data.role,
+          organization_id: data.organization_id,
+          display_name: data.display_name || 'Utente',
+          organizationDisabled
+        });
+      }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Errore durante il recupero del profilo utente:', error);
       setLoading(false);
@@ -116,8 +120,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
+        console.error('Errore durante il login:', error);
         throw error;
       } else if (data.user) {
+        toast({
+          title: "Accesso effettuato",
+          description: `Benvenuto`,
+        });
+        
+        // Recuperiamo il profilo utente per determinare dove reindirizzare l'utente
         const { data: profileData, error: profileError } = await supabase
           .from('user_profiles')
           .select('role')
@@ -127,11 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (profileError) {
           console.error('Errore nel recupero del ruolo:', profileError);
         }
-        
-        toast({
-          title: "Accesso effettuato",
-          description: `Benvenuto`,
-        });
         
         if (profileData && profileData.role === 'admin') {
           navigate('/app/admin/gestione');
