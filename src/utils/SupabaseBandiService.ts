@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Bando } from '@/types';
 import { FirecrawlService } from './FirecrawlService';
@@ -374,6 +373,80 @@ export class SupabaseBandiService {
     } catch (error) {
       console.error('Errore durante l\'importazione dei bandi dalla sessionStorage:', error);
       return 0;
+    }
+  }
+
+  /**
+   * Importa solo bandi nuovi da una sorgente esterna
+   * Ritorna un array con i bandi che sono stati effettivamente importati
+   */
+  static async importNewBandi(bandiDaImportare: Bando[]): Promise<Bando[]> {
+    try {
+      // Recuperiamo prima i bandi esistenti per evitare duplicazioni
+      const bandiEsistenti = await this.getBandi();
+      const titoliFonteEsistenti = new Set(
+        bandiEsistenti.map(b => {
+          // Normalizziamo i testi per confronto più accurato
+          const titoloNormalizzato = b.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = b.fonte.trim().toLowerCase(); 
+          return `${titoloNormalizzato}|${fonteNormalizzata}`;
+        })
+      );
+      
+      console.log(`Controllo di ${bandiDaImportare.length} bandi contro ${bandiEsistenti.length} bandi esistenti`);
+      const bandiImportati: Bando[] = [];
+      
+      for (const bando of bandiDaImportare) {
+        try {
+          // Verifichiamo che non esista già un bando con lo stesso titolo e fonte normalizzati
+          const titoloNormalizzato = bando.titolo.trim().toLowerCase().replace(/\s+/g, ' ');
+          const fonteNormalizzata = bando.fonte.trim().toLowerCase();
+          const chiave = `${titoloNormalizzato}|${fonteNormalizzata}`;
+          
+          if (!titoliFonteEsistenti.has(chiave)) {
+            // Assicuriamo che ogni bando abbia tutti i campi necessari
+            const bandoCompleto = {
+              ...bando,
+              settori: bando.settori || [],
+              fonte: bando.fonte || 'Importato',
+              tipo: bando.tipo || 'altro',
+              // Assicuriamo che le date siano valide
+              scadenza: bando.scadenza || new Date().toISOString().split('T')[0],
+              dataEstrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0],
+              // Aggiungiamo la data di importazione
+              dataImportazione: new Date().toISOString()
+            };
+            
+            // Assegnamo un ID se non ne ha
+            if (!bandoCompleto.id || !this.isValidUUID(bandoCompleto.id)) {
+              bandoCompleto.id = uuidv4();
+            }
+            
+            const salvato = await this.saveBando(bandoCompleto);
+            if (salvato) {
+              bandiImportati.push(bandoCompleto);
+              titoliFonteEsistenti.add(chiave);
+              console.log(`Bando importato e salvato con successo: ${bando.titolo}`);
+            } else {
+              console.error(`Errore nel salvataggio del bando: ${bando.titolo}`);
+            }
+          } else {
+            console.log(`Bando "${bando.titolo}" da "${bando.fonte}" già presente nel database, saltato.`);
+          }
+        } catch (err) {
+          console.error(`Errore nell'elaborazione del bando: ${bando.titolo}`, err);
+        }
+      }
+      
+      // Salviamo i bandi importati in sessionStorage per visualizzarli
+      // nell'elenco dei bandi importati
+      sessionStorage.setItem('ultimiBandiImportati', JSON.stringify(bandiImportati));
+      sessionStorage.setItem('dataUltimaImportazione', new Date().toISOString());
+      
+      return bandiImportati;
+    } catch (error) {
+      console.error('Errore durante l\'importazione dei bandi:', error);
+      return [];
     }
   }
 

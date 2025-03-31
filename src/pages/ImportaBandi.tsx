@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RefreshCw, ArrowRight } from 'lucide-react';
+import { RefreshCw, ArrowRight, ListFilter } from 'lucide-react';
 import GoogleSheetsService from '@/utils/GoogleSheetsService';
 import { Bando } from '@/types';
 import SupabaseBandiService from '@/utils/SupabaseBandiService';
@@ -66,69 +67,35 @@ const ImportaBandi = () => {
         return;
       }
       
-      const bandiEsistentiMap = new Map();
-      bandiEsistenti.forEach(bando => {
-        const chiave = `${bando.titolo.toLowerCase().trim()}|${bando.fonte.toLowerCase().trim()}`;
-        bandiEsistentiMap.set(chiave, true);
-      });
+      // Utilizziamo la nuova funzione per importare solo bandi nuovi
+      console.log(`Tentativo di importare ${bandi.length} bandi dal foglio`);
+      const bandiImportati = await SupabaseBandiService.importNewBandi(bandi);
       
-      const nuoviBandi = bandi.filter(bando => {
-        const chiave = `${bando.titolo.toLowerCase().trim()}|${bando.fonte.toLowerCase().trim()}`;
-        return !bandiEsistentiMap.has(chiave);
-      });
+      console.log(`Importati ${bandiImportati.length} nuovi bandi su ${bandi.length} totali`);
       
-      console.log(`Trovati ${nuoviBandi.length} nuovi bandi su ${bandi.length} totali`);
-      
-      setBandiAnteprima(nuoviBandi);
-      
-      let contatoreSalvati = 0;
-      
-      for (const bando of nuoviBandi) {
-        try {
-          const bandoCompleto: Bando = {
-            ...bando,
-            fonte: bando.fonte || 'Google Sheet',
-            tipo: bando.tipo || 'altro',
-            settori: bando.settori || [],
-            scadenza: bando.scadenza || new Date().toISOString().split('T')[0],
-            dataEstrazione: bando.dataEstrazione || new Date().toISOString().split('T')[0]
-          };
-          
-          console.log(`Salvando bando: ${bandoCompleto.titolo}, scadenza: ${bandoCompleto.scadenza}`);
-          
-          const success = await SupabaseBandiService.saveBando(bandoCompleto);
-          
-          if (success) {
-            contatoreSalvati++;
-            console.log(`Bando salvato: ${contatoreSalvati}/${nuoviBandi.length}`);
-          } else {
-            console.error('Errore nel salvataggio del bando:', bando.titolo);
-          }
-        } catch (err) {
-          console.error(`Errore nel salvataggio del bando: ${bando.titolo}`, err);
-        }
-      }
-      
-      try {
-        sessionStorage.setItem('bandiImportati', JSON.stringify(nuoviBandi));
-      } catch (err) {
-        console.error('Errore nel salvataggio dei bandi in sessionStorage:', err);
-      }
+      setBandiAnteprima(bandiImportati);
       
       setImportStats({
         total: bandi.length,
-        saved: contatoreSalvati,
-        nuovi: nuoviBandi.length
+        saved: bandiImportati.length,
+        nuovi: bandiImportati.length
       });
       
       toast({
         title: "Importazione completata",
-        description: `Importati ${contatoreSalvati} nuovi bandi su ${nuoviBandi.length} trovati`,
+        description: `Importati ${bandiImportati.length} nuovi bandi su ${bandi.length} trovati`,
       });
       
       await fetchBandi();
       
-      await findAndShowMatches(nuoviBandi);
+      if (bandiImportati.length > 0) {
+        await findAndShowMatches(bandiImportati);
+      } else {
+        toast({
+          title: "Nessun nuovo bando",
+          description: "Tutti i bandi erano già presenti nel database",
+        });
+      }
       
     } catch (error: any) {
       console.error('Errore durante l\'importazione:', error);
@@ -176,7 +143,11 @@ const ImportaBandi = () => {
     }
   };
 
-  const handleViewBandi = () => {
+  const handleViewBandiImportati = () => {
+    navigate('/app/strumenti/bandi-importati');
+  };
+  
+  const handleViewAllBandi = () => {
     navigate('/bandi');
   };
   
@@ -189,12 +160,22 @@ const ImportaBandi = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Importa Bandi</h1>
         
-        <Button 
-          onClick={handleViewBandi} 
-          variant="outline"
-        >
-          Visualizza Bandi
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            onClick={handleViewBandiImportati} 
+            variant="outline"
+            disabled={bandiAnteprima.length === 0}
+          >
+            <ListFilter className="mr-2 h-4 w-4" />
+            Visualizza Importati
+          </Button>
+          <Button 
+            onClick={handleViewAllBandi} 
+            variant="outline"
+          >
+            Tutti i Bandi
+          </Button>
+        </div>
       </div>
       
       <Card>
@@ -241,6 +222,7 @@ const ImportaBandi = () => {
                       <tr className="border-b bg-gray-50">
                         <th className="px-4 py-3 text-left">Titolo</th>
                         <th className="px-4 py-3 text-left">Fonte</th>
+                        <th className="px-4 py-3 text-right">Data importazione</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -248,6 +230,9 @@ const ImportaBandi = () => {
                         <tr key={index} className="border-b">
                           <td className="px-4 py-3">{bando.titolo}</td>
                           <td className="px-4 py-3">{bando.fonte}</td>
+                          <td className="px-4 py-3 text-right text-gray-600">
+                            {new Date().toLocaleDateString('it-IT')}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
