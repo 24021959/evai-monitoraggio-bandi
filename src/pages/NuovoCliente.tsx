@@ -243,271 +243,347 @@ const NuovoCliente = () => {
   ];
 
   return (
-    <div className="container mx-auto py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Nuovo Cliente</CardTitle>
-          <CardDescription>Inserisci i dettagli del nuovo cliente.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="col-span-2">
-                <h2 className="text-lg font-medium mb-2 border-b pb-2">Informazioni di Base</h2>
+    <div className="container mx-auto py-8 animate-fade-in">
+      <div className="max-w-5xl mx-auto">
+        <Card className="border-t-4 border-t-blue-500 shadow-md">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-white">
+            <CardTitle className="text-2xl text-blue-700">Nuovo Cliente</CardTitle>
+            <CardDescription className="text-blue-600">Inserisci i dettagli del nuovo cliente per creare una scheda completa.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="col-span-2">
+                  <h2 className="text-lg font-medium mb-2 border-b border-blue-100 pb-2 text-blue-800">
+                    Informazioni di Base
+                  </h2>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nome" className="text-gray-700">Nome Azienda *</Label>
+                  <Input 
+                    type="text" 
+                    id="nome" 
+                    value={formData.nome} 
+                    onChange={handleChange} 
+                    required 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-gray-700">Email *</Label>
+                  <Input 
+                    type="email" 
+                    id="email" 
+                    value={formData.email} 
+                    onChange={handleChange} 
+                    required 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telefono" className="text-gray-700">Telefono</Label>
+                  <Input 
+                    type="tel" 
+                    id="telefono" 
+                    value={formData.telefono} 
+                    onChange={handleChange} 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settore" className="text-gray-700">Settore Principale *</Label>
+                  <Select 
+                    value={formData.settore} 
+                    onValueChange={(value) => setFormData(prevData => ({ ...prevData, settore: value }))}
+                    required
+                  >
+                    <SelectTrigger className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                      <SelectValue placeholder="Seleziona un settore" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {settori.map((settore) => (
+                        <SelectItem key={settore} value={settore}>{settore}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="interessiSettoriali" className="text-gray-700">Interessi Settoriali (separati da virgola) *</Label>
+                  <Input
+                    id="interessiSettoriali"
+                    value={formData.interessiSettoriali.join(', ')}
+                    onChange={(e) => handleArrayChange('interessiSettoriali', e.target.value.split(',').map(item => item.trim()))}
+                    placeholder="Es: Digitale, Energia, Innovazione, Sostenibilità"
+                    required
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="nome">Nome Azienda *</Label>
-                <Input type="text" id="nome" value={formData.nome} onChange={handleChange} required />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-blue-50 p-6 rounded-lg">
+                <div className="col-span-2">
+                  <h2 className="text-lg font-medium mb-2 border-b border-blue-200 pb-2 text-blue-800">
+                    Localizzazione
+                  </h2>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="regione" className="text-gray-700">Regione *</Label>
+                  <Select 
+                    value={formData.regione} 
+                    onValueChange={(value) => setFormData(prevData => ({ ...prevData, regione: value }))}
+                    required
+                  >
+                    <SelectTrigger className="w-full bg-white border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                      <SelectValue placeholder="Seleziona una regione" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {regioni.map((regione) => (
+                        <SelectItem key={regione} value={regione}>{regione}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="provincia" className="text-gray-700">Provincia *</Label>
+                  <Select 
+                    value={formData.provincia} 
+                    onValueChange={(value) => setFormData(prevData => ({ ...prevData, provincia: value }))}
+                    disabled={!formData.regione}
+                    required
+                  >
+                    <SelectTrigger className="w-full bg-white border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                      <SelectValue placeholder={formData.regione ? "Seleziona una provincia" : "Prima seleziona una regione"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {provincieDisponibili.map((provincia) => (
+                        <SelectItem key={provincia} value={provincia}>{provincia}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input type="email" id="email" value={formData.email} onChange={handleChange} required />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="col-span-2">
+                  <h2 className="text-lg font-medium mb-2 border-b border-blue-100 pb-2 text-blue-800">
+                    Informazioni Aziendali
+                  </h2>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fatturato" className="text-gray-700">Fatturato annuale (€) *</Label>
+                  <Input 
+                    type="number" 
+                    id="fatturato" 
+                    value={formData.fatturato} 
+                    onChange={handleNumberChange} 
+                    required 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dipendenti" className="text-gray-700">Numero Dipendenti *</Label>
+                  <Input 
+                    type="number" 
+                    id="dipendenti" 
+                    value={formData.dipendenti} 
+                    onChange={handleNumberChange} 
+                    required 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="annoFondazione" className="text-gray-700">Anno di Fondazione</Label>
+                  <Input 
+                    type="number" 
+                    id="annoFondazione" 
+                    value={formData.annoFondazione} 
+                    onChange={handleNumberChange} 
+                    max={new Date().getFullYear()} 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="formaGiuridica" className="text-gray-700">Forma Giuridica</Label>
+                  <Select 
+                    value={formData.formaGiuridica} 
+                    onValueChange={(value) => setFormData(prevData => ({ ...prevData, formaGiuridica: value }))}
+                  >
+                    <SelectTrigger className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                      <SelectValue placeholder="Seleziona una forma giuridica" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white max-h-[300px]">
+                      {formeGiuridiche.map((forma) => (
+                        <SelectItem key={forma} value={forma}>{forma}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="codiceATECO" className="text-gray-700">Codice ATECO</Label>
+                  <Input 
+                    type="text" 
+                    id="codiceATECO" 
+                    value={formData.codiceATECO} 
+                    onChange={handleChange} 
+                    placeholder="Es: C.25.62" 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="faseDiCrescita" className="text-gray-700">Fase di Crescita</Label>
+                  <Select 
+                    value={formData.faseDiCrescita} 
+                    onValueChange={(value) => setFormData(prevData => ({ ...prevData, faseDiCrescita: value }))}
+                  >
+                    <SelectTrigger className="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                      <SelectValue placeholder="Seleziona fase di crescita" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {fasiCrescita.map((fase) => (
+                        <SelectItem key={fase} value={fase}>{fase}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="telefono">Telefono</Label>
-                <Input type="tel" id="telefono" value={formData.telefono} onChange={handleChange} />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-blue-50 p-6 rounded-lg">
+                <div className="col-span-2">
+                  <h2 className="text-lg font-medium mb-2 border-b border-blue-200 pb-2 text-blue-800">
+                    Elementi di Valutazione per Finanziamenti
+                  </h2>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="esperienzaFinanziamenti" className="text-gray-700">Esperienza Pregressa con Finanziamenti</Label>
+                  <Select 
+                    value={formData.esperienzaFinanziamenti} 
+                    onValueChange={(value) => setFormData(prevData => ({ ...prevData, esperienzaFinanziamenti: value }))}
+                  >
+                    <SelectTrigger className="w-full bg-white border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                      <SelectValue placeholder="Seleziona livello di esperienza" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {livelliEsperienzaFinanziamenti.map((livello) => (
+                        <SelectItem key={livello} value={livello}>{livello}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stabilitaFinanziaria" className="text-gray-700">Stabilità Finanziaria</Label>
+                  <Select 
+                    value={formData.stabilitaFinanziaria} 
+                    onValueChange={(value) => setFormData(prevData => ({ ...prevData, stabilitaFinanziaria: value }))}
+                  >
+                    <SelectTrigger className="w-full bg-white border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                      <SelectValue placeholder="Seleziona stato finanziario" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {livelliStabilita.map((livello) => (
+                        <SelectItem key={livello} value={livello}>{livello}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="capacitaRD" className="text-gray-700">Capacità R&D</Label>
+                  <Textarea 
+                    id="capacitaRD" 
+                    name="capacitaRD"
+                    value={formData.capacitaRD} 
+                    onChange={handleChange} 
+                    placeholder="Descrivi brevemente le capacità di ricerca e sviluppo" 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all min-h-[100px]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="presenzaInternazionale" className="text-gray-700">Presenza Internazionale</Label>
+                  <Textarea 
+                    id="presenzaInternazionale" 
+                    name="presenzaInternazionale"
+                    value={formData.presenzaInternazionale} 
+                    onChange={handleChange} 
+                    placeholder="Descrivi la presenza sui mercati esteri" 
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all min-h-[100px]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tecnologieSpecifiche" className="text-gray-700">Tecnologie Specifiche (separate da virgola)</Label>
+                  <Input
+                    type="text"
+                    id="tecnologieSpecifiche"
+                    value={formData.tecnologieSpecifiche.join(', ')}
+                    onChange={(e) => handleArrayChange('tecnologieSpecifiche', e.target.value.split(',').map(item => item.trim()))}
+                    placeholder="Es: AI, Blockchain, IoT, Cloud"
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="criteriESG" className="text-gray-700">Criteri ESG (separati da virgola)</Label>
+                  <Input
+                    type="text"
+                    id="criteriESG"
+                    value={formData.criteriESG.join(', ')}
+                    onChange={(e) => handleArrayChange('criteriESG', e.target.value.split(',').map(item => item.trim()))}
+                    placeholder="Es: Sostenibilità ambientale, Governance, Responsabilità sociale"
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="settore">Settore Principale *</Label>
-                <Select 
-                  value={formData.settore} 
-                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, settore: value }))}
-                  required
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona un settore" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {settori.map((settore) => (
-                      <SelectItem key={settore} value={settore}>{settore}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="interessiSettoriali">Interessi Settoriali (separati da virgola) *</Label>
-                <Input
-                  id="interessiSettoriali"
-                  value={formData.interessiSettoriali.join(', ')}
-                  onChange={(e) => handleArrayChange('interessiSettoriali', e.target.value.split(',').map(item => item.trim()))}
-                  placeholder="Es: Digitale, Energia, Innovazione, Sostenibilità"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="col-span-2">
-                <h2 className="text-lg font-medium mb-2 border-b pb-2">Localizzazione</h2>
-              </div>
-              <div>
-                <Label htmlFor="regione">Regione *</Label>
-                <Select 
-                  value={formData.regione} 
-                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, regione: value }))}
-                  required
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona una regione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {regioni.map((regione) => (
-                      <SelectItem key={regione} value={regione}>{regione}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="provincia">Provincia *</Label>
-                <Select 
-                  value={formData.provincia} 
-                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, provincia: value }))}
-                  disabled={!formData.regione}
-                  required
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={formData.regione ? "Seleziona una provincia" : "Prima seleziona una regione"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {provincieDisponibili.map((provincia) => (
-                      <SelectItem key={provincia} value={provincia}>{provincia}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="col-span-2">
-                <h2 className="text-lg font-medium mb-2 border-b pb-2">Informazioni Aziendali</h2>
-              </div>
-              <div>
-                <Label htmlFor="fatturato">Fatturato annuale (€) *</Label>
-                <Input type="number" id="fatturato" value={formData.fatturato} onChange={handleNumberChange} required />
-              </div>
-              <div>
-                <Label htmlFor="dipendenti">Numero Dipendenti *</Label>
-                <Input type="number" id="dipendenti" value={formData.dipendenti} onChange={handleNumberChange} required />
-              </div>
-              <div>
-                <Label htmlFor="annoFondazione">Anno di Fondazione</Label>
-                <Input type="number" id="annoFondazione" value={formData.annoFondazione} onChange={handleNumberChange} max={new Date().getFullYear()} />
-              </div>
-              <div>
-                <Label htmlFor="formaGiuridica">Forma Giuridica</Label>
-                <Select 
-                  value={formData.formaGiuridica} 
-                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, formaGiuridica: value }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona una forma giuridica" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formeGiuridiche.map((forma) => (
-                      <SelectItem key={forma} value={forma}>{forma}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="codiceATECO">Codice ATECO</Label>
-                <Input type="text" id="codiceATECO" value={formData.codiceATECO} onChange={handleChange} placeholder="Es: C.25.62" />
-              </div>
-              <div>
-                <Label htmlFor="faseDiCrescita">Fase di Crescita</Label>
-                <Select 
-                  value={formData.faseDiCrescita} 
-                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, faseDiCrescita: value }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona fase di crescita" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fasiCrescita.map((fase) => (
-                      <SelectItem key={fase} value={fase}>{fase}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="col-span-2">
-                <h2 className="text-lg font-medium mb-2 border-b pb-2">Elementi di Valutazione per Finanziamenti</h2>
-              </div>
-              <div>
-                <Label htmlFor="esperienzaFinanziamenti">Esperienza Pregressa con Finanziamenti</Label>
-                <Select 
-                  value={formData.esperienzaFinanziamenti} 
-                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, esperienzaFinanziamenti: value }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona livello di esperienza" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {livelliEsperienzaFinanziamenti.map((livello) => (
-                      <SelectItem key={livello} value={livello}>{livello}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="stabilitaFinanziaria">Stabilità Finanziaria</Label>
-                <Select 
-                  value={formData.stabilitaFinanziaria} 
-                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, stabilitaFinanziaria: value }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona stato finanziario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {livelliStabilita.map((livello) => (
-                      <SelectItem key={livello} value={livello}>{livello}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="capacitaRD">Capacità R&D</Label>
-                <Textarea 
-                  id="capacitaRD" 
-                  value={formData.capacitaRD} 
-                  onChange={handleChange} 
-                  placeholder="Descrivi brevemente le capacità di ricerca e sviluppo"
-                />
-              </div>
-              <div>
-                <Label htmlFor="presenzaInternazionale">Presenza Internazionale</Label>
-                <Textarea 
-                  id="presenzaInternazionale" 
-                  value={formData.presenzaInternazionale} 
-                  onChange={handleChange} 
-                  placeholder="Descrivi la presenza sui mercati esteri"
-                />
-              </div>
-              <div>
-                <Label htmlFor="tecnologieSpecifiche">Tecnologie Specifiche (separate da virgola)</Label>
-                <Input
-                  type="text"
-                  id="tecnologieSpecifiche"
-                  value={formData.tecnologieSpecifiche.join(', ')}
-                  onChange={(e) => handleArrayChange('tecnologieSpecifiche', e.target.value.split(',').map(item => item.trim()))}
-                  placeholder="Es: AI, Blockchain, IoT, Cloud"
-                />
-              </div>
-              <div>
-                <Label htmlFor="criteriESG">Criteri ESG (separati da virgola)</Label>
-                <Input
-                  type="text"
-                  id="criteriESG"
-                  value={formData.criteriESG.join(', ')}
-                  onChange={(e) => handleArrayChange('criteriESG', e.target.value.split(',').map(item => item.trim()))}
-                  placeholder="Es: Sostenibilità ambientale, Governance, Responsabilità sociale"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <h2 className="text-lg font-medium mb-2 border-b pb-2">Altre Informazioni</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="col-span-2">
+                  <h2 className="text-lg font-medium mb-2 border-b border-blue-100 pb-2 text-blue-800">
+                    Altre Informazioni
+                  </h2>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="competenzeDipendenti" className="text-gray-700">Competenze Dipendenti (separate da virgola)</Label>
+                  <Input
+                    type="text"
+                    id="competenzeDipendenti"
+                    value={formData.competenzeDipendenti.join(', ')}
+                    onChange={(e) => handleArrayChange('competenzeDipendenti', e.target.value.split(',').map(item => item.trim()))}
+                    placeholder="Es: Digitali, Linguistiche, Tecniche, Soft skills"
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="partnership" className="text-gray-700">Partnership (separate da virgola)</Label>
+                  <Input
+                    type="text"
+                    id="partnership"
+                    value={formData.partnership.join(', ')}
+                    onChange={(e) => handleArrayChange('partnership', e.target.value.split(',').map(item => item.trim()))}
+                    placeholder="Es: Università, Centri di Ricerca, Grandi Aziende"
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <Label htmlFor="certificazioni" className="text-gray-700">Certificazioni (separate da virgola)</Label>
+                  <Input
+                    type="text"
+                    id="certificazioni"
+                    value={formData.certificazioni.join(', ')}
+                    onChange={(e) => handleArrayChange('certificazioni', e.target.value.split(',').map(item => item.trim()))}
+                    placeholder="Es: ISO 9001, ISO 14001, SA8000, EMAS"
+                    className="border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2 mt-8 flex justify-end">
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-2 rounded-md transition-colors shadow-md hover:shadow-lg"
+                  >
+                    Crea Cliente
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="competenzeDipendenti">Competenze Dipendenti (separate da virgola)</Label>
-                <Input
-                  type="text"
-                  id="competenzeDipendenti"
-                  value={formData.competenzeDipendenti.join(', ')}
-                  onChange={(e) => handleArrayChange('competenzeDipendenti', e.target.value.split(',').map(item => item.trim()))}
-                  placeholder="Es: Digitali, Linguistiche, Tecniche, Soft skills"
-                />
-              </div>
-              <div>
-                <Label htmlFor="partnership">Partnership (separate da virgola)</Label>
-                <Input
-                  type="text"
-                  id="partnership"
-                  value={formData.partnership.join(', ')}
-                  onChange={(e) => handleArrayChange('partnership', e.target.value.split(',').map(item => item.trim()))}
-                  placeholder="Es: Università, Centri di Ricerca, Grandi Aziende"
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <Label htmlFor="certificazioni">Certificazioni (separate da virgola)</Label>
-                <Input
-                  type="text"
-                  id="certificazioni"
-                  value={formData.certificazioni.join(', ')}
-                  onChange={(e) => handleArrayChange('certificazioni', e.target.value.split(',').map(item => item.trim()))}
-                  placeholder="Es: ISO 9001, ISO 14001, SA8000, EMAS"
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2 mt-6 flex justify-end">
-                <Button type="submit" size="lg">Crea Cliente</Button>
-              </div>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
