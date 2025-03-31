@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { v4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
@@ -40,7 +41,7 @@ const NuovoCliente = () => {
     dipendenti: 0,
     email: '',
     telefono: '',
-    annoFondazione: 0,
+    annoFondazione: new Date().getFullYear() - 5, // Default to 5 years ago
     formaGiuridica: '',
     codiceATECO: '',
     esperienzaFinanziamenti: '',
@@ -213,6 +214,33 @@ const NuovoCliente = () => {
     "PMI Innovativa",
     "Altro"
   ];
+  
+  // Fasi di crescita aziendale
+  const fasiCrescita = [
+    "Startup (0-3 anni)",
+    "Early Stage (3-5 anni)",
+    "Scale-up (5-10 anni)",
+    "Growth (10-20 anni)",
+    "Matura (20+ anni)"
+  ];
+  
+  // Livelli di esperienza finanziamenti
+  const livelliEsperienzaFinanziamenti = [
+    "Nessuna esperienza precedente",
+    "Esperienza limitata (1-2 progetti)",
+    "Esperienza media (3-5 progetti)",
+    "Esperienza consolidata (6+ progetti)",
+    "Team dedicato alla ricerca finanziamenti"
+  ];
+  
+  // Livelli stabilità finanziaria
+  const livelliStabilita = [
+    "In fase di avvio",
+    "In crescita con supporto di investitori",
+    "Break-even",
+    "Redditività stabile",
+    "Alta redditività e liquidità"
+  ];
 
   return (
     <div className="container mx-auto py-8">
@@ -223,173 +251,260 @@ const NuovoCliente = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="nome">Nome</Label>
-              <Input type="text" id="nome" value={formData.nome} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input type="email" id="email" value={formData.email} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="telefono">Telefono</Label>
-              <Input type="tel" id="telefono" value={formData.telefono} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="settore">Settore</Label>
-              <Select 
-                value={formData.settore} 
-                onValueChange={(value) => setFormData(prevData => ({ ...prevData, settore: value }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleziona un settore" />
-                </SelectTrigger>
-                <SelectContent>
-                  {settori.map((settore) => (
-                    <SelectItem key={settore} value={settore}>{settore}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Regione dropdown */}
-            <div>
-              <Label htmlFor="regione">Regione</Label>
-              <Select 
-                value={formData.regione} 
-                onValueChange={(value) => setFormData(prevData => ({ ...prevData, regione: value }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleziona una regione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {regioni.map((regione) => (
-                    <SelectItem key={regione} value={regione}>{regione}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="col-span-2">
+                <h2 className="text-lg font-medium mb-2 border-b pb-2">Informazioni di Base</h2>
+              </div>
+              <div>
+                <Label htmlFor="nome">Nome Azienda *</Label>
+                <Input type="text" id="nome" value={formData.nome} onChange={handleChange} required />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input type="email" id="email" value={formData.email} onChange={handleChange} required />
+              </div>
+              <div>
+                <Label htmlFor="telefono">Telefono</Label>
+                <Input type="tel" id="telefono" value={formData.telefono} onChange={handleChange} />
+              </div>
+              <div>
+                <Label htmlFor="settore">Settore Principale *</Label>
+                <Select 
+                  value={formData.settore} 
+                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, settore: value }))}
+                  required
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona un settore" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {settori.map((settore) => (
+                      <SelectItem key={settore} value={settore}>{settore}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="interessiSettoriali">Interessi Settoriali (separati da virgola) *</Label>
+                <Input
+                  id="interessiSettoriali"
+                  value={formData.interessiSettoriali.join(', ')}
+                  onChange={(e) => handleArrayChange('interessiSettoriali', e.target.value.split(',').map(item => item.trim()))}
+                  placeholder="Es: Digitale, Energia, Innovazione, Sostenibilità"
+                  required
+                />
+              </div>
             </div>
             
-            {/* Provincia dropdown - only enabled if a region is selected */}
-            <div>
-              <Label htmlFor="provincia">Provincia</Label>
-              <Select 
-                value={formData.provincia} 
-                onValueChange={(value) => setFormData(prevData => ({ ...prevData, provincia: value }))}
-                disabled={!formData.regione}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={formData.regione ? "Seleziona una provincia" : "Prima seleziona una regione"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {provincieDisponibili.map((provincia) => (
-                    <SelectItem key={provincia} value={provincia}>{provincia}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="col-span-2">
+                <h2 className="text-lg font-medium mb-2 border-b pb-2">Localizzazione</h2>
+              </div>
+              <div>
+                <Label htmlFor="regione">Regione *</Label>
+                <Select 
+                  value={formData.regione} 
+                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, regione: value }))}
+                  required
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona una regione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {regioni.map((regione) => (
+                      <SelectItem key={regione} value={regione}>{regione}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="provincia">Provincia *</Label>
+                <Select 
+                  value={formData.provincia} 
+                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, provincia: value }))}
+                  disabled={!formData.regione}
+                  required
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={formData.regione ? "Seleziona una provincia" : "Prima seleziona una regione"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {provincieDisponibili.map((provincia) => (
+                      <SelectItem key={provincia} value={provincia}>{provincia}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
-            <div>
-              <Label htmlFor="fatturato">Fatturato</Label>
-              <Input type="number" id="fatturato" value={formData.fatturato} onChange={handleNumberChange} />
-            </div>
-            <div>
-              <Label htmlFor="dipendenti">Dipendenti</Label>
-              <Input type="number" id="dipendenti" value={formData.dipendenti} onChange={handleNumberChange} />
-            </div>
-            <div>
-              <Label htmlFor="annoFondazione">Anno di Fondazione</Label>
-              <Input type="number" id="annoFondazione" value={formData.annoFondazione} onChange={handleNumberChange} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="col-span-2">
+                <h2 className="text-lg font-medium mb-2 border-b pb-2">Informazioni Aziendali</h2>
+              </div>
+              <div>
+                <Label htmlFor="fatturato">Fatturato annuale (€) *</Label>
+                <Input type="number" id="fatturato" value={formData.fatturato} onChange={handleNumberChange} required />
+              </div>
+              <div>
+                <Label htmlFor="dipendenti">Numero Dipendenti *</Label>
+                <Input type="number" id="dipendenti" value={formData.dipendenti} onChange={handleNumberChange} required />
+              </div>
+              <div>
+                <Label htmlFor="annoFondazione">Anno di Fondazione</Label>
+                <Input type="number" id="annoFondazione" value={formData.annoFondazione} onChange={handleNumberChange} max={new Date().getFullYear()} />
+              </div>
+              <div>
+                <Label htmlFor="formaGiuridica">Forma Giuridica</Label>
+                <Select 
+                  value={formData.formaGiuridica} 
+                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, formaGiuridica: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona una forma giuridica" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formeGiuridiche.map((forma) => (
+                      <SelectItem key={forma} value={forma}>{forma}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="codiceATECO">Codice ATECO</Label>
+                <Input type="text" id="codiceATECO" value={formData.codiceATECO} onChange={handleChange} placeholder="Es: C.25.62" />
+              </div>
+              <div>
+                <Label htmlFor="faseDiCrescita">Fase di Crescita</Label>
+                <Select 
+                  value={formData.faseDiCrescita} 
+                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, faseDiCrescita: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona fase di crescita" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fasiCrescita.map((fase) => (
+                      <SelectItem key={fase} value={fase}>{fase}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
-            {/* Forma Giuridica dropdown */}
-            <div>
-              <Label htmlFor="formaGiuridica">Forma Giuridica</Label>
-              <Select 
-                value={formData.formaGiuridica} 
-                onValueChange={(value) => setFormData(prevData => ({ ...prevData, formaGiuridica: value }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleziona una forma giuridica" />
-                </SelectTrigger>
-                <SelectContent>
-                  {formeGiuridiche.map((forma) => (
-                    <SelectItem key={forma} value={forma}>{forma}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="col-span-2">
+                <h2 className="text-lg font-medium mb-2 border-b pb-2">Elementi di Valutazione per Finanziamenti</h2>
+              </div>
+              <div>
+                <Label htmlFor="esperienzaFinanziamenti">Esperienza Pregressa con Finanziamenti</Label>
+                <Select 
+                  value={formData.esperienzaFinanziamenti} 
+                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, esperienzaFinanziamenti: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona livello di esperienza" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {livelliEsperienzaFinanziamenti.map((livello) => (
+                      <SelectItem key={livello} value={livello}>{livello}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="stabilitaFinanziaria">Stabilità Finanziaria</Label>
+                <Select 
+                  value={formData.stabilitaFinanziaria} 
+                  onValueChange={(value) => setFormData(prevData => ({ ...prevData, stabilitaFinanziaria: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona stato finanziario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {livelliStabilita.map((livello) => (
+                      <SelectItem key={livello} value={livello}>{livello}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="capacitaRD">Capacità R&D</Label>
+                <Textarea 
+                  id="capacitaRD" 
+                  value={formData.capacitaRD} 
+                  onChange={handleChange} 
+                  placeholder="Descrivi brevemente le capacità di ricerca e sviluppo"
+                />
+              </div>
+              <div>
+                <Label htmlFor="presenzaInternazionale">Presenza Internazionale</Label>
+                <Textarea 
+                  id="presenzaInternazionale" 
+                  value={formData.presenzaInternazionale} 
+                  onChange={handleChange} 
+                  placeholder="Descrivi la presenza sui mercati esteri"
+                />
+              </div>
+              <div>
+                <Label htmlFor="tecnologieSpecifiche">Tecnologie Specifiche (separate da virgola)</Label>
+                <Input
+                  type="text"
+                  id="tecnologieSpecifiche"
+                  value={formData.tecnologieSpecifiche.join(', ')}
+                  onChange={(e) => handleArrayChange('tecnologieSpecifiche', e.target.value.split(',').map(item => item.trim()))}
+                  placeholder="Es: AI, Blockchain, IoT, Cloud"
+                />
+              </div>
+              <div>
+                <Label htmlFor="criteriESG">Criteri ESG (separati da virgola)</Label>
+                <Input
+                  type="text"
+                  id="criteriESG"
+                  value={formData.criteriESG.join(', ')}
+                  onChange={(e) => handleArrayChange('criteriESG', e.target.value.split(',').map(item => item.trim()))}
+                  placeholder="Es: Sostenibilità ambientale, Governance, Responsabilità sociale"
+                />
+              </div>
             </div>
-            
-            <div>
-              <Label htmlFor="codiceATECO">Codice ATECO</Label>
-              <Input type="text" id="codiceATECO" value={formData.codiceATECO} onChange={handleChange} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <h2 className="text-lg font-medium mb-2 border-b pb-2">Altre Informazioni</h2>
+              </div>
+              <div>
+                <Label htmlFor="competenzeDipendenti">Competenze Dipendenti (separate da virgola)</Label>
+                <Input
+                  type="text"
+                  id="competenzeDipendenti"
+                  value={formData.competenzeDipendenti.join(', ')}
+                  onChange={(e) => handleArrayChange('competenzeDipendenti', e.target.value.split(',').map(item => item.trim()))}
+                  placeholder="Es: Digitali, Linguistiche, Tecniche, Soft skills"
+                />
+              </div>
+              <div>
+                <Label htmlFor="partnership">Partnership (separate da virgola)</Label>
+                <Input
+                  type="text"
+                  id="partnership"
+                  value={formData.partnership.join(', ')}
+                  onChange={(e) => handleArrayChange('partnership', e.target.value.split(',').map(item => item.trim()))}
+                  placeholder="Es: Università, Centri di Ricerca, Grandi Aziende"
+                />
+              </div>
+              <div className="col-span-1 md:col-span-2">
+                <Label htmlFor="certificazioni">Certificazioni (separate da virgola)</Label>
+                <Input
+                  type="text"
+                  id="certificazioni"
+                  value={formData.certificazioni.join(', ')}
+                  onChange={(e) => handleArrayChange('certificazioni', e.target.value.split(',').map(item => item.trim()))}
+                  placeholder="Es: ISO 9001, ISO 14001, SA8000, EMAS"
+                />
+              </div>
+              <div className="col-span-1 md:col-span-2 mt-6 flex justify-end">
+                <Button type="submit" size="lg">Crea Cliente</Button>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="esperienzaFinanziamenti">Esperienza Finanziamenti</Label>
-              <Textarea id="esperienzaFinanziamenti" value={formData.esperienzaFinanziamenti} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="tecnologieSpecifiche">Tecnologie Specifiche (separate da virgola)</Label>
-              <Input
-                type="text"
-                id="tecnologieSpecifiche"
-                value={formData.tecnologieSpecifiche.join(', ')}
-                onChange={(e) => handleArrayChange('tecnologieSpecifiche', e.target.value.split(',').map(item => item.trim()))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="criteriESG">Criteri ESG (separate da virgola)</Label>
-              <Input
-                type="text"
-                id="criteriESG"
-                value={formData.criteriESG.join(', ')}
-                onChange={(e) => handleArrayChange('criteriESG', e.target.value.split(',').map(item => item.trim()))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="capacitaRD">Capacità R&D</Label>
-              <Input type="text" id="capacitaRD" value={formData.capacitaRD} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="presenzaInternazionale">Presenza Internazionale</Label>
-              <Input type="text" id="presenzaInternazionale" value={formData.presenzaInternazionale} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="faseDiCrescita">Fase di Crescita</Label>
-              <Input type="text" id="faseDiCrescita" value={formData.faseDiCrescita} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="stabilitaFinanziaria">Stabilità Finanziaria</Label>
-              <Input type="text" id="stabilitaFinanziaria" value={formData.stabilitaFinanziaria} onChange={handleChange} />
-            </div>
-            <div>
-              <Label htmlFor="competenzeDipendenti">Competenze Dipendenti (separate da virgola)</Label>
-              <Input
-                type="text"
-                id="competenzeDipendenti"
-                value={formData.competenzeDipendenti.join(', ')}
-                onChange={(e) => handleArrayChange('competenzeDipendenti', e.target.value.split(',').map(item => item.trim()))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="partnership">Partnership (separate da virgola)</Label>
-              <Input
-                type="text"
-                id="partnership"
-                value={formData.partnership.join(', ')}
-                onChange={(e) => handleArrayChange('partnership', e.target.value.split(',').map(item => item.trim()))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="certificazioni">Certificazioni (separate da virgola)</Label>
-              <Input
-                type="text"
-                id="certificazioni"
-                value={formData.certificazioni.join(', ')}
-                onChange={(e) => handleArrayChange('certificazioni', e.target.value.split(',').map(item => item.trim()))}
-              />
-            </div>
-            <Button type="submit">Crea Cliente</Button>
           </form>
         </CardContent>
       </Card>
