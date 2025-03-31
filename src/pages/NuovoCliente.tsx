@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { v4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
@@ -191,6 +190,29 @@ const NuovoCliente = () => {
   
   // Get list of regions from the provinceItaliane.ts file
   const regioni = Object.keys(provincePerRegione).sort();
+  
+  // List of Italian legal business forms (forme giuridiche)
+  const formeGiuridiche = [
+    "Società per Azioni (S.p.A.)",
+    "Società a Responsabilità Limitata (S.r.l.)",
+    "Società in Accomandita per Azioni (S.a.p.a.)",
+    "Società in Accomandita Semplice (S.a.s.)",
+    "Società in Nome Collettivo (S.n.c.)",
+    "Società Semplice (S.s.)",
+    "Ditta Individuale",
+    "Impresa Familiare",
+    "Società Cooperativa",
+    "Associazione",
+    "Fondazione",
+    "Consorzio",
+    "Società Consortile",
+    "Ente Pubblico",
+    "Ente del Terzo Settore (ETS)",
+    "Società Benefit",
+    "Start-up Innovativa",
+    "PMI Innovativa",
+    "Altro"
+  ];
 
   return (
     <div className="container mx-auto py-8">
@@ -279,10 +301,25 @@ const NuovoCliente = () => {
               <Label htmlFor="annoFondazione">Anno di Fondazione</Label>
               <Input type="number" id="annoFondazione" value={formData.annoFondazione} onChange={handleNumberChange} />
             </div>
+            
+            {/* Forma Giuridica dropdown */}
             <div>
               <Label htmlFor="formaGiuridica">Forma Giuridica</Label>
-              <Input type="text" id="formaGiuridica" value={formData.formaGiuridica} onChange={handleChange} />
+              <Select 
+                value={formData.formaGiuridica} 
+                onValueChange={(value) => setFormData(prevData => ({ ...prevData, formaGiuridica: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleziona una forma giuridica" />
+                </SelectTrigger>
+                <SelectContent>
+                  {formeGiuridiche.map((forma) => (
+                    <SelectItem key={forma} value={forma}>{forma}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            
             <div>
               <Label htmlFor="codiceATECO">Codice ATECO</Label>
               <Input type="text" id="codiceATECO" value={formData.codiceATECO} onChange={handleChange} />
