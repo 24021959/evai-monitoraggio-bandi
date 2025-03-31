@@ -1,3 +1,4 @@
+
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 
@@ -35,7 +36,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute children={<Layout />} />}>
           <Route path="/app/dashboard" element={<Dashboard />} />
           <Route path="/app/clienti" element={<Clienti />} />
           <Route path="/app/nuovo-cliente" element={<NuovoCliente />} />
