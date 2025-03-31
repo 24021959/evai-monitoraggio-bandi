@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
@@ -48,6 +49,7 @@ export const useUsers = () => {
     }
   };
   
+  // Effettua una verifica automatica all'avvio
   useEffect(() => {
     verifyAdminClient();
   }, []);
