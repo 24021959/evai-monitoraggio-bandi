@@ -5,7 +5,6 @@ import { Switch } from '@/components/ui/switch';
 import { Users, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import UserDetailsDialog from './UserDetailsDialog';
 
 type UserProfile = {
   id: string;
@@ -19,17 +18,10 @@ type UserTableProps = {
   users: UserProfile[];
   loadingUsers: boolean;
   toggleUserActive: (userId: string, isCurrentlyActive: boolean, userName: string) => Promise<void>;
+  onShowDetails: (user: UserProfile) => void;
 };
 
-const UserTable = ({ users, loadingUsers, toggleUserActive }: UserTableProps) => {
-  const [selectedUser, setSelectedUser] = React.useState<UserProfile | null>(null);
-  const [userDetailsOpen, setUserDetailsOpen] = React.useState(false);
-  
-  const handleViewUser = (user: UserProfile) => {
-    setSelectedUser(user);
-    setUserDetailsOpen(true);
-  };
-  
+const UserTable = ({ users, loadingUsers, toggleUserActive, onShowDetails }: UserTableProps) => {
   return (
     <Card>
       <CardHeader>
@@ -93,7 +85,7 @@ const UserTable = ({ users, loadingUsers, toggleUserActive }: UserTableProps) =>
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            onClick={() => handleViewUser(user)}
+                            onClick={() => onShowDetails(user)}
                             className="text-blue-500 hover:text-blue-700 hover:bg-blue-100"
                             aria-label="Visualizza dettagli"
                             title="Visualizza dettagli utente"
@@ -110,14 +102,6 @@ const UserTable = ({ users, loadingUsers, toggleUserActive }: UserTableProps) =>
           </div>
         )}
       </CardContent>
-      
-      {selectedUser && (
-        <UserDetailsDialog
-          user={selectedUser}
-          open={userDetailsOpen}
-          onOpenChange={setUserDetailsOpen}
-        />
-      )}
     </Card>
   );
 };

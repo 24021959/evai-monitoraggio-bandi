@@ -4,10 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, ShieldCheck, Database, Settings } from "lucide-react";
-import { UserTable } from "@/components/admin/UserTable";
+import UserTable from "@/components/admin/UserTable";
 import { useUsers } from "@/hooks/useUsers";
-import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
-import { UserDetailsDialog } from "@/components/admin/UserDetailsDialog";
+import CreateUserDialog from "@/components/admin/CreateUserDialog";
+import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
 import { useToast } from '@/components/ui/use-toast';
 import { FontiTabContent } from '@/components/fonti/FontiTabContent';
 import { AggiungiTabContent } from '@/components/fonti/AggiungiTabContent';
@@ -15,7 +15,7 @@ import { useFonti } from '@/hooks/useFonti';
 
 const AdminPage = () => {
   const { toast } = useToast();
-  const { users, createUser, updateUser, deleteUser, resetPassword, isLoading } = useUsers();
+  const { users, createUser, updateUserProfile, toggleUserActive, loadingUsers } = useUsers();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("users");
@@ -113,7 +113,8 @@ const AdminPage = () => {
             <CardContent>
               <UserTable 
                 users={users} 
-                isLoading={isLoading}
+                loadingUsers={loadingUsers}
+                toggleUserActive={toggleUserActive}
                 onShowDetails={showUserDetails}
               />
             </CardContent>
@@ -178,12 +179,10 @@ const AdminPage = () => {
       {/* Dialog per i dettagli utente */}
       {selectedUser && (
         <UserDetailsDialog 
+          user={selectedUser} 
           open={!!selectedUser} 
           onOpenChange={() => setSelectedUser(null)}
-          user={selectedUser}
-          updateUser={updateUser}
-          deleteUser={deleteUser}
-          resetPassword={resetPassword}
+          updateUser={updateUserProfile}
           onUserUpdated={handleUserUpdated}
           onUserDeleted={handleUserDeleted}
           onPasswordReset={handlePasswordReset}

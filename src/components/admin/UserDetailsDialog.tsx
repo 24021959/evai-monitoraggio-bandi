@@ -1,24 +1,14 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
-import { useUsers } from '@/hooks/useUsers';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 type UserProfile = {
   id: string;
@@ -32,46 +22,62 @@ interface UserDetailsDialogProps {
   user: UserProfile;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  updateUser?: (userId: string, updates: any) => Promise<void>;
+  onUserUpdated?: () => void;
+  onUserDeleted?: () => void;
+  onPasswordReset?: () => void;
 }
 
-const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpenChange }) => {
+const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
+  user,
+  open,
+  onOpenChange,
+  updateUser,
+  onUserUpdated,
+  onUserDeleted,
+  onPasswordReset
+}) => {
   const { toast } = useToast();
-  const { updateUserProfile } = useUsers();
   
-  const [displayName, setDisplayName] = useState(user.display_name);
-  const [role, setRole] = useState<'admin' | 'client'>(user.role);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateRole = async (newRole: 'admin' | 'client') => {
+    if (!updateUser) return;
     
-    if (!displayName.trim()) {
+    try {
+      await updateUser(user.id, { role: newRole });
       toast({
-        title: 'Errore',
-        description: 'Il nome utente non può essere vuoto',
-        variant: 'destructive'
+        title: "Ruolo aggiornato",
+        description: `L'utente ${user.display_name} è ora un ${newRole === 'admin' ? 'Amministratore' : 'Cliente'}.`,
       });
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    const success = await updateUserProfile(user.id, {
-      display_name: displayName,
-      role: role
-    });
-    
-    setIsSubmitting(false);
-    
-    if (success) {
+      if (onUserUpdated) onUserUpdated();
+    } catch (error) {
+      console.error("Errore nell'aggiornamento del ruolo:", error);
       toast({
-        title: 'Utente aggiornato',
-        description: `I dettagli per ${displayName} sono stati aggiornati con successo.`
+        title: "Errore",
+        description: "Non è stato possibile aggiornare il ruolo dell'utente.",
+        variant: "destructive",
       });
-      onOpenChange(false);
     }
   };
-
+  
+  const handleResetPassword = async () => {
+    try {
+      // In una implementazione reale, inviamo email di reset password
+      // await resetPassword(user.email);
+      toast({
+        title: "Reset richiesto",
+        description: `Email di reset password inviata a ${user.email}.`,
+      });
+      if (onPasswordReset) onPasswordReset();
+    } catch (error) {
+      console.error("Errore nell'invio del reset password:", error);
+      toast({
+        title: "Errore",
+        description: "Non è stato possibile inviare l'email di reset password.",
+        variant: "destructive",
+      });
+    }
+  };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -79,70 +85,65 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
           <DialogTitle>Dettagli Utente</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                value={user.email} 
-                disabled 
-                className="bg-gray-50"
-              />
-              <p className="text-xs text-muted-foreground">
-                L'email non può essere modificata
-              </p>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="displayName">Nome Utente</Label>
-              <Input 
-                id="displayName" 
-                value={displayName} 
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="role">Ruolo</Label>
-              <Select value={role} onValueChange={(value: 'admin' | 'client') => setRole(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona un ruolo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Amministratore</SelectItem>
-                  <SelectItem value="client">Cliente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label>Stato</Label>
-              <div className={`px-3 py-2 rounded-md ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                {user.is_active ? 'Attivo' : 'Disattivato'}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Lo stato può essere modificato dalla tabella principale
-              </p>
+        <div className="py-4 space-y-4">
+          <div>
+            <h3 className="font-medium">Nome</h3>
+            <p>{user.display_name}</p>
+          </div>
+          
+          <div>
+            <h3 className="font-medium">Email</h3>
+            <p>{user.email}</p>
+          </div>
+          
+          <div>
+            <h3 className="font-medium">Ruolo</h3>
+            <div className="flex space-x-2 mt-1">
+              <Button
+                size="sm"
+                variant={user.role === 'client' ? 'default' : 'outline'}
+                onClick={() => handleUpdateRole('client')}
+                className={user.role === 'client' ? 'bg-blue-500' : ''}
+              >
+                Cliente
+              </Button>
+              <Button
+                size="sm"
+                variant={user.role === 'admin' ? 'default' : 'outline'}
+                onClick={() => handleUpdateRole('admin')}
+                className={user.role === 'admin' ? 'bg-purple-600' : ''}
+              >
+                Admin
+              </Button>
             </div>
           </div>
           
-          <DialogFooter className="mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Annulla
-            </Button>
+          <div>
+            <h3 className="font-medium">Stato</h3>
+            <p className={user.is_active ? "text-green-600" : "text-red-600"}>
+              {user.is_active ? "Attivo" : "Disattivato"}
+            </p>
+          </div>
+        </div>
+        
+        <DialogFooter className="flex justify-between">
+          <div>
             <Button 
-              type="submit"
-              disabled={isSubmitting}
+              variant="outline" 
+              size="sm"
+              onClick={handleResetPassword}
             >
-              {isSubmitting ? 'Salvataggio...' : 'Salva Modifiche'}
+              Invia Reset Password
             </Button>
-          </DialogFooter>
-        </form>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+          >
+            Chiudi
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

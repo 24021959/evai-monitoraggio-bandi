@@ -1,3 +1,4 @@
+
 export interface Bando {
   id: string;
   titolo: string;
@@ -18,23 +19,81 @@ export interface Bando {
   modalitaPresentazione?: string;
   ultimiAggiornamenti?: string;
   created_at?: string;
+  abilitata?: boolean;
+  regex?: string;
 }
 
 export interface Fonte {
   id: string;
   nome: string;
   url: string;
-  abilitata: boolean;
-  regex: string;
+  abilitata?: boolean;
+  regex?: string;
+  tipo?: string;
+  stato?: string;
 }
 
 export interface Cliente {
   id: string;
   nome: string;
   email: string;
-  telefono: string;
+  telefono?: string;
   settore: string;
   interessi: string[];
-  note: string;
+  note?: string;
   userId: string;
+  regione?: string;
+  provincia?: string;
+  fatturato?: number;
+  dipendenti?: number;
+  interessiSettoriali?: string[];
+  annoFondazione?: number;
+  formaGiuridica?: string;
+  codiceATECO?: string;
+  esperienzaFinanziamenti?: string;
+  tecnologieSpecifiche?: string[];
+  criteriESG?: string[];
+  capacitaRD?: string;
+  presenzaInternazionale?: string;
+  faseDiCrescita?: string;
+  stabilitaFinanziaria?: string;
+  competenzeDipendenti?: string[];
+  partnership?: string[];
+  certificazioni?: string[];
+  interessisettoriali?: string[]; // Lowercase version for backward compatibility
+  codiceateco?: string; // Lowercase version for backward compatibility
+}
+
+export interface Match {
+  id: string;
+  clienteId: string;
+  bandoId: string;
+  compatibilita: number;
+  notificato?: boolean;
+  archiviato?: boolean;
+  created_at?: string;
+}
+
+export interface Statistica {
+  bandiAttivi: number;
+  numeroClienti: number;
+  matchRecenti: number;
+  distribuzioneBandi: {
+    europei: number;
+    statali: number;
+    regionali: number;
+  };
+  bandoPerSettore: Array<{
+    settore: string;
+    percentuale: number;
+  }>;
+  matchPerCliente: Array<{
+    cliente: string;
+    percentuale: number;
+  }>;
+}
+
+export interface TipoBando {
+  value: string;
+  label: string;
 }
