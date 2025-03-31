@@ -51,7 +51,7 @@ const LoginPage = () => {
       
       let errorMessage = 'Si è verificato un errore durante il login';
       
-      if (error.code === 'invalid_credentials') {
+      if (error.code === 'invalid_credentials' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         errorMessage = 'Email o password non validi. Verifica le tue credenziali.';
       } else if (error.message) {
         errorMessage = `Errore: ${error.message}`;
