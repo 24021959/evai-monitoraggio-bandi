@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { v4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,13 +10,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 import { Cliente } from '@/types';
+import provincePerRegione from '@/utils/provinceItaliane';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 const NuovoCliente = () => {
   const navigate = useNavigate();
@@ -44,6 +55,22 @@ const NuovoCliente = () => {
     partnership: [] as string[],
     certificazioni: [] as string[],
   });
+  
+  // Available provinces based on selected region
+  const [provincieDisponibili, setProvincieDisponibili] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Update available provinces when region changes
+    if (formData.regione && provincePerRegione[formData.regione]) {
+      setProvincieDisponibili(provincePerRegione[formData.regione]);
+      // Reset province selection if current province is not in the new region
+      if (!provincePerRegione[formData.regione].includes(formData.provincia)) {
+        setFormData(prevData => ({ ...prevData, provincia: '' }));
+      }
+    } else {
+      setProvincieDisponibili([]);
+    }
+  }, [formData.regione]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -161,6 +188,9 @@ const NuovoCliente = () => {
     "Turismo",
     "Altro"
   ];
+  
+  // Get list of regions from the provinceItaliane.ts file
+  const regioni = Object.keys(provincePerRegione).sort();
 
   return (
     <div className="container mx-auto py-8">
@@ -185,7 +215,10 @@ const NuovoCliente = () => {
             </div>
             <div>
               <Label htmlFor="settore">Settore</Label>
-              <Select onValueChange={(value) => setFormData(prevData => ({ ...prevData, settore: value }))}>
+              <Select 
+                value={formData.settore} 
+                onValueChange={(value) => setFormData(prevData => ({ ...prevData, settore: value }))}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleziona un settore" />
                 </SelectTrigger>
@@ -196,14 +229,44 @@ const NuovoCliente = () => {
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Regione dropdown */}
             <div>
               <Label htmlFor="regione">Regione</Label>
-              <Input type="text" id="regione" value={formData.regione} onChange={handleChange} />
+              <Select 
+                value={formData.regione} 
+                onValueChange={(value) => setFormData(prevData => ({ ...prevData, regione: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleziona una regione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {regioni.map((regione) => (
+                    <SelectItem key={regione} value={regione}>{regione}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            
+            {/* Provincia dropdown - only enabled if a region is selected */}
             <div>
               <Label htmlFor="provincia">Provincia</Label>
-              <Input type="text" id="provincia" value={formData.provincia} onChange={handleChange} />
+              <Select 
+                value={formData.provincia} 
+                onValueChange={(value) => setFormData(prevData => ({ ...prevData, provincia: value }))}
+                disabled={!formData.regione}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={formData.regione ? "Seleziona una provincia" : "Prima seleziona una regione"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {provincieDisponibili.map((provincia) => (
+                    <SelectItem key={provincia} value={provincia}>{provincia}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            
             <div>
               <Label htmlFor="fatturato">Fatturato</Label>
               <Input type="number" id="fatturato" value={formData.fatturato} onChange={handleNumberChange} />
