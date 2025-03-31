@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Users, BarChart2, FileText, Database, ArrowUpDown, Lock } from 'lucide-react';
+import { Users, BarChart2, FileText, Database, ArrowUpDown, Lock, FileUp } from 'lucide-react';
 
 const ClientSidebar = () => {
   return (
@@ -77,6 +77,19 @@ const ClientSidebar = () => {
             <div className="flex items-center gap-3">
               <BarChart2 className="w-5 h-5" />
               Report
+            </div>
+          </NavLink>
+
+          {/* Added new button for importing announcements */}
+          <NavLink
+            to="/app/strumenti/importa-bandi"
+            className={({ isActive }) =>
+              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700'}`
+            }
+          >
+            <div className="flex items-center gap-3">
+              <FileUp className="w-5 h-5" />
+              Importa Bandi
             </div>
           </NavLink>
           
