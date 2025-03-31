@@ -5,7 +5,7 @@ import type { Database } from './types';
 // Utilizziamo costanti per la connessione Supabase
 const SUPABASE_URL = "https://yeyfuxtzutciijtsezgc.supabase.co";
 
-// Service Role Key di Supabase, da verificare che sia corretta
+// Service Role Key di Supabase
 const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlleWZ1eHR6dXRjaWlqdHNlemdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjUyMTAyOCwiZXhwIjoyMDUyMDk3MDI4fQ.-zVViMWxk1Ogm6YXhgDh3_mlL1KoxL_furGK6J55eCk";
 
 // Configurazione del client amministrativo con opzioni corrette
@@ -22,7 +22,7 @@ export const verifyAdminClientAccess = async () => {
   try {
     console.log("Tentativo di verifica dell'accesso amministrativo...");
     
-    // Verifica dell'accesso amministrativo usando un endpoint più affidabile
+    // Verifica dell'accesso amministrativo con metodo più affidabile
     const { data, error } = await adminClient.auth.admin.listUsers({
       perPage: 1, 
       page: 1

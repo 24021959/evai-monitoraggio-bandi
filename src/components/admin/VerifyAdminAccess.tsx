@@ -22,6 +22,7 @@ const VerifyAdminAccess: React.FC<VerifyAdminAccessProps> = ({
     setErrorDetails(null);
     
     try {
+      console.log("Avvio della verifica manuale del client amministrativo");
       const result = await verifyAdminClient();
       if (!result) {
         setErrorDetails("La verifica è fallita. Assicurati che la Service Role Key sia corretta in adminClient.ts.");
@@ -35,14 +36,14 @@ const VerifyAdminAccess: React.FC<VerifyAdminAccessProps> = ({
   };
 
   return (
-    <Card className="mb-6">
+    <Card className="mb-6 border-l-4 border-l-blue-500">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="h-5 w-5 text-blue-600" />
           Verifica Accesso Amministrativo
         </CardTitle>
         <CardDescription>
-          Verifica l'accesso amministrativo per visualizzare tutte le informazioni degli utenti
+          È necessario verificare l'accesso amministrativo per visualizzare le informazioni complete degli utenti
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -86,17 +87,17 @@ const VerifyAdminAccess: React.FC<VerifyAdminAccessProps> = ({
             onClick={handleVerify} 
             disabled={verifying}
             variant={adminClientVerified ? "outline" : "default"} 
-            className="gap-2"
+            className="gap-2 w-full md:w-auto"
           >
             <RefreshCw className={`h-4 w-4 ${verifying ? "animate-spin" : ""}`} />
             {verifying ? "Verifica in corso..." : "Verifica Accesso Admin"}
           </Button>
           
           {!adminClientVerified && (
-            <div className="text-xs text-gray-500 mt-1">
-              <p className="font-medium">Suggerimenti per la risoluzione dei problemi:</p>
-              <ul className="list-disc ml-5 mt-1">
-                <li>Verifica che la Service Role Key in adminClient.ts sia corretta e aggiornata.</li>
+            <div className="text-sm text-gray-500 mt-3 p-3 bg-gray-50 rounded-md">
+              <p className="font-medium mb-2">Suggerimenti per la risoluzione dei problemi:</p>
+              <ul className="list-disc ml-5 space-y-1">
+                <li>Verifica che la Service Role Key in <strong>adminClient.ts</strong> sia corretta e aggiornata.</li>
                 <li>Assicurati di avere i permessi amministrativi sul progetto Supabase.</li>
                 <li>Controlla la connessione internet e che il progetto Supabase sia attivo.</li>
               </ul>

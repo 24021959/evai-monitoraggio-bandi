@@ -25,11 +25,16 @@ const UserManagement = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
-  // Effettua una verifica automatica all'avvio se lo stato è null
+  // Effettua una verifica automatica all'avvio se lo stato è null o false
   useEffect(() => {
-    if (adminClientVerified === null) {
-      verifyAdminClient();
-    }
+    const checkAdminAccess = async () => {
+      if (adminClientVerified !== true) {
+        console.log("Verifica automatica dell'accesso amministrativo all'avvio della pagina");
+        await verifyAdminClient();
+      }
+    };
+    
+    checkAdminAccess();
   }, [adminClientVerified, verifyAdminClient]);
 
   const handleUserCreated = (userData: any) => {
@@ -87,7 +92,7 @@ const UserManagement = () => {
         </Button>
       </div>
 
-      {/* Componente verifica accesso admin */}
+      {/* Componente verifica accesso admin più visibile */}
       <VerifyAdminAccess 
         verifyAdminClient={verifyAdminClient}
         adminClientVerified={adminClientVerified}

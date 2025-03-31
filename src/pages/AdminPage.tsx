@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { useUsers } from "@/hooks/useUsers";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
 import { useToast } from '@/components/ui/use-toast';
+import VerifyAdminAccess from '@/components/admin/VerifyAdminAccess';
 import { FontiTabContent } from '@/components/fonti/FontiTabContent';
 import { AggiungiTabContent } from '@/components/fonti/AggiungiTabContent';
 import { useFonti } from '@/hooks/useFonti';
@@ -18,7 +18,16 @@ import { UserProfile, UserProfileUpdate } from '@/types';
 
 const AdminPage = () => {
   const { toast } = useToast();
-  const { users, createUser, updateUserProfile, toggleUserActive, loadingUsers } = useUsers();
+  const { 
+    users, 
+    createUser, 
+    updateUserProfile, 
+    toggleUserActive, 
+    loadingUsers, 
+    adminClientVerified,
+    verifyAdminClient 
+  } = useUsers();
+  
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState("users");
@@ -33,6 +42,18 @@ const AdminPage = () => {
     handleDelete,
     handleAddSource,
   } = useFonti();
+
+  // Effettua una verifica automatica all'avvio
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      if (adminClientVerified !== true) {
+        console.log("Verifica automatica dell'accesso amministrativo all'avvio della pagina");
+        await verifyAdminClient();
+      }
+    };
+    
+    checkAdminAccess();
+  }, [adminClientVerified, verifyAdminClient]);
 
   const handleUserCreated = (userData) => {
     toast({
@@ -109,11 +130,20 @@ const AdminPage = () => {
           <ShieldCheck className="h-6 w-6 text-blue-500" />
           Pannello Amministrazione
         </h1>
-        <Button onClick={() => setShowCreateDialog(true)} className="flex items-center">
+        <Button 
+          onClick={() => setShowCreateDialog(true)} 
+          disabled={!adminClientVerified}
+          className="flex items-center"
+        >
           <UserPlus className="mr-2 h-4 w-4" />
           Crea Nuovo Utente
         </Button>
       </div>
+
+      <VerifyAdminAccess
+        verifyAdminClient={verifyAdminClient}
+        adminClientVerified={adminClientVerified}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">
@@ -291,7 +321,6 @@ const AdminPage = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Dialog per creare un nuovo utente */}
       <CreateUserDialog 
         open={showCreateDialog} 
         onOpenChange={setShowCreateDialog} 
@@ -299,7 +328,6 @@ const AdminPage = () => {
         createUser={createUser}
       />
       
-      {/* Dialog per i dettagli utente */}
       {selectedUser && (
         <UserDetailsDialog 
           user={{
