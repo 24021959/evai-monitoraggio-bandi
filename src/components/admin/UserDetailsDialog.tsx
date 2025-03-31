@@ -9,20 +9,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-
-type UserProfile = {
-  id: string;
-  display_name: string;
-  email: string;
-  role: 'admin' | 'client';
-  is_active: boolean;
-};
+import { UserProfile, UserProfileUpdate } from "@/types";
 
 interface UserDetailsDialogProps {
   user: UserProfile;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  updateUser?: (userId: string, updates: any) => Promise<void>;
+  updateUser?: (userId: string, updates: UserProfileUpdate) => Promise<void>;
   onUserUpdated?: () => void;
   onUserDeleted?: () => void;
   onPasswordReset?: () => void;
@@ -88,12 +81,12 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         <div className="py-4 space-y-4">
           <div>
             <h3 className="font-medium">Nome</h3>
-            <p>{user.display_name}</p>
+            <p>{user.display_name || "-"}</p>
           </div>
           
           <div>
             <h3 className="font-medium">Email</h3>
-            <p>{user.email}</p>
+            <p>{user.email || "Email non disponibile"}</p>
           </div>
           
           <div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
@@ -73,26 +74,27 @@ export const useUsers = () => {
 
         const authUsers = data?.users || [];
 
+        // Combiniamo i dati dai profili con le email degli utenti autenticati
         const combinedUsers = profiles?.map(profile => {
           const authUser = authUsers.find(u => u.id === profile.id);
           return {
             id: profile.id,
             display_name: profile.display_name,
-            email: authUser?.email || 'N/A',
+            email: authUser?.email || 'Email non disponibile', // Usiamo l'email dell'utente autenticato
             role: profile.role,
-            is_active: profile.organizations?.is_active !== false
+            is_active: profile.organizations?.is_active !== false,
+            disabled: !authUser?.email_confirmed_at // Consideriamo disabilitati gli utenti non confermati
           };
         }) || [];
 
         console.log("Utenti combinati recuperati:", combinedUsers.length);
         setUsers(combinedUsers);
       } else {
-        // Fallback to profiles only if admin client is unavailable
-        console.log("Fallback al recupero dei soli profili (senza email)");
+        // Visualizziamo un messaggio più chiaro se non abbiamo accesso al client admin
         const basicUsers = profiles?.map(profile => ({
           id: profile.id,
           display_name: profile.display_name,
-          email: 'Email non disponibile', // Clearer message to user
+          email: 'Email non disponibile (accesso admin richiesto)',
           role: profile.role,
           is_active: profile.organizations?.is_active !== false
         })) || [];

@@ -5,14 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Users, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
-type UserProfile = {
-  id: string;
-  display_name: string;
-  email: string;
-  role: 'admin' | 'client';
-  is_active: boolean;
-};
+import { UserProfile } from '@/types';
 
 type UserTableProps = {
   users: UserProfile[];
@@ -58,7 +51,7 @@ const UserTable = ({ users, loadingUsers, toggleUserActive, onShowDetails }: Use
                 ) : (
                   users.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.display_name}</TableCell>
+                      <TableCell className="font-medium">{user.display_name || "-"}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <span className={`inline-flex px-2 py-1 rounded-full text-xs ${
@@ -73,7 +66,7 @@ const UserTable = ({ users, loadingUsers, toggleUserActive, onShowDetails }: Use
                         <div className="flex items-center space-x-2">
                           <Switch 
                             checked={user.is_active} 
-                            onCheckedChange={() => toggleUserActive(user.id, user.is_active, user.display_name)}
+                            onCheckedChange={() => toggleUserActive(user.id, user.is_active || false, user.display_name || "")}
                           />
                           <span className={user.is_active ? "text-green-600" : "text-red-600"}>
                             {user.is_active ? "Attivo" : "Disattivato"}

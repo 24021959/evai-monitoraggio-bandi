@@ -120,8 +120,4 @@ export interface UserProfile {
   role?: 'admin' | 'client';
   is_active?: boolean;
   disabled?: boolean;
-  profile?: {
-    display_name?: string;
-    role?: 'admin' | 'client';
-  };
 }
