@@ -41,6 +41,7 @@ const AdminPage = () => {
     isLoading: fontiLoading,
     handleDelete,
     handleAddSource,
+    fetchFonti
   } = useFonti();
 
   // Effettua una verifica automatica all'avvio
