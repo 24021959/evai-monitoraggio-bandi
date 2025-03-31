@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
@@ -101,7 +102,7 @@ export const useUsers = () => {
         const basicUsers = profiles?.map(profile => ({
           id: profile.id,
           display_name: profile.display_name,
-          email: 'Email non disponibile (accesso admin richiesto)',
+          email: 'Email non disponibile (accesso admin richiesto)', // Messaggo chiaro sul perché l'email non è disponibile
           role: profile.role,
           is_active: profile.organizations?.is_active !== false
         })) || [];

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Cliente } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -161,6 +160,39 @@ export class SupabaseClientiService {
       competenzedipendenti: cliente.competenzeDipendenti,
       partnership: cliente.partnership,
       certificazioni: cliente.certificazioni
+    };
+  }
+
+  /**
+   * Mappa una riga del database nel formato Cliente
+   */
+  mapData(data: any): Cliente {
+    return {
+      id: data.id,
+      nome: data.nome,
+      settore: data.settore,
+      regione: data.regione,
+      provincia: data.provincia,
+      fatturato: data.fatturato,
+      interessiSettoriali: data.interessisettoriali || data.interessiSettoriali || [],
+      dipendenti: data.dipendenti,
+      email: data.email,
+      telefono: data.telefono,
+      annoFondazione: data.annofondazione || data.annoFondazione,
+      formaGiuridica: data.formagiuridica || data.formaGiuridica,
+      codiceATECO: data.codiceateco || data.codiceATECO,
+      esperienzaFinanziamenti: data.esperienzaFinanziamenti,
+      tecnologieSpecifiche: data.tecnologieSpecifiche || [],
+      criteriESG: data.criteriESG || [],
+      capacitaRD: data.capacitaRD,
+      presenzaInternazionale: data.presenzaInternazionale,
+      faseDiCrescita: data.faseDiCrescita,
+      stabilitaFinanziaria: data.stabilitaFinanziaria,
+      competenzeDipendenti: data.competenzeDipendenti || [],
+      partnership: data.partnership || [],
+      certificazioni: data.certificazioni || [],
+      interessi: data.interessi || [],
+      userId: data.userId || ''
     };
   }
 }

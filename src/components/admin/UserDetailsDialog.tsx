@@ -86,7 +86,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           
           <div>
             <h3 className="font-medium">Email</h3>
-            <p>{user.email || "Email non disponibile"}</p>
+            <p>{user.email}</p>
           </div>
           
           <div>

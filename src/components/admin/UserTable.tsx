@@ -52,7 +52,7 @@ const UserTable = ({ users, loadingUsers, toggleUserActive, onShowDetails }: Use
                   users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.display_name || "-"}</TableCell>
-                      <TableCell>{user.email || "Email non disponibile"}</TableCell>
+                      <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <span className={`inline-flex px-2 py-1 rounded-full text-xs ${
                           user.role === 'admin' 
