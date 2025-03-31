@@ -121,7 +121,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           <div>
             <h3 className="font-medium">Stato</h3>
             <p className={user.is_active ? "text-green-600" : "text-red-600"}>
-              {user.is_active ? "Attivo" : "Disattivato"}
+              {user.is_active ? "Attivo" : "Disabilitato"}
             </p>
           </div>
         </div>

@@ -1,3 +1,4 @@
+
 export interface Bando {
   id: string;
   titolo: string;
@@ -78,7 +79,7 @@ export interface Match {
   notificato?: boolean;
   archiviato?: boolean;
   created_at?: string;
-  bando_titolo?: string; // Add these fields to match what's used in the code
+  bando_titolo?: string;
   cliente_nome?: string;
   data_creazione?: string;
 }
@@ -112,16 +113,15 @@ export interface UserProfileUpdate {
   role?: 'admin' | 'client';
 }
 
-// Modifichiamo l'interfaccia UserProfile per includere i campi richiesti
 export interface UserProfile {
   id: string;
   email: string;
+  display_name?: string;
+  role?: 'admin' | 'client';
+  is_active?: boolean;
+  disabled?: boolean;
   profile?: {
     display_name?: string;
     role?: 'admin' | 'client';
   };
-  disabled?: boolean;
-  display_name?: string;
-  role?: 'admin' | 'client';
-  is_active?: boolean;
 }

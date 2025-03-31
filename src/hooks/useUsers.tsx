@@ -2,14 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
 import { useToast } from '@/components/ui/use-toast';
-
-type UserProfile = {
-  id: string;
-  display_name: string;
-  email: string;
-  role: 'admin' | 'client';
-  is_active: boolean;
-};
+import { UserProfile } from '@/types';
 
 type UserProfileUpdate = {
   display_name?: string;
