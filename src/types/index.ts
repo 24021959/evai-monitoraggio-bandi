@@ -1,4 +1,3 @@
-
 export interface Bando {
   id: string;
   titolo: string;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { adminClient, verifyAdminClientAccess } from '@/integrations/supabase/adminClient';
@@ -73,24 +72,32 @@ export const useUsers = () => {
         }
 
         const authUsers = data?.users || [];
+        console.log("Utenti auth recuperati:", authUsers);
 
         // Combiniamo i dati dai profili con le email degli utenti autenticati
         const combinedUsers = profiles?.map(profile => {
           const authUser = authUsers.find(u => u.id === profile.id);
+          
           return {
             id: profile.id,
             display_name: profile.display_name,
-            email: authUser?.email || 'Email non disponibile', // Usiamo l'email dell'utente autenticato
+            email: authUser?.email || '', // Usiamo l'email dell'utente autenticato
             role: profile.role,
             is_active: profile.organizations?.is_active !== false,
-            disabled: !authUser?.email_confirmed_at // Consideriamo disabilitati gli utenti non confermati
+            disabled: authUser ? !authUser.email_confirmed_at : true // Consideriamo disabilitati gli utenti non confermati
           };
         }) || [];
 
-        console.log("Utenti combinati recuperati:", combinedUsers.length);
+        console.log("Utenti combinati recuperati:", combinedUsers);
         setUsers(combinedUsers);
       } else {
-        // Visualizziamo un messaggio più chiaro se non abbiamo accesso al client admin
+        // Se non abbiamo accesso al client admin, non possiamo recuperare le email
+        toast({
+          title: 'Attenzione',
+          description: 'Client amministrativo non configurato. Impossibile visualizzare le email degli utenti.',
+          variant: 'destructive'
+        });
+        
         const basicUsers = profiles?.map(profile => ({
           id: profile.id,
           display_name: profile.display_name,

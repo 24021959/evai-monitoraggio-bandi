@@ -1,4 +1,3 @@
-
 import { Bando, Cliente, Fonte, Match, Statistica, TipoBando } from '../types';
 
 export const mockBandi: Bando[] = [
@@ -68,7 +67,9 @@ export const mockClienti: Cliente[] = [
     regione: 'Lombardia',
     provincia: 'Milano',
     interessiSettoriali: ['Innovazione', 'Digitalizzazione', 'Smart City'],
-    email: 'info@tech.it'
+    email: 'info@tech.it',
+    interessi: ['Innovazione', 'Digitalizzazione', 'Smart City'],
+    userId: 'fake-user-id-1'
   },
   {
     id: '2',
@@ -79,7 +80,9 @@ export const mockClienti: Cliente[] = [
     regione: 'Piemonte',
     provincia: 'Torino',
     interessiSettoriali: ['Energie Rinnovabili', 'Efficienza Energetica', 'Sostenibilità'],
-    email: 'info@green.it'
+    email: 'info@green.it',
+    interessi: ['Energie Rinnovabili', 'Efficienza Energetica', 'Sostenibilità'],
+    userId: 'fake-user-id-2'
   },
   {
     id: '3',
@@ -90,7 +93,9 @@ export const mockClienti: Cliente[] = [
     regione: 'Emilia-Romagna',
     provincia: 'Bologna',
     interessiSettoriali: ['Agricoltura Biologica', 'Tecnologie Agricole', 'Sostenibilità'],
-    email: 'info@agri.it'
+    email: 'info@agri.it',
+    interessi: ['Agricoltura Biologica', 'Tecnologie Agricole', 'Sostenibilità'],
+    userId: 'fake-user-id-3'
   },
   {
     id: '4',
@@ -101,7 +106,9 @@ export const mockClienti: Cliente[] = [
     regione: 'Veneto',
     provincia: 'Padova',
     interessiSettoriali: ['Industria 4.0', 'Automazione', 'Manifattura Avanzata'],
-    email: 'info@mani.it'
+    email: 'info@mani.it',
+    interessi: ['Industria 4.0', 'Automazione', 'Manifattura Avanzata'],
+    userId: 'fake-user-id-4'
   },
   {
     id: '5',
@@ -112,7 +119,9 @@ export const mockClienti: Cliente[] = [
     regione: 'Lazio',
     provincia: 'Roma',
     interessiSettoriali: ['Innovazione', 'Digitale', 'Startup'],
-    email: 'info@innova.it'
+    email: 'info@innova.it',
+    interessi: ['Innovazione', 'Digitale', 'Startup'],
+    userId: 'fake-user-id-5'
   },
   {
     id: '6',
@@ -123,7 +132,9 @@ export const mockClienti: Cliente[] = [
     regione: 'Toscana',
     provincia: 'Firenze',
     interessiSettoriali: ['Ricerca Medica', 'Biotecnologie', 'Salute'],
-    email: 'info@biomed.it'
+    email: 'info@biomed.it',
+    interessi: ['Ricerca Medica', 'Biotecnologie', 'Salute'],
+    userId: 'fake-user-id-6'
   }
 ];
 
