@@ -26,6 +26,7 @@ import AdminPage from './pages/AdminPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ImportaBandi from './pages/ImportaBandi';
 import BandiImportati from './pages/BandiImportati';
+import UserManagement from './pages/UserManagement';
 
 function App() {
   return (
@@ -52,6 +53,11 @@ function App() {
           <Route path="/app/admin/settings" element={
             <AdminProtectedRoute>
               <AdminSettings />
+            </AdminProtectedRoute>
+          } />
+          <Route path="/app/admin/gestione" element={
+            <AdminProtectedRoute>
+              <UserManagement />
             </AdminProtectedRoute>
           } />
           <Route path="/app/admin" element={
