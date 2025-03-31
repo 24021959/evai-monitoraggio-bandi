@@ -1,30 +1,12 @@
 
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from 'react';
 import { FontiHeader } from '@/components/fonti/FontiHeader';
 import { FontiLoadingState } from '@/components/fonti/FontiLoadingState';
-import { FontiTabContent } from '@/components/fonti/FontiTabContent';
-import { AggiungiTabContent } from '@/components/fonti/AggiungiTabContent';
 import { useFonti } from '@/hooks/useFonti';
-import { Fonte } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const Fonti = () => {
-  const [activeTab, setActiveTab] = useState("fonti");
-  const {
-    fonti,
-    isLoading,
-    handleDelete,
-    handleAddSource,
-  } = useFonti();
-
-  // Add source handler also changes the active tab
-  const onAddSource = async (newSource: Omit<Fonte, 'id'>) => {
-    const success = await handleAddSource(newSource);
-    if (success) {
-      setActiveTab("fonti");
-    }
-    return success;
-  };
+  const { fonti, isLoading } = useFonti();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -32,27 +14,32 @@ const Fonti = () => {
       
       {isLoading && <FontiLoadingState />}
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 mb-6">
-          <TabsTrigger value="fonti" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Fonti Configurate</TabsTrigger>
-          <TabsTrigger value="aggiungi" className="bg-blue-100 data-[state=active]:bg-blue-500 data-[state=active]:text-white">Aggiungi Fonte</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="fonti">
-          <FontiTabContent 
-            fonti={fonti} 
-            isLoading={isLoading}
-            onDelete={handleDelete}
-          />
-        </TabsContent>
-        
-        <TabsContent value="aggiungi">
-          <AggiungiTabContent 
-            onAddSource={onAddSource} 
-            fonti={fonti}
-          />
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Fonti Configurate</CardTitle>
+          <CardDescription>Lista delle fonti da cui vengono estratti i bandi</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            </div>
+          ) : fonti.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>Nessuna fonte disponibile</p>
+              <p className="text-sm mt-2">Le fonti vengono configurate dall'amministratore di sistema</p>
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {fonti.map(fonte => (
+                <li key={fonte.id} className="py-3">
+                  <div className="font-medium">{fonte.nome}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
