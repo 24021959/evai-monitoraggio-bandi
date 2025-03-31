@@ -119,31 +119,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       console.log('Tentativo di login con email:', email);
       
+      // Clear any existing session first to avoid conflicts
+      await supabase.auth.signOut();
+      
+      // Small delay to ensure signOut completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         console.error('Errore durante il login:', error);
         throw error;
       } else if (data.user) {
+        console.log('Login riuscito:', data.user.id);
+        
         toast({
           title: "Accesso effettuato",
           description: `Benvenuto`,
         });
         
-        // Attendiamo il caricamento del profilo utente
-        await new Promise(resolve => {
-          const checkProfile = () => {
-            if (userProfile) {
-              resolve(null);
-            } else {
-              setTimeout(checkProfile, 100);
-            }
-          };
-          checkProfile();
-        });
+        // Fetch user profile directly here to ensure it's loaded before redirect
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
+          .select(`
+            role,
+            organization_id,
+            display_name,
+            organizations:organization_id (
+              is_active
+            )
+          `)
+          .eq('id', data.user.id)
+          .single();
         
-        // Reindirizzo basato sul ruolo
-        if (userProfile?.role === 'admin') {
+        if (profileError) {
+          console.error('Errore nel recupero del profilo dopo login:', profileError);
+          navigate('/app/dashboard');
+          return;
+        }
+        
+        console.log('Profilo dopo login:', profileData);
+        
+        if (profileData?.role === 'admin') {
           navigate('/app/admin/gestione');
         } else {
           navigate('/app/dashboard');

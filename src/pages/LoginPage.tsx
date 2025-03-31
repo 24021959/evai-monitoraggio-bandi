@@ -21,7 +21,6 @@ const LoginPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Aggiungiamo dei log per debug
   console.log('Rendering LoginPage, user:', user);
 
   // Redirect if user is already logged in
