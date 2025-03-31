@@ -9,6 +9,11 @@ import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
 import { useToast } from '@/components/ui/use-toast';
 
+type UserProfileUpdate = {
+  display_name?: string;
+  role?: 'admin' | 'client';
+};
+
 const UserManagement = () => {
   const { toast } = useToast();
   const { users, createUser, updateUserProfile, toggleUserActive, loadingUsers } = useUsers();
@@ -48,6 +53,11 @@ const UserManagement = () => {
 
   const showUserDetails = (user) => {
     setSelectedUser(user);
+  };
+
+  // Wrapper function to handle the return type mismatch
+  const handleUpdateUser = async (userId: string, updates: UserProfileUpdate) => {
+    await updateUserProfile(userId, updates);
   };
 
   return (
@@ -94,7 +104,7 @@ const UserManagement = () => {
           user={selectedUser} 
           open={!!selectedUser} 
           onOpenChange={() => setSelectedUser(null)}
-          updateUser={updateUserProfile}
+          updateUser={handleUpdateUser}
           onUserUpdated={handleUserUpdated}
           onUserDeleted={handleUserDeleted}
           onPasswordReset={handlePasswordReset}

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ShieldCheck, Database, Settings } from "lucide-react";
+import { Users, ShieldCheck, Database, Settings, FileSpreadsheet, Webhook } from "lucide-react";
 import UserTable from "@/components/admin/UserTable";
 import { useUsers } from "@/hooks/useUsers";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
@@ -12,6 +12,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { FontiTabContent } from '@/components/fonti/FontiTabContent';
 import { AggiungiTabContent } from '@/components/fonti/AggiungiTabContent';
 import { useFonti } from '@/hooks/useFonti';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminPage = () => {
   const { toast } = useToast();
@@ -20,6 +23,8 @@ const AdminPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState("users");
   const [activeFontiTab, setActiveFontiTab] = useState("fonti");
+  const [googleSheetUrl, setGoogleSheetUrl] = useState(localStorage.getItem('googleSheetUrl') || '');
+  const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('n8nWebhookUrl') || '');
 
   // Utilizziamo lo stesso hook useFonti che viene usato nella pagina utente
   const {
@@ -73,8 +78,26 @@ const AdminPage = () => {
     return success;
   };
 
+  // Salva configurazione Google Sheets
+  const saveGoogleSheetUrl = () => {
+    localStorage.setItem('googleSheetUrl', googleSheetUrl);
+    toast({
+      title: "Configurazione salvata",
+      description: "URL del foglio Google Sheets salvato con successo."
+    });
+  };
+
+  // Salva configurazione webhook
+  const saveWebhookUrl = () => {
+    localStorage.setItem('n8nWebhookUrl', webhookUrl);
+    toast({
+      title: "Configurazione salvata", 
+      description: "URL del webhook n8n salvato con successo."
+    });
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in container py-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <ShieldCheck className="h-6 w-6 text-blue-500" />
@@ -146,25 +169,69 @@ const AdminPage = () => {
         </TabsContent>
         
         <TabsContent value="settings">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle>Impostazioni</CardTitle>
-              <CardDescription>
-                Configura le impostazioni globali della piattaforma.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Per configurare le impostazioni avanzate come le connessioni API e i webhook, utilizza la pagina 
-                <a href="/app/admin/settings" className="text-blue-600 hover:underline ml-1">Impostazioni Avanzate</a>.
-              </p>
-              
-              <p className="text-sm text-muted-foreground">
-                La configurazione del foglio Google per l'importazione/esportazione delle fonti può essere gestita dalle 
-                <a href="/app/admin/settings" className="text-blue-600 hover:underline ml-1">Impostazioni Avanzate</a>.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5 text-green-500" />
+                  Configurazione Google Sheets
+                </CardTitle>
+                <CardDescription>
+                  Configura il collegamento al foglio Google per l'importazione e la sincronizzazione dei dati
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="google-sheet-url">URL del foglio Google</Label>
+                  <Input
+                    id="google-sheet-url"
+                    value={googleSheetUrl}
+                    onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                    className="w-full"
+                  />
+                </div>
+                <Button onClick={saveGoogleSheetUrl} className="w-full">
+                  Salva Configurazione
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Webhook className="h-5 w-5 text-blue-500" />
+                  Configurazione Webhook n8n
+                </CardTitle>
+                <CardDescription>
+                  Configura il webhook n8n per automatizzare le operazioni sulle fonti
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="webhook-url">URL del webhook n8n</Label>
+                  <Input
+                    id="webhook-url"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://n8n.example.com/webhook/..."
+                    className="w-full"
+                  />
+                </div>
+                <Button onClick={saveWebhookUrl} className="w-full">
+                  Salva Configurazione
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Alert className="bg-amber-50 border-amber-200 mt-6">
+            <AlertTitle>Area protetta</AlertTitle>
+            <AlertDescription>
+              Questa sezione contiene configurazioni sensibili che influenzano il funzionamento dell'applicazione.
+              Modificare queste impostazioni con cautela.
+            </AlertDescription>
+          </Alert>
         </TabsContent>
       </Tabs>
       

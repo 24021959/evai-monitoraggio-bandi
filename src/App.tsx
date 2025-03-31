@@ -50,6 +50,13 @@ function App() {
           <Route path="/app/change-password" element={<ChangePasswordPage />} />
           <Route path="/app/strumenti/importa-bandi" element={<ImportaBandi />} />
           <Route path="/app/strumenti/bandi-importati" element={<BandiImportati />} />
+          
+          {/* Admin routes - directly using Layout without sidebar */}
+          <Route path="/app/admin" element={
+            <AdminProtectedRoute>
+              <AdminPage />
+            </AdminProtectedRoute>
+          } />
           <Route path="/app/admin/settings" element={
             <AdminProtectedRoute>
               <AdminSettings />
@@ -58,11 +65,6 @@ function App() {
           <Route path="/app/admin/gestione" element={
             <AdminProtectedRoute>
               <UserManagement />
-            </AdminProtectedRoute>
-          } />
-          <Route path="/app/admin" element={
-            <AdminProtectedRoute>
-              <AdminPage />
             </AdminProtectedRoute>
           } />
         </Route>

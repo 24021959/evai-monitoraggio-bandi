@@ -72,6 +72,9 @@ export interface Match {
   notificato?: boolean;
   archiviato?: boolean;
   created_at?: string;
+  bando_titolo?: string; // Add these fields to match what's used in the code
+  cliente_nome?: string;
+  data_creazione?: string;
 }
 
 export interface Statistica {
