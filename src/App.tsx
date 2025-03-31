@@ -50,7 +50,7 @@ function App() {
           <Route path="/app/strumenti/importa-bandi" element={<ImportaBandi />} />
           <Route path="/app/strumenti/bandi-importati" element={<BandiImportati />} />
           
-          {/* Admin routes */}
+          {/* Admin routes - modifichiamo i percorsi per renderli più diretti */}
           <Route path="/app/admin" element={
             <AdminProtectedRoute>
               <AdminPage />

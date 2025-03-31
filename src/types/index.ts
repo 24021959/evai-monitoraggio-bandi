@@ -1,4 +1,3 @@
-
 export interface Bando {
   id: string;
   titolo: string;
@@ -113,13 +112,16 @@ export interface UserProfileUpdate {
   role?: 'admin' | 'client';
 }
 
-// Aggiungiamo un'interfaccia estesa per gli utenti del pannello admin
+// Modifichiamo l'interfaccia UserProfile per includere i campi richiesti
 export interface UserProfile {
   id: string;
   email: string;
-  disabled?: boolean;
   profile?: {
     display_name?: string;
     role?: 'admin' | 'client';
   };
+  disabled?: boolean;
+  display_name?: string;
+  role?: 'admin' | 'client';
+  is_active?: boolean;
 }

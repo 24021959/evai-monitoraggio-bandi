@@ -23,14 +23,14 @@ const Layout = () => {
       <Header />
       
       <div className="flex flex-1">
-        {/* Only show sidebar for non-admin pages */}
+        {/* Solo mostrare la sidebar per le pagine non-admin e gli utenti non-admin */}
         {!isAdminRoute && !isAdmin && (
           <div className="w-1/5">
             <ClientSidebar />
           </div>
         )}
         
-        {/* Adjust width based on whether sidebar is shown */}
+        {/* Aggiustare la larghezza in base a se viene mostrata la sidebar */}
         <div className={`${isAdminRoute || isAdmin ? 'w-full' : 'w-4/5'} p-8 overflow-auto bg-white`}>
           <Outlet />
         </div>

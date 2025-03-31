@@ -159,20 +159,20 @@ const AdminPage = () => {
                     <tbody>
                       {users && users.map((user) => (
                         <tr key={user.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3 font-medium">{user.profile?.display_name || "-"}</td>
+                          <td className="p-3 font-medium">{user.profile?.display_name || user.display_name || "-"}</td>
                           <td className="p-3 text-gray-600">{user.email}</td>
                           <td className="p-3">
                             <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                              user.profile?.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"
+                              (user.profile?.role || user.role) === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"
                             }`}>
-                              {user.profile?.role === "admin" ? "Admin" : "Cliente"}
+                              {(user.profile?.role || user.role) === "admin" ? "Admin" : "Cliente"}
                             </span>
                           </td>
                           <td className="p-3">
                             <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                              !user.disabled ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                              !(user.disabled || !user.is_active) ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                             }`}>
-                              {!user.disabled ? "Attivo" : "Disabilitato"}
+                              {!(user.disabled || !user.is_active) ? "Attivo" : "Disabilitato"}
                             </span>
                           </td>
                           <td className="p-3">
@@ -182,10 +182,10 @@ const AdminPage = () => {
                               </Button>
                               <Button 
                                 size="sm" 
-                                variant={user.disabled ? "default" : "destructive"}
-                                onClick={() => toggleUserActive(user.id, !!user.disabled)}
+                                variant={(user.disabled || !user.is_active) ? "default" : "destructive"}
+                                onClick={() => toggleUserActive(user.id, !(user.disabled || !user.is_active), user.profile?.display_name || user.display_name || "")}
                               >
-                                {user.disabled ? "Attiva" : "Disattiva"}
+                                {(user.disabled || !user.is_active) ? "Attiva" : "Disattiva"}
                               </Button>
                             </div>
                           </td>
@@ -302,7 +302,13 @@ const AdminPage = () => {
       {/* Dialog per i dettagli utente */}
       {selectedUser && (
         <UserDetailsDialog 
-          user={selectedUser} 
+          user={{
+            id: selectedUser.id,
+            display_name: selectedUser.profile?.display_name || selectedUser.display_name || "",
+            email: selectedUser.email,
+            role: selectedUser.profile?.role || selectedUser.role || "client",
+            is_active: !(selectedUser.disabled || !selectedUser.is_active)
+          }} 
           open={!!selectedUser} 
           onOpenChange={() => setSelectedUser(null)}
           updateUser={handleUpdateUser}
