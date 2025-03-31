@@ -21,6 +21,13 @@ export interface Bando {
   created_at?: string;
   abilitata?: boolean;
   regex?: string;
+  
+  // Legacy field names for backward compatibility
+  importo_min?: number;
+  importo_max?: number;
+  budget_disponibile?: string;
+  scadenza_dettagliata?: string;
+  data_estrazione?: string;
 }
 
 export interface Fonte {
@@ -99,4 +106,9 @@ export interface Statistica {
 export interface TipoBando {
   value: string;
   label: string;
+}
+
+export interface UserProfileUpdate {
+  display_name?: string;
+  role?: 'admin' | 'client';
 }

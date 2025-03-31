@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, ShieldCheck, Database, Settings, FileSpreadsheet, Webhook } from "lucide-react";
-import UserTable from "@/components/admin/UserTable";
 import { useUsers } from "@/hooks/useUsers";
 import CreateUserDialog from "@/components/admin/CreateUserDialog";
 import UserDetailsDialog from "@/components/admin/UserDetailsDialog";
@@ -15,6 +14,12 @@ import { useFonti } from '@/hooks/useFonti';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Definizione del tipo per gli aggiornamenti del profilo utente
+type UserProfileUpdate = {
+  display_name?: string;
+  role?: 'admin' | 'client';
+};
 
 const AdminPage = () => {
   const { toast } = useToast();
@@ -96,6 +101,12 @@ const AdminPage = () => {
     });
   };
 
+  // Wrapper function to handle the updateUserProfile return type
+  const handleUpdateUser = async (userId: string, updates: UserProfileUpdate) => {
+    await updateUserProfile(userId, updates);
+    return; // Return void to match the expected type
+  };
+
   return (
     <div className="space-y-6 animate-fade-in container py-6">
       <div className="flex items-center justify-between">
@@ -134,12 +145,61 @@ const AdminPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <UserTable 
-                users={users} 
-                loadingUsers={loadingUsers}
-                toggleUserActive={toggleUserActive}
-                onShowDetails={showUserDetails}
-              />
+              {loadingUsers ? (
+                <div className="flex justify-center p-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 text-left">
+                        <th className="p-3">Utente</th>
+                        <th className="p-3">Email</th>
+                        <th className="p-3">Ruolo</th>
+                        <th className="p-3">Stato</th>
+                        <th className="p-3">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users && users.map((user) => (
+                        <tr key={user.id} className="border-b hover:bg-gray-50">
+                          <td className="p-3 font-medium">{user.profile?.display_name || "-"}</td>
+                          <td className="p-3 text-gray-600">{user.email}</td>
+                          <td className="p-3">
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                              user.profile?.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"
+                            }`}>
+                              {user.profile?.role === "admin" ? "Admin" : "Cliente"}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                              !user.disabled ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                            }`}>
+                              {!user.disabled ? "Attivo" : "Disabilitato"}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex space-x-2">
+                              <Button size="sm" variant="outline" onClick={() => showUserDetails(user)}>
+                                Dettagli
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant={user.disabled ? "default" : "destructive"}
+                                onClick={() => toggleUserActive(user.id, user.disabled)}
+                              >
+                                {user.disabled ? "Attiva" : "Disattiva"}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -249,7 +309,7 @@ const AdminPage = () => {
           user={selectedUser} 
           open={!!selectedUser} 
           onOpenChange={() => setSelectedUser(null)}
-          updateUser={updateUserProfile}
+          updateUser={handleUpdateUser}
           onUserUpdated={handleUserUpdated}
           onUserDeleted={handleUserDeleted}
           onPasswordReset={handlePasswordReset}

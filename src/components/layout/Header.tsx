@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LogOut, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,10 @@ import ChangePasswordForm from '@/components/admin/ChangePasswordForm';
 const Header = () => {
   const { user, userProfile, signOut, isAdmin } = useAuth();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const location = useLocation();
+  
+  // Check if we're on an admin page
+  const isAdminRoute = location.pathname.startsWith('/app/admin');
 
   return (
     <header className="w-full bg-white shadow-sm py-4 px-8">
