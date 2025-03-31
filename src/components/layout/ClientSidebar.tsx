@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Home, Users, Database, LineChart, FileText, Settings, Upload } from 'lucide-react';
+import FontiDialog from '@/components/fonti/FontiDialog';
 
 const ClientSidebar = () => {
   const { isAdmin } = useAuth();
+  const [showFontiDialog, setShowFontiDialog] = useState(false);
   
   // Se l'utente è admin, non mostrare la sidebar client
   if (isAdmin) {
@@ -40,17 +42,15 @@ const ClientSidebar = () => {
             </div>
           </NavLink>
           
-          <NavLink
-            to="/app/fonti"
-            className={({ isActive }) =>
-              `p-5 hover:bg-blue-50 ${isActive ? 'bg-blue-500 text-white' : 'text-black'}`
-            }
+          <button
+            className="p-5 w-full text-left hover:bg-blue-50 text-black"
+            onClick={() => setShowFontiDialog(true)}
           >
             <div className="flex items-center gap-3">
               <Database className="w-5 h-5" />
               Fonti
             </div>
-          </NavLink>
+          </button>
           
           <NavLink
             to="/app/match"
@@ -117,6 +117,11 @@ const ClientSidebar = () => {
           </NavLink>
         </nav>
       </div>
+      
+      <FontiDialog
+        open={showFontiDialog}
+        onOpenChange={setShowFontiDialog}
+      />
     </div>
   );
 };

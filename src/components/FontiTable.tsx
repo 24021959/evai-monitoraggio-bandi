@@ -9,7 +9,6 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { FonteRow } from './fonti/FonteRow';
-import { FontiTableHeader } from './fonti/FontiTableHeader';
 import { useFontiUrlHandler } from '@/utils/FontiUrlHandler';
 
 interface FontiTableProps {
@@ -29,32 +28,28 @@ const FontiTable: React.FC<FontiTableProps> = ({
   };
 
   return (
-    <>
-      <FontiTableHeader />
-      
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>Azioni</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {fonti.map((fonte) => (
-              <FonteRow 
-                key={fonte.id}
-                fonte={fonte}
-                onDelete={onDelete}
-                onEditUrl={handleEditUrl}
-                onSaveUrl={handleSaveUrl}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nome</TableHead>
+            <TableHead>URL</TableHead>
+            <TableHead>Azioni</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {fonti.map((fonte) => (
+            <FonteRow 
+              key={fonte.id}
+              fonte={fonte}
+              onDelete={onDelete}
+              onEditUrl={handleEditUrl}
+              onSaveUrl={handleSaveUrl}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 
